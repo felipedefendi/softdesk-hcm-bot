@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+state/*.json
+state/encaminhamentos.log
+debug/
+*.log
+
+# ferramentas de IA (uso local, nao versionar)
+CLAUDE.md
+AGENTS.md
+.claude/

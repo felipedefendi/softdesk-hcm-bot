@@ -1,0 +1,170 @@
+:root {
+  color-scheme: light dark;
+  --bg: #0f1115;
+  --cartao-bg: #1a1d24;
+  --texto: #e6e6e6;
+  --texto-fraco: #9aa0a6;
+  --borda: #2a2d35;
+  --acento: #ff8c42;
+  --erro: #ff5c5c;
+  --ok: #4caf50;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--texto);
+}
+
+.oculto {
+  display: none !important;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--borda);
+}
+
+h1 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.tela-login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#tela-login.tela {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cartao {
+  background: var(--cartao-bg);
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  padding: 1.25rem;
+  margin: 1rem 1.5rem;
+}
+
+.cartao-login {
+  width: 320px;
+  text-align: center;
+}
+
+.cartao-login input {
+  width: 100%;
+  margin: 0.75rem 0;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--borda);
+  background: var(--bg);
+  color: var(--texto);
+}
+
+button {
+  background: var(--acento);
+  color: #1a1a1a;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+button.botao-secundario {
+  background: transparent;
+  color: var(--texto);
+  border: 1px solid var(--borda);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.erro {
+  color: var(--erro);
+  min-height: 1.2em;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+
+th, td {
+  text-align: left;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--borda);
+  font-size: 0.9rem;
+}
+
+th {
+  color: var(--texto-fraco);
+  font-weight: 600;
+}
+
+.badge {
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.badge-ativo {
+  background: rgba(76, 175, 80, 0.2);
+  color: var(--ok);
+}
+
+.badge-inativo {
+  background: rgba(255, 92, 92, 0.2);
+  color: var(--erro);
+}
+
+form#form-config label {
+  display: block;
+  margin-bottom: 0.75rem;
+  color: var(--texto-fraco);
+  font-size: 0.9rem;
+}
+
+form#form-config input {
+  display: block;
+  margin-top: 0.25rem;
+  padding: 0.4rem;
+  border-radius: 6px;
+  border: 1px solid var(--borda);
+  background: var(--bg);
+  color: var(--texto);
+  width: 160px;
+}
+
+.linha-acao {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.linha-acao input {
+  padding: 0.3rem;
+  border-radius: 6px;
+  border: 1px solid var(--borda);
+  background: var(--bg);
+  color: var(--texto);
+}
