@@ -2,7 +2,7 @@ import { abrirSessao } from "./browser";
 import { listarChamadosSemAtendente, buscarMinutosEncaminhamento } from "./tickets";
 import { atribuirChamado } from "./assign";
 import { atendenteAtual, avancarRodizio } from "./rotation";
-import { registrarEncaminhamento, registrarDryRun } from "./log";
+import { registrarEncaminhamento, registrarDryRun, foiRegistradoNoDryRun } from "./log";
 import { notificarTeams } from "./teams";
 import { lerConfiguracoes } from "./configuracoes";
 import { salvarStatus } from "./status";
@@ -27,6 +27,13 @@ export async function verificarChamados(): Promise<{ processados: number }> {
     for (const chamado of chamados) {
       const minutos = await buscarMinutosEncaminhamento(page, chamado.numero);
       if (minutos < cfg.encaminhamentoLimiteMinutos) continue;
+
+      if (config.dryRun && foiRegistradoNoDryRun(chamado.numero)) {
+        // Chamado ja foi calculado numa verificacao anterior e continua
+        // aberto (ninguem atribuiu de verdade ainda) - nao recalcula, senao
+        // o rodizio avancaria de novo pro mesmo chamado a cada ciclo.
+        continue;
+      }
 
       const atendente = atendenteAtual();
       const prefixo = config.dryRun ? "[DRY-RUN] " : "";
