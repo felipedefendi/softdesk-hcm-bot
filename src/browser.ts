@@ -11,7 +11,11 @@ export async function abrirSessao(): Promise<{ browser: Browser; page: Page }> {
 
   // Login como "Atendente" (nao "Solicitante") - ver print da tela de login.
   await page.locator("button", { hasText: "Atendente" }).first().click();
-  await page.waitForLoadState("networkidle");
+  // Espera sair da tela de login e o app carregar de fato. "networkidle" nao
+  // e confiavel aqui: a pagina mantem alguma conexao persistente (polling ou
+  // websocket) que nunca deixa a rede "parada".
+  await page.waitForURL((url) => url.pathname === "/chamado", { timeout: 15000 });
+  await page.getByText("Novo chamado", { exact: true }).first().waitFor({ state: "visible", timeout: 30000 });
 
   return { browser, page };
 }
