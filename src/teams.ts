@@ -21,11 +21,21 @@ function montarAdaptiveCard(info: NotificacaoEncaminhamento) {
           version: "1.4",
           body: [
             {
+              // Primeiro bloco de texto - a notificacao/preview do Teams costuma
+              // mostrar justamente este primeiro texto, entao deixamos so o nome
+              // do atendente aqui pra facilitar a vida de quem ve a notificacao.
+              type: "TextBlock",
+              text: info.atendente,
+              weight: "Bolder",
+              size: "Large",
+              wrap: true,
+            },
+            {
               type: "TextBlock",
               text: "🔔 Chamado encaminhado automaticamente",
-              weight: "Bolder",
-              size: "Medium",
               wrap: true,
+              spacing: "Small",
+              isSubtle: true,
             },
             {
               type: "TextBlock",
@@ -38,7 +48,6 @@ function montarAdaptiveCard(info: NotificacaoEncaminhamento) {
               facts: [
                 { title: "Chamado:", value: `#${info.chamado}` },
                 { title: "Cliente:", value: info.cliente },
-                { title: "Atendente:", value: info.atendente },
                 { title: "Encaminhamento:", value: `${info.minutosEncaminhamento} min` },
                 { title: "Horário:", value: new Date().toLocaleString("pt-BR") },
               ],

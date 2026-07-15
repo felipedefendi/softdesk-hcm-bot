@@ -5,6 +5,7 @@
   "description": "Automacao para distribuir chamados HCM sem atendente no SoftDesk entre a equipe, em rodizio",
   "scripts": {
     "dev": "ts-node src/index.ts",
+    "rodar": "ts-node src/rodar-uma-vez.ts",
     "dashboard": "ts-node src/dashboard/server.ts",
     "codegen": "playwright codegen https://js.soft4.com.br/chamado",
     "build": "tsc",

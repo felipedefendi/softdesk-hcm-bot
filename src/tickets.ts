@@ -59,15 +59,6 @@ export async function listarChamadosSemAtendente(page: Page): Promise<Chamado[]>
   return chamados.sort((a, b) => a.criadoEm.getTime() - b.criadoEm.getTime());
 }
 
-/**
- * Confirmado por inspecao em 2026-07-09: a fila deste login ja e exclusiva do
- * "Grupo de solucao: Gestao de Pessoas HCM", cd_servico 23. Mantido como
- * checagem de seguranca caso o login algum dia veja chamados de outro servico.
- */
-export function ehCategoriaHcm(chamado: Chamado): boolean {
-  return chamado.cdServico === 23;
-}
-
 /** Busca o SLA do chamado (endpoint real: POST /chamado/detalhe/{id}/json) e retorna minutos de Encaminhamento. */
 export async function buscarMinutosEncaminhamento(page: Page, numeroChamado: number): Promise<number> {
   const token = await obterTokenCsrf(page);

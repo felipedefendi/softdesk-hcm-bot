@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { config } from "./config";
 import { abrirSessao } from "./browser";
-import { listarChamadosSemAtendente, ehCategoriaHcm, buscarMinutosEncaminhamento } from "./tickets";
+import { listarChamadosSemAtendente, buscarMinutosEncaminhamento } from "./tickets";
 import { atribuirChamado } from "./assign";
 import { atendenteAtual, avancarRodizio } from "./rotation";
 import { registrarEncaminhamento } from "./log";
@@ -25,10 +25,7 @@ async function main() {
       console.log(`  #${c.numero} - ${c.titulo} - cliente ${c.cliente} - cd_servico ${c.cdServico}`);
     }
 
-    const hcm = chamados.filter(ehCategoriaHcm);
-    console.log(`\n${hcm.length} sao HCM (cd_servico 23).`);
-
-    for (const chamado of hcm) {
+    for (const chamado of chamados) {
       const minutos = await buscarMinutosEncaminhamento(page, chamado.numero);
       console.log(`  Chamado ${chamado.numero}: ${minutos} min de encaminhamento`);
 

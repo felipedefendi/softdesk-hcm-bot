@@ -1,5 +1,5 @@
 import { abrirSessao } from "./browser";
-import { listarChamadosSemAtendente, ehCategoriaHcm, buscarMinutosEncaminhamento } from "./tickets";
+import { listarChamadosSemAtendente, buscarMinutosEncaminhamento } from "./tickets";
 import { atribuirChamado } from "./assign";
 import { atendenteAtual, avancarRodizio } from "./rotation";
 import { registrarEncaminhamento } from "./log";
@@ -8,10 +8,12 @@ import { lerConfiguracoes } from "./configuracoes";
 import { salvarStatus } from "./status";
 
 /**
- * Uma passada completa: lista chamados "Sem atendente", filtra HCM, checa o
- * SLA de Encaminhamento e atribui ao proximo atendente ativo do rodizio
- * quando passar do limite configurado. Usado tanto pelo loop continuo
- * (index.ts) quanto pelo botao "Forcar verificacao agora" do dashboard.
+ * Uma passada completa: lista chamados "Sem atendente", checa o SLA de
+ * Encaminhamento e atribui ao proximo atendente ativo do rodizio quando
+ * passar do limite configurado. Sem filtro de categoria/servico - este login
+ * so enxerga chamados do HCM de qualquer forma. Usado tanto pelo loop
+ * continuo (index.ts) quanto pelo botao "Forcar verificacao agora" do
+ * dashboard.
  */
 export async function verificarChamados(): Promise<{ processados: number }> {
   const cfg = lerConfiguracoes();
@@ -20,9 +22,8 @@ export async function verificarChamados(): Promise<{ processados: number }> {
 
   try {
     const chamados = await listarChamadosSemAtendente(page);
-    const hcm = chamados.filter(ehCategoriaHcm);
 
-    for (const chamado of hcm) {
+    for (const chamado of chamados) {
       const minutos = await buscarMinutosEncaminhamento(page, chamado.numero);
       if (minutos < cfg.encaminhamentoLimiteMinutos) continue;
 

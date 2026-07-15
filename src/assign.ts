@@ -25,6 +25,8 @@ export async function atribuirChamado(page: Page, numeroChamado: number, atenden
   await page.waitForLoadState("networkidle");
 
   const selectAtendente = page.locator("#section-encaminhar #cd_atendente");
+  await selectAtendente.waitFor({ state: "attached", timeout: 15000 });
+  await page.waitForTimeout(1000);
   await selectAtendente.selectOption(String(codigo), { force: true });
 
   // "Acompanhar o chamado apos encaminhar" so faz sentido quando o atendente e o proprio
@@ -40,10 +42,11 @@ export async function atribuirChamado(page: Page, numeroChamado: number, atenden
   await page.locator("#cd_tipo_atividade").selectOption(CODIGO_TIPO_ATIVIDADE_ENCAMINHAMENTO, { force: true });
   await page.locator("#tempo_gasto").fill("00:01");
   await page.locator('input[name="fl_exibir_atividade"][value="false"]').click({ force: true });
+  await page.waitForTimeout(1000);
 
   await page.getByRole("button", { name: "Salvar" }).click();
   await page.waitForLoadState("networkidle");
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(2000);
 
   const painelAindaVisivel = await page.locator("#section-encaminhar").first().isVisible().catch(() => false);
   const temErroValidacao = (await page.getByText("Campo obrigatório").count()) > 0;
