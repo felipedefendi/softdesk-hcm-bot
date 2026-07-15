@@ -2,10 +2,11 @@ import { abrirSessao } from "./browser";
 import { listarChamadosSemAtendente, buscarMinutosEncaminhamento } from "./tickets";
 import { atribuirChamado } from "./assign";
 import { atendenteAtual, avancarRodizio } from "./rotation";
-import { registrarEncaminhamento } from "./log";
+import { registrarEncaminhamento, registrarDryRun } from "./log";
 import { notificarTeams } from "./teams";
 import { lerConfiguracoes } from "./configuracoes";
 import { salvarStatus } from "./status";
+import { config } from "./config";
 
 /**
  * Uma passada completa: lista chamados "Sem atendente", checa o SLA de
@@ -28,9 +29,22 @@ export async function verificarChamados(): Promise<{ processados: number }> {
       if (minutos < cfg.encaminhamentoLimiteMinutos) continue;
 
       const atendente = atendenteAtual();
+      const prefixo = config.dryRun ? "[DRY-RUN] " : "";
       console.log(
-        `[${new Date().toLocaleString("pt-BR")}] Chamado ${chamado.numero} (${chamado.titulo}, ${minutos} min) -> ${atendente}`
+        `[${new Date().toLocaleString("pt-BR")}] ${prefixo}Chamado ${chamado.numero} (${chamado.titulo}, ${minutos} min) -> ${atendente}`
       );
+
+      if (config.dryRun) {
+        // So calcula e registra quem seria o atendente - nunca abre o painel
+        // "Encaminhar chamado" nem envia notificacao real. avancarRodizio
+        // ainda roda pra manter o rodizio local em sincronia com o que o bot
+        // real ja processou, permitindo comparar os dois logs depois.
+        avancarRodizio(atendente);
+        registrarDryRun(chamado.numero, chamado.titulo, chamado.cliente, atendente);
+        processados++;
+        continue;
+      }
+
       await atribuirChamado(page, chamado.numero, atendente);
       avancarRodizio(atendente);
       registrarEncaminhamento(chamado.numero, chamado.titulo, chamado.cliente, atendente);

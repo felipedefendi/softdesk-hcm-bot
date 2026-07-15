@@ -11,6 +11,7 @@ export const config = {
   password: process.env.SOFTDESK_PASSWORD ?? "",
   pollIntervalMinutes: Number(process.env.POLL_INTERVAL_MINUTES ?? 5),
   headless: process.env.HEADLESS === "true",
+  dryRun: process.env.DRY_RUN === "true",
   encaminhamentoLimiteMinutos: 15,
   stateFile: path.join(__dirname, "..", "state", "rotation.json"),
   teamsWebhookUrl: process.env.TEAMS_WEBHOOK_URL ?? "",

@@ -124,16 +124,41 @@ bot da nuvem le e escreve - sem duplicidade de estado.
 ## Pendencias / a confirmar com o Felipe antes de implementar
 
 - [x] Aprovar este plano
-- [x] Shape da instancia: Ampere A1, 2 OCPU / 12GB
-- [x] Sem dominio proprio -> usar DuckDNS
+- [x] Shape da instancia: sem capacidade Ampere A1 disponivel na regiao -
+      usado o fallback `VM.Standard.E2.1.Micro` (AMD, 1GB RAM + swap de 2GB)
+- [x] Sem dominio proprio -> usado DuckDNS (`softdeskbot.duckdns.org`)
 - [x] Estrategia de corte: dry-run primeiro, sem paralelismo real
-- [ ] Confirmar acesso SSH a VM ja criada (IP publico, usuario do SO, chave
-      `.pem` baixada) para eu conseguir configurar remotamente
-- [ ] Horario exato do dry-run/producao na nuvem (manter 07:42-18:00 ou
-      simplificar pra marcas redondas de 5 em 5 min, ex. 07:00-18:00?)
-- [ ] Nova senha do dashboard antes de expor publicamente
+- [x] Acesso SSH configurado (chave `.pem`, IP publico)
+- [x] Horario simplificado para marcas redondas: 07:00-18:00 (systemd timer,
+      fuso America/Sao_Paulo)
+- [x] Nova senha do dashboard definida antes de expor publicamente
 
-## Status: planejado, nao implementado
+## Status: Fases 1 a 4 implementadas, Fase 5 (corte) pendente
 
-Nenhuma acao real foi tomada ainda. Proximo passo, quando o Felipe confirmar
-as pendencias acima, e comecar pela Fase 1 (provisionar a VM).
+- **Fase 1-2**: VM provisionada (Ubuntu 22.04, AMD Micro + swap 2GB), Node 20,
+  nginx, certbot instalados, codigo clonado e buildado. Login no SoftDesk
+  validado sem bloqueio vindo do IP do datacenter - unico problema real foi
+  um bug de timing (`networkidle` nunca resolvia), corrigido em `browser.ts`
+  e ja commitado.
+- **Fase 3**: modo `DRY_RUN` implementado (`config.ts`, `log.ts`, `fluxo.ts`)
+  - so calcula e loga em `state/dry-run.log` quem seria o atendente, nunca
+  atribui de verdade. Ativo via `.env` (`DRY_RUN=true`) so na nuvem. Rodando
+  sozinho via `systemd timer` (`softdesk-bot.timer`), a cada 5 min, Seg-Sex
+  07:00-18:00, confirmado disparando automaticamente sem erro.
+- **Fase 4**: dashboard rodando como `systemd service`
+  (`softdesk-dashboard.service`), nginx como proxy reverso, HTTPS via
+  certbot/Let's Encrypt em `https://softdeskbot.duckdns.org` (renovacao
+  automatica configurada), senha trocada. Testado ponta a ponta: login,
+  API de status respondendo com dados reais do bot na nuvem.
+  - Gotcha resolvido: alem da Security List da Oracle, a imagem Ubuntu vem
+    com `iptables` proprio bloqueando tudo exceto porta 22 por padrao -
+    precisou liberar 80/443 no `iptables` da VM e persistir com
+    `netfilter-persistent save`.
+- **Fase 5 (corte)**: ainda nao iniciada. Aguardando alguns dias de
+  `dry-run.log` acumulando dados reais pra comparar com o
+  `encaminhamentos.log` do Windows antes de migrar de verdade.
+
+**Atencao**: o dashboard publico ja esta acessivel com a URL/senha novas, mas
+ainda mostra o estado de **teste/dry-run** da nuvem, nao o rodizio real (que
+continua rodando no Windows). Nao compartilhar com os colaboradores como "a
+fila oficial" ate o corte da Fase 5.
