@@ -54,3 +54,24 @@ export function atendenteAtual(): string {
 export function avancarRodizio(nomeAtribuido: string): void {
   salvarEstado({ ultimoAtendente: nomeAtribuido });
 }
+
+/**
+ * Ajuste manual do rodizio: forca quem sera o proximo atendente, sem
+ * precisar que alguem receba um chamado de verdade primeiro. Funciona
+ * ajustando ultimoAtendente para quem vem logo antes de "nome" na ordem
+ * cadastrada, de forma que atendenteAtual() passe a retornar "nome".
+ */
+export function definirProximoManualmente(nome: string): void {
+  const todos = listarAtendentes();
+  const indiceAlvo = todos.findIndex((a) => a.nome === nome);
+
+  if (indiceAlvo === -1) {
+    throw new Error(`Atendente "${nome}" nao encontrado.`);
+  }
+  if (!todos[indiceAlvo].ativo) {
+    throw new Error(`Atendente "${nome}" esta inativo e nao pode ser o proximo do rodizio.`);
+  }
+
+  const indicePredecessor = (indiceAlvo - 1 + todos.length) % todos.length;
+  salvarEstado({ ultimoAtendente: todos[indicePredecessor].nome });
+}

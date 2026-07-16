@@ -85,6 +85,16 @@ async function carregarAtendentes() {
   const tbody = document.querySelector("#tabela-atendentes tbody");
   tbody.innerHTML = "";
 
+  const select = document.getElementById("rodizio-select");
+  select.innerHTML = "";
+  for (const a of atendentes) {
+    if (!a.ativo) continue;
+    const option = document.createElement("option");
+    option.value = a.nome;
+    option.textContent = a.nome;
+    select.appendChild(option);
+  }
+
   for (const a of atendentes) {
     const tr = document.createElement("tr");
 
@@ -201,6 +211,21 @@ async function carregarLog() {
     tbody.appendChild(tr);
   }
 }
+
+document.getElementById("btn-definir-proximo").addEventListener("click", async () => {
+  const select = document.getElementById("rodizio-select");
+  const resultadoEl = document.getElementById("rodizio-resultado");
+  const nome = select.value;
+  if (!nome) return;
+
+  try {
+    await api("/rotation/proximo", { method: "POST", body: JSON.stringify({ nome }) });
+    resultadoEl.textContent = "";
+    await carregarRotation();
+  } catch (err) {
+    resultadoEl.textContent = `Erro: ${err.message}`;
+  }
+});
 
 document.getElementById("btn-verificar-agora").addEventListener("click", async () => {
   const btn = document.getElementById("btn-verificar-agora");

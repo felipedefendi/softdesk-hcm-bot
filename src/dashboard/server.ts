@@ -2,7 +2,7 @@ import path from "node:path";
 import express from "express";
 import cookieParser from "cookie-parser";
 import { config } from "../config";
-import { atendenteAtual } from "../rotation";
+import { atendenteAtual, definirProximoManualmente } from "../rotation";
 import { listarAtendentes, marcarInativo, reativarManualmente } from "../atendentes";
 import { lerConfiguracoes, salvarConfiguracoes } from "../configuracoes";
 import { lerStatus } from "../status";
@@ -57,6 +57,17 @@ app.patch("/api/atendentes/:nome", (req, res) => {
 
 app.get("/api/rotation", (req, res) => {
   try {
+    res.json({ proximo: atendenteAtual() });
+  } catch (err) {
+    res.status(400).json({ erro: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+app.post("/api/rotation/proximo", (req, res) => {
+  const nome = typeof req.body?.nome === "string" ? req.body.nome : "";
+
+  try {
+    definirProximoManualmente(nome);
     res.json({ proximo: atendenteAtual() });
   } catch (err) {
     res.status(400).json({ erro: err instanceof Error ? err.message : String(err) });
