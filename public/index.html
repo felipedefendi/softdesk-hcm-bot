@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rodizio HCM - Dashboard</title>
+  <title>Rodizio HCM - Painel Administrativo</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -19,75 +20,111 @@
 
   <div id="tela-dashboard" class="tela oculto">
     <header>
-      <h1>Rodizio HCM - Dashboard</h1>
+      <div class="header-titulo">
+        <h1>Rodizio HCM</h1>
+        <span id="chip-automacao" class="chip">-</span>
+      </div>
       <button id="btn-logout" class="botao-secundario">Sair</button>
     </header>
 
-    <section class="cartao">
-      <h2>Status da automacao</h2>
-      <div id="status-conteudo">Carregando...</div>
-      <p>Revezamento: <strong id="automacao-status">-</strong></p>
-      <button id="btn-pausar-automacao">Pausar revezamento</button>
-      <button id="btn-retomar-automacao">Retomar revezamento</button>
-      <button id="btn-verificar-agora">Forcar verificacao agora</button>
-      <p id="verificar-resultado"></p>
-    </section>
+    <main class="conteudo">
+      <div class="grade-2col">
+        <section class="cartao">
+          <h2>Status da automação</h2>
 
-    <section class="cartao">
-      <h2>Rodizio</h2>
-      <p>Proximo atendente: <strong id="rodizio-proximo">-</strong></p>
-      <div class="linha-acao">
-        <select id="rodizio-select"></select>
-        <button id="btn-definir-proximo">Definir como proximo</button>
+          <div class="stats-linha">
+            <div class="stat">
+              <span class="stat-rotulo">Última execução</span>
+              <span class="stat-valor" id="stat-ultima-execucao">-</span>
+            </div>
+            <div class="stat">
+              <span class="stat-rotulo">Próxima execução</span>
+              <span class="stat-valor" id="stat-proxima-execucao">-</span>
+            </div>
+            <div class="stat">
+              <span class="stat-rotulo">Processados</span>
+              <span class="stat-valor" id="stat-processados">-</span>
+            </div>
+          </div>
+          <p id="status-erro" class="erro"></p>
+
+          <div class="divisor"></div>
+
+          <div class="linha-controle">
+            <label class="toggle">
+              <input type="checkbox" id="toggle-automacao" />
+              <span class="toggle-trilho"></span>
+            </label>
+            <span id="toggle-automacao-rotulo">Automação</span>
+          </div>
+
+          <div class="linha-acao">
+            <button id="btn-verificar-agora" class="botao-secundario">Forçar verificação agora</button>
+          </div>
+          <p id="verificar-resultado" class="texto-fraco"></p>
+        </section>
+
+        <section class="cartao">
+          <h2>Rodízio</h2>
+          <p class="texto-fraco">Próximo atendente</p>
+          <p class="valor-destaque" id="rodizio-proximo">-</p>
+          <div class="linha-acao">
+            <select id="rodizio-select"></select>
+            <button id="btn-definir-proximo">Definir como próximo</button>
+          </div>
+          <p id="rodizio-resultado" class="erro"></p>
+        </section>
       </div>
-      <p id="rodizio-resultado"></p>
-    </section>
 
-    <section class="cartao">
-      <h2>Atendentes</h2>
-      <table id="tabela-atendentes">
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>Status</th>
-            <th>Motivo</th>
-            <th>Retorna em</th>
-            <th>Acao</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
+      <section class="cartao">
+        <h2>Atendentes</h2>
+        <table id="tabela-atendentes">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Status</th>
+              <th>Motivo</th>
+              <th>Retorna em</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
 
-    <section class="cartao">
-      <h2>Configuracoes</h2>
-      <form id="form-config">
-        <label>
-          Intervalo de verificacao (minutos)
-          <input type="number" id="cfg-intervalo" min="1" />
-        </label>
-        <label>
-          Limite de SLA de Encaminhamento (minutos)
-          <input type="number" id="cfg-limite" min="1" />
-        </label>
-        <button type="submit">Salvar configuracoes</button>
-      </form>
-    </section>
+      <section class="cartao cartao-estreita">
+        <h2>Configurações</h2>
+        <form id="form-config" class="form-linha">
+          <label>
+            Intervalo de verificação (min)
+            <input type="number" id="cfg-intervalo" min="1" />
+          </label>
+          <label>
+            Limite SLA (min)
+            <input type="number" id="cfg-limite" min="1" />
+          </label>
+          <button type="submit">Salvar</button>
+        </form>
+      </section>
 
-    <section class="cartao">
-      <h2>Historico de encaminhamentos</h2>
-      <table id="tabela-log">
-        <thead>
-          <tr>
-            <th>Horario</th>
-            <th>Chamado</th>
-            <th>Cliente / Titulo</th>
-            <th>Atendente</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
+      <section class="cartao">
+        <h2>Histórico de encaminhamentos</h2>
+        <table id="tabela-log">
+          <thead>
+            <tr>
+              <th>Horário</th>
+              <th>Chamado</th>
+              <th>Cliente / Título</th>
+              <th>Atendente</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="linha-acao">
+          <button id="btn-carregar-mais-log" class="botao-secundario oculto">Carregar mais</button>
+        </div>
+      </section>
+    </main>
   </div>
 
   <script src="app.js"></script>

@@ -63,29 +63,34 @@ function formatarData(iso) {
 
 async function carregarStatus() {
   const status = await api("/status");
-  document.getElementById("status-conteudo").innerHTML = `
-    <p>Ultima execucao: ${formatarData(status.ultimaExecucao)}</p>
-    <p>Proxima execucao prevista: ${formatarData(status.proximaExecucaoPrevista)}</p>
-    <p>Chamados processados na ultima execucao: ${status.chamadosProcessadosUltimaExecucao}</p>
-    ${status.ultimoErro ? `<p class="erro">Ultimo erro: ${status.ultimoErro}</p>` : ""}
-  `;
+  document.getElementById("stat-ultima-execucao").textContent = formatarData(status.ultimaExecucao);
+  document.getElementById("stat-proxima-execucao").textContent = formatarData(status.proximaExecucaoPrevista);
+  document.getElementById("stat-processados").textContent = status.chamadosProcessadosUltimaExecucao;
+  document.getElementById("status-erro").textContent = status.ultimoErro ? `Ultimo erro: ${status.ultimoErro}` : "";
 }
 
 async function carregarAutomacao() {
   const { ativa } = await api("/automacao");
-  document.getElementById("automacao-status").textContent = ativa ? "Ativo" : "Pausado";
-  document.getElementById("btn-pausar-automacao").classList.toggle("oculto", !ativa);
-  document.getElementById("btn-retomar-automacao").classList.toggle("oculto", ativa);
+  const chip = document.getElementById("chip-automacao");
+  chip.textContent = ativa ? "Ativo" : "Pausado";
+  chip.classList.toggle("chip-ativo", ativa);
+  chip.classList.toggle("chip-inativo", !ativa);
+
+  document.getElementById("toggle-automacao").checked = ativa;
+  document.getElementById("toggle-automacao-rotulo").textContent = ativa ? "Automação ativa" : "Automação pausada";
 }
 
-document.getElementById("btn-pausar-automacao").addEventListener("click", async () => {
-  await api("/automacao/pausar", { method: "POST" });
-  await carregarAutomacao();
-});
-
-document.getElementById("btn-retomar-automacao").addEventListener("click", async () => {
-  await api("/automacao/retomar", { method: "POST" });
-  await carregarAutomacao();
+document.getElementById("toggle-automacao").addEventListener("change", async (ev) => {
+  const ligar = ev.target.checked;
+  ev.target.disabled = true;
+  try {
+    await api(ligar ? "/automacao/retomar" : "/automacao/pausar", { method: "POST" });
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    ev.target.disabled = false;
+    await carregarAutomacao();
+  }
 });
 
 async function carregarRotation() {
@@ -132,8 +137,15 @@ async function carregarAtendentes() {
 
     const tdAcao = document.createElement("td");
     if (a.ativo) {
-      const linha = document.createElement("div");
-      linha.className = "linha-acao";
+      const wrapAcao = document.createElement("div");
+      wrapAcao.className = "acao-atendente";
+
+      const btnAbrir = document.createElement("button");
+      btnAbrir.textContent = "Desativar";
+      btnAbrir.className = "botao-secundario btn-desativar-abrir";
+
+      const painel = document.createElement("div");
+      painel.className = "linha-acao linha-acao-painel";
 
       const inputMotivo = document.createElement("input");
       inputMotivo.placeholder = "Motivo (ferias, falta...)";
@@ -142,10 +154,24 @@ async function carregarAtendentes() {
       const inputData = document.createElement("input");
       inputData.type = "date";
 
-      const btn = document.createElement("button");
-      btn.textContent = "Desativar";
-      btn.addEventListener("click", async () => {
-        btn.disabled = true;
+      const btnConfirmar = document.createElement("button");
+      btnConfirmar.textContent = "Confirmar";
+
+      const btnCancelar = document.createElement("button");
+      btnCancelar.textContent = "Cancelar";
+      btnCancelar.className = "botao-secundario";
+
+      btnAbrir.addEventListener("click", () => {
+        wrapAcao.classList.add("aberto");
+        inputMotivo.focus();
+      });
+
+      btnCancelar.addEventListener("click", () => {
+        wrapAcao.classList.remove("aberto");
+      });
+
+      btnConfirmar.addEventListener("click", async () => {
+        btnConfirmar.disabled = true;
         try {
           await api(`/atendentes/${encodeURIComponent(a.nome)}`, {
             method: "PATCH",
@@ -158,12 +184,13 @@ async function carregarAtendentes() {
           await Promise.all([carregarAtendentes(), carregarRotation()]);
         } catch (err) {
           alert(err.message);
-          btn.disabled = false;
+          btnConfirmar.disabled = false;
         }
       });
 
-      linha.append(inputMotivo, inputData, btn);
-      tdAcao.appendChild(linha);
+      painel.append(inputMotivo, inputData, btnConfirmar, btnCancelar);
+      wrapAcao.append(btnAbrir, painel);
+      tdAcao.appendChild(wrapAcao);
     } else {
       const btn = document.createElement("button");
       btn.textContent = "Reativar agora";
@@ -206,12 +233,14 @@ document.getElementById("form-config").addEventListener("submit", async (ev) => 
   alert("Configuracoes salvas. Valem a partir do proximo ciclo do bot.");
 });
 
+let qtdLogVisiveis = 50;
+
 async function carregarLog() {
   const entradas = await api("/log");
   const tbody = document.querySelector("#tabela-log tbody");
   tbody.innerHTML = "";
 
-  for (const e of entradas.slice(0, 50)) {
+  for (const e of entradas.slice(0, qtdLogVisiveis)) {
     const tr = document.createElement("tr");
     if (e.chamado === null) {
       const td = document.createElement("td");
@@ -227,7 +256,14 @@ async function carregarLog() {
     }
     tbody.appendChild(tr);
   }
+
+  document.getElementById("btn-carregar-mais-log").classList.toggle("oculto", entradas.length <= qtdLogVisiveis);
 }
+
+document.getElementById("btn-carregar-mais-log").addEventListener("click", () => {
+  qtdLogVisiveis += 50;
+  carregarLog();
+});
 
 document.getElementById("btn-definir-proximo").addEventListener("click", async () => {
   const select = document.getElementById("rodizio-select");
