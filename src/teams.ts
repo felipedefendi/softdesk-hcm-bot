@@ -13,6 +13,30 @@ function urlChamado(numero: number): string {
   return `${config.softdeskUrl}/encaminhar/${numero}`;
 }
 
+// FactSet nao suporta link em markdown no valor, entao as linhas "rotulo: valor"
+// sao montadas manualmente com ColumnSet - a largura fixa do rotulo garante que
+// todas as linhas (incluindo a do link) fiquem alinhadas na mesma coluna.
+const LARGURA_ROTULO = "140px";
+
+function linhaFato(rotulo: string, valor: string) {
+  return {
+    type: "ColumnSet",
+    spacing: "Small",
+    columns: [
+      {
+        type: "Column",
+        width: LARGURA_ROTULO,
+        items: [{ type: "TextBlock", text: rotulo, weight: "Bolder", wrap: true }],
+      },
+      {
+        type: "Column",
+        width: "stretch",
+        items: [{ type: "TextBlock", text: valor, wrap: true }],
+      },
+    ],
+  };
+}
+
 function montarAdaptiveCard(info: NotificacaoEncaminhamento) {
   return {
     type: "message",
@@ -48,20 +72,10 @@ function montarAdaptiveCard(info: NotificacaoEncaminhamento) {
               wrap: true,
               spacing: "Small",
             },
-            {
-              type: "TextBlock",
-              text: `Chamado: [#${info.chamado}](${urlChamado(info.chamado)})`,
-              wrap: true,
-              spacing: "Small",
-            },
-            {
-              type: "FactSet",
-              facts: [
-                { title: "Cliente:", value: info.cliente },
-                { title: "Encaminhamento:", value: `${info.minutosEncaminhamento} min` },
-                { title: "Horário:", value: new Date().toLocaleString("pt-BR") },
-              ],
-            },
+            linhaFato("Chamado:", `[#${info.chamado}](${urlChamado(info.chamado)})`),
+            linhaFato("Cliente:", info.cliente),
+            linhaFato("Encaminhamento:", `${info.minutosEncaminhamento} min`),
+            linhaFato("Horário:", new Date().toLocaleString("pt-BR")),
           ],
         },
       },
