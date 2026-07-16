@@ -75,7 +75,6 @@ function montarAdaptiveCard(info: NotificacaoEncaminhamento) {
             linhaFato("Chamado:", `[#${info.chamado}](${urlChamado(info.chamado)})`),
             linhaFato("Cliente:", info.cliente),
             linhaFato("Encaminhamento:", `${info.minutosEncaminhamento} min`),
-            linhaFato("Horário:", new Date().toLocaleString("pt-BR")),
           ],
         },
       },
