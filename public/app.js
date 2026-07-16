@@ -261,16 +261,26 @@ document.getElementById("btn-verificar-agora").addEventListener("click", async (
   }
 });
 
-async function carregarTudo() {
-  await Promise.all([
-    carregarStatus(),
-    carregarAutomacao(),
-    carregarRotation(),
-    carregarAtendentes(),
-    carregarConfiguracoes(),
-    carregarLog(),
-  ]);
+// Evita sobrescrever um campo que o usuario esta editando no momento do refresh automatico.
+function usuarioEditandoDentroDe(seletor) {
+  return document.activeElement?.closest(seletor) != null;
 }
+
+async function carregarTudo() {
+  const tarefas = [carregarStatus(), carregarAutomacao(), carregarRotation(), carregarLog()];
+  if (!usuarioEditandoDentroDe("#tabela-atendentes")) tarefas.push(carregarAtendentes());
+  if (!usuarioEditandoDentroDe("#form-config")) tarefas.push(carregarConfiguracoes());
+  await Promise.all(tarefas);
+}
+
+// Atualizacao automatica: outros colaboradores com o dashboard aberto ao
+// mesmo tempo veem mudancas (feitas por outra pessoa ou pelo proprio bot)
+// sem precisar recarregar a pagina manualmente.
+setInterval(() => {
+  if (!telaDashboard.classList.contains("oculto")) {
+    carregarTudo().catch(() => {});
+  }
+}, 15000);
 
 (async function iniciar() {
   try {
