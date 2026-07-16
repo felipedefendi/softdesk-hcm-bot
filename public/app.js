@@ -71,6 +71,23 @@ async function carregarStatus() {
   `;
 }
 
+async function carregarAutomacao() {
+  const { ativa } = await api("/automacao");
+  document.getElementById("automacao-status").textContent = ativa ? "Ativo" : "Pausado";
+  document.getElementById("btn-pausar-automacao").classList.toggle("oculto", !ativa);
+  document.getElementById("btn-retomar-automacao").classList.toggle("oculto", ativa);
+}
+
+document.getElementById("btn-pausar-automacao").addEventListener("click", async () => {
+  await api("/automacao/pausar", { method: "POST" });
+  await carregarAutomacao();
+});
+
+document.getElementById("btn-retomar-automacao").addEventListener("click", async () => {
+  await api("/automacao/retomar", { method: "POST" });
+  await carregarAutomacao();
+});
+
 async function carregarRotation() {
   try {
     const rotation = await api("/rotation");
@@ -247,6 +264,7 @@ document.getElementById("btn-verificar-agora").addEventListener("click", async (
 async function carregarTudo() {
   await Promise.all([
     carregarStatus(),
+    carregarAutomacao(),
     carregarRotation(),
     carregarAtendentes(),
     carregarConfiguracoes(),

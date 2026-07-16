@@ -18,6 +18,17 @@ import { config } from "./config";
  */
 export async function verificarChamados(): Promise<{ processados: number }> {
   const cfg = lerConfiguracoes();
+
+  if (!cfg.automacaoAtiva) {
+    // Revezamento pausado pelo dashboard - nem abre sessao no SoftDesk.
+    salvarStatus({
+      ultimaExecucao: new Date().toISOString(),
+      ultimoErro: null,
+      chamadosProcessadosUltimaExecucao: 0,
+    });
+    return { processados: 0 };
+  }
+
   const { browser, page } = await abrirSessao();
   let processados = 0;
 

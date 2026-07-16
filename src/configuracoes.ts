@@ -5,6 +5,7 @@ import { config } from "./config";
 export interface Configuracoes {
   pollIntervalMinutes: number;
   encaminhamentoLimiteMinutos: number;
+  automacaoAtiva: boolean;
 }
 
 const ARQUIVO = path.join(__dirname, "..", "state", "configuracoes.json");
@@ -13,11 +14,17 @@ const ARQUIVO = path.join(__dirname, "..", "state", "configuracoes.json");
 export function lerConfiguracoes(): Configuracoes {
   try {
     const raw = fs.readFileSync(ARQUIVO, "utf-8");
-    return JSON.parse(raw) as Configuracoes;
+    const salvo = JSON.parse(raw) as Partial<Configuracoes>;
+    return {
+      pollIntervalMinutes: salvo.pollIntervalMinutes ?? config.pollIntervalMinutes,
+      encaminhamentoLimiteMinutos: salvo.encaminhamentoLimiteMinutos ?? config.encaminhamentoLimiteMinutos,
+      automacaoAtiva: salvo.automacaoAtiva ?? true,
+    };
   } catch {
     return {
       pollIntervalMinutes: config.pollIntervalMinutes,
       encaminhamentoLimiteMinutos: config.encaminhamentoLimiteMinutos,
+      automacaoAtiva: true,
     };
   }
 }

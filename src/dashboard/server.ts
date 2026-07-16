@@ -91,10 +91,25 @@ app.patch("/api/configuracoes", (req, res) => {
   const atual = lerConfiguracoes();
 
   salvarConfiguracoes({
+    ...atual,
     pollIntervalMinutes: Number(pollIntervalMinutes) || atual.pollIntervalMinutes,
     encaminhamentoLimiteMinutos: Number(encaminhamentoLimiteMinutos) || atual.encaminhamentoLimiteMinutos,
   });
   res.json(lerConfiguracoes());
+});
+
+app.get("/api/automacao", (req, res) => {
+  res.json({ ativa: lerConfiguracoes().automacaoAtiva });
+});
+
+app.post("/api/automacao/pausar", (req, res) => {
+  salvarConfiguracoes({ ...lerConfiguracoes(), automacaoAtiva: false });
+  res.json({ ativa: false });
+});
+
+app.post("/api/automacao/retomar", (req, res) => {
+  salvarConfiguracoes({ ...lerConfiguracoes(), automacaoAtiva: true });
+  res.json({ ativa: true });
 });
 
 let verificacaoEmAndamento = false;
