@@ -8,6 +8,11 @@ interface NotificacaoEncaminhamento {
   minutosEncaminhamento: number;
 }
 
+/** Pagina real do chamado no SoftDesk (mesma rota usada como referer em assign.ts). */
+function urlChamado(numero: number): string {
+  return `${config.softdeskUrl}/encaminhar/${numero}`;
+}
+
 function montarAdaptiveCard(info: NotificacaoEncaminhamento) {
   return {
     type: "message",
@@ -44,9 +49,14 @@ function montarAdaptiveCard(info: NotificacaoEncaminhamento) {
               spacing: "Small",
             },
             {
+              type: "TextBlock",
+              text: `Chamado: [#${info.chamado}](${urlChamado(info.chamado)})`,
+              wrap: true,
+              spacing: "Small",
+            },
+            {
               type: "FactSet",
               facts: [
-                { title: "Chamado:", value: `#${info.chamado}` },
                 { title: "Cliente:", value: info.cliente },
                 { title: "Encaminhamento:", value: `${info.minutosEncaminhamento} min` },
                 { title: "Horário:", value: new Date().toLocaleString("pt-BR") },
