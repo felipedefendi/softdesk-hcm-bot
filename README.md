@@ -1,245 +1,100 @@
-# SoftDesk HCM Bot — Rodízio automático de chamados
+# SoftDesk HCM Bot
 
-Automação pessoal que monitora a fila **"Sem atendente"** do SoftDesk (sistema
-de chamados/suporte da Senior), e quando um chamado passa de **15 minutos**
-sem ser encaminhado, atribui automaticamente ao próximo atendente de uma lista
-fixa em rodízio — avisando o time no Microsoft Teams. Inclui um dashboard web
-para gerenciar quem está ativo no rodízio (férias, faltas, etc).
+Automação de rodízio de chamados para o **SoftDesk** (sistema de chamados/suporte da **Senior**), construída para resolver um problema real do time de suporte HCM onde trabalho: chamados sem atendente ficavam parados na fila até alguém perceber manualmente e distribuir.
 
-Este documento é um guia de estudo: explica o que foi construído, por quê, e
-como cada peça se encaixa.
+O bot monitora a fila **"Sem atendente"**, e quando um chamado passa de 15 minutos sem ser encaminhado, atribui automaticamente ao próximo atendente disponível de uma lista em rodízio — notificando o time no Microsoft Teams. Inclui um dashboard web para gerenciar quem está ativo no rodízio (férias, faltas, ajustes de configuração).
 
-## Contexto (por que existe)
+Rodando em produção 24/7 numa VM na nuvem (Oracle Cloud), monitorando e agindo em tempo real sobre o sistema real da equipe.
 
-O SoftDesk não tem uma opção nativa de "distribuir chamados sem atendente
-automaticamente entre a equipe". O processo era manual: alguém precisava ficar
-de olho na fila e encaminhar na mão. Este bot substitui essa checagem manual.
+## Funcionalidades
 
-## Tecnologias utilizadas
+- Monitoramento contínuo da fila de chamados sem atendente, com verificação de SLA
+- Atribuição automática por rodízio, pulando atendentes marcados como ausentes
+- Reativação automática de atendentes por data de retorno (fim de férias, etc.)
+- Notificação em tempo real no Microsoft Teams a cada atribuição
+- Dashboard web protegido por senha para gestão da equipe e monitoramento
+- Log completo de auditoria de todas as atribuições feitas
 
-| Tecnologia | Papel no projeto |
+## Arquitetura
+
+```
+┌──────────────┐     ┌──────────────────────┐     ┌─────────────────┐
+│ Agendador     │────▶│  Bot (1 passada)      │────▶│  SoftDesk (real) │
+│ (a cada 5 min)│     │                       │◀────│  API JSON + UI   │
+└──────────────┘     └──────────┬───────────┘     └─────────────────┘
+                                    │                            │
+                                    ▼                            ▼
+                          ┌──────────────────┐          notificação
+                          │  Estado (JSON)     │          no Teams
+                          └──────────┬─────────┘
+                                     ▲
+                                     │
+                          ┌──────────┴─────────┐
+                          │  Dashboard (Express) │
+                          │  gestão da equipe     │
+                          └──────────────────────┘
+```
+
+Bot e dashboard são processos independentes, comunicando-se só através de arquivos de estado — uma falha em um não derruba o outro. Roda em produção numa VM Linux (Oracle Cloud), com o bot agendado via `systemd timer` e o dashboard exposto publicamente com HTTPS (nginx + Let's Encrypt).
+
+## Stack técnica
+
+| Tecnologia | Uso |
 |---|---|
 | **Node.js + TypeScript** | Runtime e linguagem de todo o projeto |
-| **Playwright** | Automação de navegador (login no SoftDesk, preenchimento de formulários) e cliente HTTP (chamadas diretas à API JSON do SoftDesk) |
-| **Express** | Servidor web do dashboard de administração |
-| **HTML + CSS + JavaScript puro** | Frontend do dashboard (sem framework, sem build step) |
-| **cookie-parser** | Sessão de login simples do dashboard (cookie httpOnly) |
-| **dotenv** | Carrega credenciais/segredos do arquivo `.env` |
-| **systemd (timer + service)** | Agendamento em produção — dispara o bot a cada 5 min, seg-sex, 07:00-18:00, e mantém o dashboard sempre no ar, numa VM Oracle Cloud (Always Free) |
-| **nginx + certbot (Let's Encrypt)** | Proxy reverso e HTTPS do dashboard público |
-| **Windows Task Scheduler** | Mecanismo original, hoje mantido **desativado** como rollback local (ver "Deploy na nuvem" abaixo) |
-| **Microsoft Teams (Power Automate Workflows)** | Notificação de cada encaminhamento via webhook + Adaptive Card |
+| **Playwright** | Automação de navegador para login/atribuição, e cliente HTTP para consumir a API interna do SoftDesk |
+| **Express** | API REST do dashboard de administração |
+| **systemd** | Agendamento do bot e supervisão do dashboard em produção |
+| **nginx + Let's Encrypt** | Proxy reverso e HTTPS do dashboard público |
+| **Microsoft Teams (Power Automate)** | Notificações via webhook + Adaptive Cards |
 
-Não tem banco de dados: todo o estado (rodízio, atendentes, log, config) é
-persistido em arquivos JSON simples dentro de `state/`. Para o volume e o
-número de usuários deste projeto (uso interno de uma equipe pequena), isso é
-suficiente e evita a complexidade de configurar/hospedar um banco.
+Sem banco de dados — o estado (rodízio, atendentes, logs) é persistido em arquivos JSON, suficiente para o volume de uma equipe pequena e evitando a complexidade de hospedar/manter um banco externo.
 
-## Arquitetura em 3 partes
+## Desafios técnicos
 
-```
-                          VM Oracle Cloud (producao)
-┌─────────────────────┐     ┌──────────────────────┐     ┌─────────────────┐
-│  systemd timer        │────▶│  Bot (rodar-uma-vez)  │────▶│  SoftDesk (real) │
-│  a cada 5 min          │     │  1 passada e termina  │◀────│  API JSON + UI   │
-└─────────────────────┘     └──────────┬───────────┘     └─────────────────┘
-                                          │                            │
-                                          ▼                            ▼
-                                ┌──────────────────┐          notificação
-                                │  state/*.json     │          no Teams
-                                │  (fonte da verdade)│
-                                └──────────┬─────────┘
-                                           ▲
-                                           │ le/edita
-                                ┌──────────┴─────────┐     ┌────────────────┐
-                                │  Dashboard (Express) │────▶│ nginx + HTTPS  │
-                                │  systemd service      │     │ softdeskbot.  │
-                                │  localhost:3001       │     │ duckdns.org   │
-                                └──────────────────────┘     └────────────────┘
-```
+- **API não documentada**: o SoftDesk é uma SPA sem API pública para essa automação. Em vez de depender de scraping de HTML (frágil), fiz engenharia reversa da API JSON real usada pelo próprio front-end (incluindo o token CSRF necessário), reservando automação de navegador só para a parte que realmente exige interação de UI.
+- **Confiabilidade de UI automatizada**: toda ação real de atribuição é seguida de uma verificação explícita de sucesso (confere se o painel fechou e se não há erro de validação na tela) antes de considerar a operação concluída — evita falsos positivos onde a automação "parece" ter funcionado mas o formulário falhou silenciosamente.
+- **Separação entre cálculo e efeito colateral**: a lógica de "quem é o próximo do rodízio" e a de "avançar o rodízio" são funções separadas, e a segunda só é chamada depois de uma atribuição confirmada — evita que o rodízio avance para alguém que não recebeu o chamado de fato.
+- **Deploy sem custo, resiliente a reinício e sem expor senha do sistema**: publicado numa VM cloud gratuita, autenticando via chave SSH (sem senha de usuário armazenada), sobrevivendo a reinícios da máquina via `systemd`.
+- **Validação segura antes de produção**: um modo de simulação (dry-run) permitiu validar a automação rodando na nuvem, sem tomar nenhuma ação real, até confirmar que o comportamento estava correto antes do corte definitivo.
 
-O bot e o dashboard são **processos completamente independentes** — nunca
-rodam no mesmo processo. Eles só se falam através dos arquivos em `state/`.
-Isso significa que você pode reiniciar o dashboard a qualquer momento sem
-afetar o bot, e vice-versa. Os dois rodam na mesma VM pra poderem compartilhar
-os arquivos de `state/` diretamente (sem precisar de um banco/API entre eles).
+## Segurança
 
-## Estrutura de arquivos
+- Segredos (credenciais, senha do dashboard) nunca versionados, carregados via variáveis de ambiente
+- Acesso à infraestrutura só por chave SSH (sem autenticação por senha)
+- Dashboard protegido por senha e HTTPS (certificado renovado automaticamente)
+- Cookies de sessão `httpOnly`
+- Atualizações de segurança do sistema operacional aplicadas automaticamente
 
-### Núcleo do fluxo (`src/`)
-
-| Arquivo | Responsabilidade |
-|---|---|
-| `config.ts` | Le variaveis de ambiente do `.env` (credenciais, URLs, portas). Ponto central de configuração fixa. |
-| `browser.ts` | Abre uma sessão do Playwright e faz login no SoftDesk como "Atendente". |
-| `tickets.ts` | Fala com a **API JSON real** do SoftDesk (não faz scraping de HTML): lista chamados de "Sem atendente" e busca o SLA de "Encaminhamento" de um chamado especifico. |
-| `sla.ts` | Função pura (`tempoDecorridoEmMinutos`) que converte o formato de tempo do SoftDesk (`"00:21"`) em minutos. Testável isoladamente. |
-| `assign.ts` | O único módulo que **automatiza o navegador de verdade** (cliques, preenchimento de formulário) para encaminhar um chamado a um atendente. Todo o resto do projeto usa chamadas HTTP diretas; só a atribuição em si precisa de interação de UI porque o SoftDesk não expôs (que a gente tenha achado) uma API direta pra isso. |
-| `atendentes.ts` | Fonte da verdade dos atendentes do rodízio (`state/atendentes.json`): ativar, desativar (com motivo/data de retorno), reativação automática por data. |
-| `rotation.ts` | Decide quem é o próximo atendente ativo, pulando quem está inativo, mantendo a ordem fixa de cadastro. |
-| `log.ts` | Grava cada encaminhamento real em `state/encaminhamentos.log` (texto simples, uma linha por evento). Também grava o log e o controle de duplicidade do modo `DRY_RUN` (ver abaixo). |
-| `teams.ts` | Monta o Adaptive Card e envia ao webhook do Teams. Nunca lança exceção — falha aqui não pode derrubar o rodízio. |
-| `configuracoes.ts` / `status.ts` | Parâmetros ajustáveis (intervalo, limite de SLA) e status da última execução — ambos lidos/escritos pelo dashboard e pelo bot. |
-| `fluxo.ts` | **Orquestra tudo**: lista chamados → checa SLA → decide próximo atendente → atribui → loga → notifica. Usado tanto pelo loop contínuo quanto pelo botão do dashboard. |
-| `index.ts` | Loop contínuo (`npm run dev`) — usado para desenvolvimento/teste manual, não para produção. |
-| `rodar-uma-vez.ts` | Ponto de entrada usado pelo **Windows Task Scheduler**: roda uma passada e encerra o processo. |
-| `run-once.ts` | Igual ao `rodar-uma-vez.ts`, mas com logs verbosos e screenshots — usado para depuração manual quando algo dá errado. |
-
-### Dashboard (`src/dashboard/` + `public/`)
-
-| Arquivo | Responsabilidade |
-|---|---|
-| `dashboard/server.ts` | Servidor Express: login por senha, e endpoints REST (`/api/atendentes`, `/api/rotation`, `/api/log`, `/api/status`, `/api/configuracoes`, `/api/verificar-agora`). |
-| `dashboard/auth.ts` | Login simples: senha do `.env` gera um token de sessão guardado em memória + cookie httpOnly. Sem tabela de usuários, sem OAuth — proporcional ao uso (equipe pequena). |
-| `dashboard/logHistorico.ts` | Le e interpreta `state/encaminhamentos.log` como dados estruturados pra exibir em tabela. |
-| `public/index.html`, `public/app.js`, `public/style.css` | Frontend simples (HTML+JS puro, sem React/build step) que consome a API acima. |
-
-### Raiz do projeto
-
-| Arquivo | Papel |
-|---|---|
-| `executar-tarefa.cmd` | Script que o Windows Task Scheduler chamava (hoje desativado): seta `PLAYWRIGHT_BROWSERS_PATH=0` (ver "Decisões de design" abaixo) e roda `node dist/rodar-uma-vez.js`, redirecionando toda saída pra `state/task-output.log`. |
-| `PLANO-TEAMS.md`, `PLANO-DASHBOARD.md`, `PLANO-DEPLOY-ORACLE.md` | Planejamento original de cada feature (incluindo a migração pra nuvem), com decisões tomadas e status de implementação — útil pra entender o "porquê" por trás de cada escolha. |
-| `.env` / `.env.example` | Segredos (nunca commitados) e o template do que precisa ser configurado. |
-
-## Como o SoftDesk é acessado (engenharia reversa)
-
-O SoftDesk é uma SPA (aplicação de página única). Em vez de raspar HTML (frágil),
-descobrimos e usamos a API JSON real que o próprio front-end do SoftDesk chama:
-
-- **Listar fila "Sem atendente":**
-  `GET /chamado/json?cd_pasta=13&tp_requisicao=SEM_ATENDENTE&tp_usuario=ATE&...`
-  → retorna `{ lista: [...] }` com todos os campos do chamado (`cd_chamado`,
-  `tt_chamado`, `nm_cliente`, `cd_servico`, datas de criação, etc.)
-
-- **Detalhe/SLA de um chamado:**
-  `POST /chamado/detalhe/{id}/json` (precisa de header `X-CSRF-TOKEN`, obtido
-  da tag `<meta name="csrf-token">` da página) → retorna
-  `sla.sla[]`, uma lista de `{ nome: "Encaminhamento", decorrido: "00:21", ... }`
-  já calculada pelo servidor. `sla.ts` converte esse `"00:21"` em minutos.
-
-- **Atribuição de fato:** aqui não achamos uma API direta — é feita via
-  automação de UI real (`assign.ts`): abre o chamado, clica no botão
-  "Encaminhar chamado", seleciona o atendente num `<select>` (widget
-  bootstrap-select), preenche os campos obrigatórios do registro de atividade
-  (tipo de atividade, tempo gasto, "solicitante visualiza"), e clica Salvar.
-  Depois de salvar, o código **confere se a tela realmente fechou** (sem erro
-  de validação visível) antes de considerar sucesso — isso foi adicionado
-  depois de um bug real onde "Salvar" falhava silenciosamente por falta de
-  campo obrigatório, e o bot achava que tinha dado certo.
-
-## Fluxo principal, passo a passo (`fluxo.ts`)
-
-1. Lê configurações atuais (`configuracoes.ts`) — intervalo e limite de SLA
-2. Abre sessão no SoftDesk (`browser.ts`)
-3. Lista chamados de "Sem atendente", ordenados do mais antigo pro mais novo
-4. Para cada chamado, busca o SLA de Encaminhamento real
-5. Se `< 15 min` (configurável), pula
-6. Se `>= 15 min`: pega o próximo atendente **ativo** do rodízio (sem
-   avançar o ponteiro ainda!)
-7. Tenta atribuir de verdade (`assign.ts`)
-8. **Só se a atribuição foi confirmada com sucesso**: avança o rodízio, grava
-   no log, notifica o Teams
-9. Grava `state/status.json` com o resultado da execução (sucesso/erro)
-
-O passo 6/8 separados (`atendenteAtual()` vs `avancarRodizio()`) é uma decisão
-de design importante: evita que o rodízio avance pra alguém que na verdade
-não recebeu o chamado, caso a atribuição falhe no meio do caminho.
-
-## Decisões de design (o "porquê")
-
-- **Sem banco de dados** — arquivos JSON bastam pro volume/usuários deste
-  projeto, e evitam configurar/hospedar/manter um banco externo.
-- **API direta pra leitura, automação de UI só pra escrever** — mais rápido e
-  confiável (não depende de seletores CSS frágeis), reservando a automação de
-  navegador só pra parte que realmente precisa (a atribuição em si).
-- **Confirmação pós-Salvar** — nunca assume sucesso; sempre confere a tela
-  depois de qualquer ação real, porque já tivemos um caso real de falso
-  positivo (a atribuição "parecia" ter funcionado mas na real o formulário
-  tinha voltado com erro de validação).
-- **`PLAYWRIGHT_BROWSERS_PATH=0`** — o Playwright guarda o Chromium baixado
-  na pasta de perfil do Windows por padrão (`%LOCALAPPDATA%`). Rodando via
-  Task Scheduler no modo S4U (ver abaixo), o perfil do usuário não é
-  totalmente carregado, e o navegador não era encontrado. Configurando essa
-  variável, o Chromium fica dentro do próprio projeto
-  (`node_modules/playwright-core/.local-browsers`), sem depender de nada
-  ligado ao perfil do usuário.
-- **Modo de logon S4U na tarefa agendada** — permite rodar mesmo com o
-  usuário deslogado, sem precisar guardar a senha do Windows no Task
-  Scheduler (ao contrário do modo "Password"). Efeito colateral bom: roda
-  sem nenhuma janela visível na tela.
-- **Dashboard sem framework** — HTML/JS puro, sem React/Vue/build step,
-  proporcional ao tamanho da interface (algumas telas simples).
-- **Bot e dashboard como processos separados** — um bug no dashboard não
-  pode derrubar o monitoramento automático, e vice-versa.
-
-## Como rodar
+## Como rodar localmente
 
 ```bash
-npm install                    # instala dependencias
-npx playwright install chromium  # baixa o Chromium (so 1a vez)
-npm run build                  # compila TypeScript -> dist/
+npm install
+npx playwright install chromium
+npm run build
 
-npm run dev                     # loop continuo (teste manual, nao produção)
-npm run rodar                   # uma passada so (mesma logica da producao)
-npm run dashboard                # sobe o dashboard em localhost:3001
+npm run dev         # loop continuo (desenvolvimento)
+npm run rodar        # uma passada so
+npm run dashboard     # dashboard em localhost:3001
 ```
 
-Em produção, quem dispara o bot é a VM na Oracle Cloud — ver "Deploy na
-nuvem" abaixo.
+Requer um arquivo `.env` com as credenciais do SoftDesk e demais configurações — ver `.env.example`.
 
-## Deploy na nuvem (produção)
+## Estrutura do projeto
 
-Desde 15/07/2026 o bot e o dashboard rodam numa VM Oracle Cloud (Always
-Free), não mais no PC local. Planejamento completo e decisões em
-[`PLANO-DEPLOY-ORACLE.md`](PLANO-DEPLOY-ORACLE.md). Resumo:
+```
+src/
+├── browser.ts       # sessao/login via Playwright
+├── tickets.ts        # consumo da API JSON do SoftDesk
+├── assign.ts          # atribuicao de chamado (automacao de UI)
+├── rotation.ts         # logica do rodizio
+├── atendentes.ts        # gestao de atendentes (ativo/inativo)
+├── fluxo.ts               # orquestracao completa do fluxo
+├── teams.ts                # notificacao no Microsoft Teams
+└── dashboard/                # API + servidor do painel de administracao
+public/                        # frontend do dashboard (HTML/CSS/JS)
+```
 
-- **Bot**: `systemd timer` (`softdesk-bot.timer` + `softdesk-bot.service`)
-  roda `dist/rodar-uma-vez.js` a cada 5 min, seg-sex, 07:00-18:00
-  (`America/Sao_Paulo`). Cada execução é um processo `node` novo (`Type=oneshot`).
-- **Dashboard**: `softdesk-dashboard.service`, processo persistente, exposto
-  publicamente em `https://softdeskbot.duckdns.org` via nginx (proxy reverso)
-  + certbot/Let's Encrypt (renovação automática).
-- Comandos úteis (rodando via SSH na VM):
-  ```bash
-  systemctl list-timers softdesk-bot.timer     # proxima execucao do bot
-  journalctl -u softdesk-bot.service -n 30     # log da ultima execucao do bot
-  systemctl status softdesk-dashboard.service  # status do dashboard
-  ```
-- **Importante**: `dashboard/server.ts` é um processo de vida longa que lê o
-  `.env` só na inicialização — qualquer mudança em variáveis do `.env`
-  (ex: `DRY_RUN`, senha) exige `sudo systemctl restart softdesk-dashboard.service`
-  pra ter efeito. O bot não precisa disso, já que cada execução é um processo novo.
-- **Windows Task Scheduler** (`SoftdeskRodizioHCM`) fica **desativado**,
-  mantido só como rollback manual caso a nuvem apresente algum problema sério.
+## Autor
 
-## Configuração (`.env`)
-
-| Variável | Para que serve |
-|---|---|
-| `SOFTDESK_EMAIL` / `SOFTDESK_PASSWORD` | Login no SoftDesk |
-| `TEAMS_WEBHOOK_URL` | URL do workflow do Power Automate (canal "Revezamento de chamados") |
-| `DASHBOARD_PORT` / `DASHBOARD_PASSWORD` | Porta e senha do dashboard |
-| `POLL_INTERVAL_MINUTES` / `HEADLESS` | Usados só pelo `npm run dev` (loop contínuo de teste) |
-| `DRY_RUN` | Se `true`, só calcula e loga em `state/dry-run.log` quem seria o atendente — nunca atribui de verdade nem notifica o Teams. Usado pra validar a nuvem antes do corte de produção (ver `PLANO-DEPLOY-ORACLE.md`); hoje `false` em produção. |
-
-## Limitações conhecidas
-
-- Não há filtro por categoria de chamado — processa **tudo** que estiver em
-  "Sem atendente" nesta conta, já que a conta só enxerga chamados do HCM
-  mesmo (decisão tomada depois de descobrir que o filtro por `cd_servico`
-  original era grande demais e excluía chamados válidos de outro serviço
-  dentro do próprio HCM).
-- O rodízio não sabe, por si só, quando alguém recebe um chamado
-  **manualmente** (fora do bot) — se isso acontecer, é preciso ajustar
-  `state/rotation.json` (`ultimoAtendente`) na mão.
-- Se a tarefa do Windows precisar ser **recriada** (deletada e criada de novo)
-  no futuro — hoje ela fica desativada, só como rollback — volta pro modo de
-  logon padrão ("Interativo apenas") e é preciso reaplicar o S4U manualmente
-  (comando documentado no histórico do projeto) — o `schtasks /create` não
-  aceita esse modo direto pela linha de comando sem elevação.
-- **`DRY_RUN` e chamados que continuam abertos por varios ciclos**: o modo
-  dry-run lembra quais chamados já calculou (`state/dry-run-vistos.json`)
-  pra não recalcular/avançar o rodízio de novo enquanto o mesmo chamado
-  continuar sem atendente — bug real encontrado e corrigido durante a
-  validação da nuvem (ver commit `f135e64`).
+Felipe Prado — [github.com/felipedefendi](https://github.com/felipedefendi)

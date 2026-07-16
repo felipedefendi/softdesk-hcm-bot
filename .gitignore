@@ -6,8 +6,12 @@ state/encaminhamentos.log
 debug/
 *.log
 
-# plano de seguranca interno (achados de vulnerabilidades ainda nao corrigidas)
+# planos internos (achados de seguranca, infra real com IP/dominio) - so uso local
 PLANO-SEGURANCA.md
+PLANO-DEPLOY-ORACLE.md
+
+# guia de estudo detalhado - so uso local, o README publico e outro
+ESTUDO.md
 
 # ferramentas de IA (uso local, nao versionar)
 CLAUDE.md
