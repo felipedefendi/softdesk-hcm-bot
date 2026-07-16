@@ -154,9 +154,16 @@ bot da nuvem le e escreve - sem duplicidade de estado.
     com `iptables` proprio bloqueando tudo exceto porta 22 por padrao -
     precisou liberar 80/443 no `iptables` da VM e persistir com
     `netfilter-persistent save`.
-- **Fase 5 (corte)**: ainda nao iniciada. Aguardando alguns dias de
-  `dry-run.log` acumulando dados reais pra comparar com o
-  `encaminhamentos.log` do Windows antes de migrar de verdade.
+- **Fase 5 (corte)**: concluida em 15/07/2026. Estado real
+  (`atendentes.json`/`rotation.json`) sincronizado nuvem -> Windows antes do
+  corte (a nuvem estava mais atualizada, por conta da correcao de um bug do
+  DRY_RUN feita no mesmo dia - ver commit `f135e64`). Task
+  `SoftdeskRodizioHCM` do Windows Task Scheduler desativada
+  (`schtasks /change /tn SoftdeskRodizioHCM /disable`). `DRY_RUN=false`
+  definitivo na nuvem, `softdesk-dashboard.service` reiniciado pra aplicar a
+  mudanca (processo persistente cacheava o valor antigo em memoria).
+  Confirmado: timer, dashboard e nginx ativos, primeira execucao real pos-
+  corte sem erro.
 
 **Atencao**: o dashboard publico ja esta acessivel com a URL/senha novas, mas
 ainda mostra o estado de **teste/dry-run** da nuvem, nao o rodizio real (que

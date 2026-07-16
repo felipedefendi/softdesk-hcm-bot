@@ -6,6 +6,9 @@ state/encaminhamentos.log
 debug/
 *.log
 
+# plano de seguranca interno (achados de vulnerabilidades ainda nao corrigidas)
+PLANO-SEGURANCA.md
+
 # ferramentas de IA (uso local, nao versionar)
 CLAUDE.md
 AGENTS.md

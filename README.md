@@ -25,7 +25,9 @@ de olho na fila e encaminhar na mão. Este bot substitui essa checagem manual.
 | **HTML + CSS + JavaScript puro** | Frontend do dashboard (sem framework, sem build step) |
 | **cookie-parser** | Sessão de login simples do dashboard (cookie httpOnly) |
 | **dotenv** | Carrega credenciais/segredos do arquivo `.env` |
-| **Windows Task Scheduler** | Agendamento — dispara o bot a cada 5 min, seg-sex, 07:42-18:00 |
+| **systemd (timer + service)** | Agendamento em produção — dispara o bot a cada 5 min, seg-sex, 07:00-18:00, e mantém o dashboard sempre no ar, numa VM Oracle Cloud (Always Free) |
+| **nginx + certbot (Let's Encrypt)** | Proxy reverso e HTTPS do dashboard público |
+| **Windows Task Scheduler** | Mecanismo original, hoje mantido **desativado** como rollback local (ver "Deploy na nuvem" abaixo) |
 | **Microsoft Teams (Power Automate Workflows)** | Notificação de cada encaminhamento via webhook + Adaptive Card |
 
 Não tem banco de dados: todo o estado (rodízio, atendentes, log, config) é
@@ -36,11 +38,12 @@ suficiente e evita a complexidade de configurar/hospedar um banco.
 ## Arquitetura em 3 partes
 
 ```
+                          VM Oracle Cloud (producao)
 ┌─────────────────────┐     ┌──────────────────────┐     ┌─────────────────┐
-│  Windows Task        │────▶│  Bot (rodar-uma-vez)  │────▶│  SoftDesk (real) │
-│  Scheduler            │     │  1 passada e termina  │◀────│  API JSON + UI   │
-│  a cada 5 min          │     └──────────┬───────────┘     └─────────────────┘
-└─────────────────────┘                │                            │
+│  systemd timer        │────▶│  Bot (rodar-uma-vez)  │────▶│  SoftDesk (real) │
+│  a cada 5 min          │     │  1 passada e termina  │◀────│  API JSON + UI   │
+└─────────────────────┘     └──────────┬───────────┘     └─────────────────┘
+                                          │                            │
                                           ▼                            ▼
                                 ┌──────────────────┐          notificação
                                 │  state/*.json     │          no Teams
@@ -48,17 +51,18 @@ suficiente e evita a complexidade de configurar/hospedar um banco.
                                 └──────────┬─────────┘
                                            ▲
                                            │ le/edita
-                                ┌──────────┴─────────┐
-                                │  Dashboard (Express) │
-                                │  npm run dashboard   │
-                                │  localhost:3001       │
-                                └──────────────────────┘
+                                ┌──────────┴─────────┐     ┌────────────────┐
+                                │  Dashboard (Express) │────▶│ nginx + HTTPS  │
+                                │  systemd service      │     │ softdeskbot.  │
+                                │  localhost:3001       │     │ duckdns.org   │
+                                └──────────────────────┘     └────────────────┘
 ```
 
 O bot e o dashboard são **processos completamente independentes** — nunca
 rodam no mesmo processo. Eles só se falam através dos arquivos em `state/`.
-Isso significa que você pode desligar o dashboard a qualquer momento sem
-afetar o bot, e vice-versa.
+Isso significa que você pode reiniciar o dashboard a qualquer momento sem
+afetar o bot, e vice-versa. Os dois rodam na mesma VM pra poderem compartilhar
+os arquivos de `state/` diretamente (sem precisar de um banco/API entre eles).
 
 ## Estrutura de arquivos
 
@@ -73,7 +77,7 @@ afetar o bot, e vice-versa.
 | `assign.ts` | O único módulo que **automatiza o navegador de verdade** (cliques, preenchimento de formulário) para encaminhar um chamado a um atendente. Todo o resto do projeto usa chamadas HTTP diretas; só a atribuição em si precisa de interação de UI porque o SoftDesk não expôs (que a gente tenha achado) uma API direta pra isso. |
 | `atendentes.ts` | Fonte da verdade dos atendentes do rodízio (`state/atendentes.json`): ativar, desativar (com motivo/data de retorno), reativação automática por data. |
 | `rotation.ts` | Decide quem é o próximo atendente ativo, pulando quem está inativo, mantendo a ordem fixa de cadastro. |
-| `log.ts` | Grava cada encaminhamento real em `state/encaminhamentos.log` (texto simples, uma linha por evento). |
+| `log.ts` | Grava cada encaminhamento real em `state/encaminhamentos.log` (texto simples, uma linha por evento). Também grava o log e o controle de duplicidade do modo `DRY_RUN` (ver abaixo). |
 | `teams.ts` | Monta o Adaptive Card e envia ao webhook do Teams. Nunca lança exceção — falha aqui não pode derrubar o rodízio. |
 | `configuracoes.ts` / `status.ts` | Parâmetros ajustáveis (intervalo, limite de SLA) e status da última execução — ambos lidos/escritos pelo dashboard e pelo bot. |
 | `fluxo.ts` | **Orquestra tudo**: lista chamados → checa SLA → decide próximo atendente → atribui → loga → notifica. Usado tanto pelo loop contínuo quanto pelo botão do dashboard. |
@@ -94,8 +98,8 @@ afetar o bot, e vice-versa.
 
 | Arquivo | Papel |
 |---|---|
-| `executar-tarefa.cmd` | Script que o Windows Task Scheduler chama: seta `PLAYWRIGHT_BROWSERS_PATH=0` (ver "Decisões de design" abaixo) e roda `node dist/rodar-uma-vez.js`, redirecionando toda saída pra `state/task-output.log`. |
-| `PLANO-TEAMS.md`, `PLANO-DASHBOARD.md` | Planejamento original de cada feature, com decisões tomadas e status de implementação — útil pra entender o "porquê" por trás de cada escolha. |
+| `executar-tarefa.cmd` | Script que o Windows Task Scheduler chamava (hoje desativado): seta `PLAYWRIGHT_BROWSERS_PATH=0` (ver "Decisões de design" abaixo) e roda `node dist/rodar-uma-vez.js`, redirecionando toda saída pra `state/task-output.log`. |
+| `PLANO-TEAMS.md`, `PLANO-DASHBOARD.md`, `PLANO-DEPLOY-ORACLE.md` | Planejamento original de cada feature (incluindo a migração pra nuvem), com decisões tomadas e status de implementação — útil pra entender o "porquê" por trás de cada escolha. |
 | `.env` / `.env.example` | Segredos (nunca commitados) e o template do que precisa ser configurado. |
 
 ## Como o SoftDesk é acessado (engenharia reversa)
@@ -177,13 +181,37 @@ npx playwright install chromium  # baixa o Chromium (so 1a vez)
 npm run build                  # compila TypeScript -> dist/
 
 npm run dev                     # loop continuo (teste manual, nao produção)
-npm run rodar                   # uma passada so (mesma logica do Task Scheduler)
+npm run rodar                   # uma passada so (mesma logica da producao)
 npm run dashboard                # sobe o dashboard em localhost:3001
 ```
 
-Em produção, quem dispara o bot é a tarefa agendada do Windows
-(`SoftdeskRodizioHCM`), executando `dist/rodar-uma-vez.js` via
-`executar-tarefa.cmd` a cada 5 minutos, seg-sex, das 07:42 às 18:00.
+Em produção, quem dispara o bot é a VM na Oracle Cloud — ver "Deploy na
+nuvem" abaixo.
+
+## Deploy na nuvem (produção)
+
+Desde 15/07/2026 o bot e o dashboard rodam numa VM Oracle Cloud (Always
+Free), não mais no PC local. Planejamento completo e decisões em
+[`PLANO-DEPLOY-ORACLE.md`](PLANO-DEPLOY-ORACLE.md). Resumo:
+
+- **Bot**: `systemd timer` (`softdesk-bot.timer` + `softdesk-bot.service`)
+  roda `dist/rodar-uma-vez.js` a cada 5 min, seg-sex, 07:00-18:00
+  (`America/Sao_Paulo`). Cada execução é um processo `node` novo (`Type=oneshot`).
+- **Dashboard**: `softdesk-dashboard.service`, processo persistente, exposto
+  publicamente em `https://softdeskbot.duckdns.org` via nginx (proxy reverso)
+  + certbot/Let's Encrypt (renovação automática).
+- Comandos úteis (rodando via SSH na VM):
+  ```bash
+  systemctl list-timers softdesk-bot.timer     # proxima execucao do bot
+  journalctl -u softdesk-bot.service -n 30     # log da ultima execucao do bot
+  systemctl status softdesk-dashboard.service  # status do dashboard
+  ```
+- **Importante**: `dashboard/server.ts` é um processo de vida longa que lê o
+  `.env` só na inicialização — qualquer mudança em variáveis do `.env`
+  (ex: `DRY_RUN`, senha) exige `sudo systemctl restart softdesk-dashboard.service`
+  pra ter efeito. O bot não precisa disso, já que cada execução é um processo novo.
+- **Windows Task Scheduler** (`SoftdeskRodizioHCM`) fica **desativado**,
+  mantido só como rollback manual caso a nuvem apresente algum problema sério.
 
 ## Configuração (`.env`)
 
@@ -193,6 +221,7 @@ Em produção, quem dispara o bot é a tarefa agendada do Windows
 | `TEAMS_WEBHOOK_URL` | URL do workflow do Power Automate (canal "Revezamento de chamados") |
 | `DASHBOARD_PORT` / `DASHBOARD_PASSWORD` | Porta e senha do dashboard |
 | `POLL_INTERVAL_MINUTES` / `HEADLESS` | Usados só pelo `npm run dev` (loop contínuo de teste) |
+| `DRY_RUN` | Se `true`, só calcula e loga em `state/dry-run.log` quem seria o atendente — nunca atribui de verdade nem notifica o Teams. Usado pra validar a nuvem antes do corte de produção (ver `PLANO-DEPLOY-ORACLE.md`); hoje `false` em produção. |
 
 ## Limitações conhecidas
 
@@ -204,8 +233,13 @@ Em produção, quem dispara o bot é a tarefa agendada do Windows
 - O rodízio não sabe, por si só, quando alguém recebe um chamado
   **manualmente** (fora do bot) — se isso acontecer, é preciso ajustar
   `state/rotation.json` (`ultimoAtendente`) na mão.
-- Se a tarefa agendada precisar ser **recriada** (deletada e criada de novo)
-  no futuro, ela volta pro modo de logon padrão ("Interativo apenas") e é
-  preciso reaplicar o S4U manualmente (comando documentado no histórico do
-  projeto) — o `schtasks /create` não aceita esse modo direto pela linha de
-  comando sem elevação.
+- Se a tarefa do Windows precisar ser **recriada** (deletada e criada de novo)
+  no futuro — hoje ela fica desativada, só como rollback — volta pro modo de
+  logon padrão ("Interativo apenas") e é preciso reaplicar o S4U manualmente
+  (comando documentado no histórico do projeto) — o `schtasks /create` não
+  aceita esse modo direto pela linha de comando sem elevação.
+- **`DRY_RUN` e chamados que continuam abertos por varios ciclos**: o modo
+  dry-run lembra quais chamados já calculou (`state/dry-run-vistos.json`)
+  pra não recalcular/avançar o rodízio de novo enquanto o mesmo chamado
+  continuar sem atendente — bug real encontrado e corrigido durante a
+  validação da nuvem (ver commit `f135e64`).
