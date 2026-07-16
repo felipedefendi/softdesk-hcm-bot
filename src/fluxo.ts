@@ -1,4 +1,4 @@
-import { abrirSessao } from "./browser";
+import { abrirSessao, encerrarSessao } from "./sessao";
 import { listarChamadosSemAtendente, buscarMinutosEncaminhamento } from "./tickets";
 import { atribuirChamado } from "./assign";
 import { atendenteAtual, avancarRodizio } from "./rotation";
@@ -29,14 +29,14 @@ export async function verificarChamados(): Promise<{ processados: number }> {
     return { processados: 0 };
   }
 
-  const { browser, page } = await abrirSessao();
+  const sessao = await abrirSessao();
   let processados = 0;
 
   try {
-    const chamados = await listarChamadosSemAtendente(page);
+    const chamados = await listarChamadosSemAtendente(sessao);
 
     for (const chamado of chamados) {
-      const minutos = await buscarMinutosEncaminhamento(page, chamado.numero);
+      const minutos = await buscarMinutosEncaminhamento(sessao, chamado.numero);
       if (minutos < cfg.encaminhamentoLimiteMinutos) continue;
 
       if (config.dryRun && foiRegistradoNoDryRun(chamado.numero)) {
@@ -63,7 +63,7 @@ export async function verificarChamados(): Promise<{ processados: number }> {
         continue;
       }
 
-      await atribuirChamado(page, chamado.numero, atendente);
+      await atribuirChamado(sessao, chamado.numero, atendente);
       avancarRodizio(atendente);
       registrarEncaminhamento(chamado.numero, chamado.titulo, chamado.cliente, atendente);
       await notificarTeams({
@@ -89,6 +89,6 @@ export async function verificarChamados(): Promise<{ processados: number }> {
     });
     throw err;
   } finally {
-    await browser.close();
+    await encerrarSessao(sessao);
   }
 }

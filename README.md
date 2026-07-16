@@ -42,7 +42,7 @@ Bot e dashboard são processos independentes, comunicando-se só através de arq
 | Tecnologia | Uso |
 |---|---|
 | **Node.js + TypeScript** | Runtime e linguagem de todo o projeto |
-| **Playwright** | Automação de navegador para login/atribuição, e cliente HTTP para consumir a API interna do SoftDesk |
+| **Playwright** (modo API, sem navegador) | Cliente HTTP com gestão automática de cookies, usado pra autenticar e consumir a API interna do SoftDesk — sem abrir Chromium |
 | **Express** | API REST do dashboard de administração |
 | **systemd** | Agendamento do bot e supervisão do dashboard em produção |
 | **nginx + Let's Encrypt** | Proxy reverso e HTTPS do dashboard público |
@@ -52,8 +52,8 @@ Sem banco de dados — o estado (rodízio, atendentes, logs) é persistido em ar
 
 ## Desafios técnicos
 
-- **API não documentada**: o SoftDesk é uma SPA sem API pública para essa automação. Em vez de depender de scraping de HTML (frágil), fiz engenharia reversa da API JSON real usada pelo próprio front-end (incluindo o token CSRF necessário), reservando automação de navegador só para a parte que realmente exige interação de UI.
-- **Confiabilidade de UI automatizada**: toda ação real de atribuição é seguida de uma verificação explícita de sucesso (confere se o painel fechou e se não há erro de validação na tela) antes de considerar a operação concluída — evita falsos positivos onde a automação "parece" ter funcionado mas o formulário falhou silenciosamente.
+- **API não documentada, 100% via engenharia reversa**: o SoftDesk é uma SPA sem API pública. Todo o fluxo — login, listagem, checagem de SLA e a atribuição em si — roda via chamadas HTTP diretas à API JSON interna (a mesma que o próprio front-end usa), sem nunca abrir um navegador de verdade. A atribuição precisou reconstruir o payload completo esperado pelo endpoint de salvar (dezenas de campos), buscando o estado atual do chamado imediatamente antes de escrever para minimizar o risco de sobrescrever dados desatualizados.
+- **Migração de UI para API em produção**: o projeto rodou em produção com automação de navegador (Playwright + Chromium) antes da migração para chamadas diretas. A troca foi validada com um chamado real controlado, conferindo o resultado no próprio SoftDesk antes de confiar no novo caminho.
 - **Separação entre cálculo e efeito colateral**: a lógica de "quem é o próximo do rodízio" e a de "avançar o rodízio" são funções separadas, e a segunda só é chamada depois de uma atribuição confirmada — evita que o rodízio avance para alguém que não recebeu o chamado de fato.
 - **Deploy sem custo, resiliente a reinício e sem expor senha do sistema**: publicado numa VM cloud gratuita, autenticando via chave SSH (sem senha de usuário armazenada), sobrevivendo a reinícios da máquina via `systemd`.
 - **Validação segura antes de produção**: um modo de simulação (dry-run) permitiu validar a automação rodando na nuvem, sem tomar nenhuma ação real, até confirmar que o comportamento estava correto antes do corte definitivo.
@@ -70,7 +70,6 @@ Sem banco de dados — o estado (rodízio, atendentes, logs) é persistido em ar
 
 ```bash
 npm install
-npx playwright install chromium
 npm run build
 
 npm run dev         # loop continuo (desenvolvimento)
@@ -84,9 +83,9 @@ Requer um arquivo `.env` com as credenciais do SoftDesk e demais configurações
 
 ```
 src/
-├── browser.ts       # sessao/login via Playwright
+├── sessao.ts        # login e sessao via API direta (Playwright em modo HTTP, sem navegador)
 ├── tickets.ts        # consumo da API JSON do SoftDesk
-├── assign.ts          # atribuicao de chamado (automacao de UI)
+├── assign.ts          # atribuicao de chamado via API direta
 ├── rotation.ts         # logica do rodizio
 ├── atendentes.ts        # gestao de atendentes (ativo/inativo)
 ├── fluxo.ts               # orquestracao completa do fluxo
