@@ -102,6 +102,55 @@ async function carregarRotation() {
   }
 }
 
+let linhaArrastada = null;
+
+function tornarArrastavel(tr, nome) {
+  tr.dataset.nome = nome;
+
+  const tdHandle = document.createElement("td");
+  tdHandle.className = "handle-arrastar";
+  tdHandle.textContent = "⠿";
+  tdHandle.title = "Arraste para reordenar o rodizio";
+  tdHandle.addEventListener("mousedown", () => {
+    tr.draggable = true;
+  });
+
+  tr.addEventListener("dragstart", () => {
+    linhaArrastada = tr;
+    tr.classList.add("arrastando");
+  });
+
+  tr.addEventListener("dragend", async () => {
+    tr.draggable = false;
+    tr.classList.remove("arrastando");
+    linhaArrastada = null;
+
+    const novaOrdem = [...document.querySelectorAll("#tabela-atendentes tbody tr")].map((r) => r.dataset.nome);
+    try {
+      await api("/atendentes/ordem", { method: "PUT", body: JSON.stringify({ ordem: novaOrdem }) });
+      await carregarRotation();
+    } catch (err) {
+      alert(err.message);
+      await carregarAtendentes();
+    }
+  });
+
+  return tdHandle;
+}
+
+const tbodyAtendentes = document.querySelector("#tabela-atendentes tbody");
+tbodyAtendentes.addEventListener("dragover", (ev) => {
+  if (!linhaArrastada) return;
+  ev.preventDefault();
+
+  const alvo = ev.target.closest("tr");
+  if (!alvo || alvo === linhaArrastada) return;
+
+  const rect = alvo.getBoundingClientRect();
+  const antes = ev.clientY - rect.top < rect.height / 2;
+  tbodyAtendentes.insertBefore(linhaArrastada, antes ? alvo : alvo.nextSibling);
+});
+
 async function carregarAtendentes() {
   const atendentes = await api("/atendentes");
   const tbody = document.querySelector("#tabela-atendentes tbody");
@@ -119,6 +168,7 @@ async function carregarAtendentes() {
 
   for (const a of atendentes) {
     const tr = document.createElement("tr");
+    tr.appendChild(tornarArrastavel(tr, a.nome));
 
     const tdNome = document.createElement("td");
     tdNome.textContent = a.nome;

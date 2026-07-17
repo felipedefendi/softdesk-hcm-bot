@@ -301,6 +301,22 @@ table {
   margin-top: 0.5rem;
 }
 
+.col-arrastar {
+  width: 28px;
+}
+
+.handle-arrastar {
+  width: 28px;
+  text-align: center;
+  color: var(--texto-fraco);
+  cursor: grab;
+  user-select: none;
+}
+
+tbody tr.arrastando {
+  opacity: 0.4;
+}
+
 th, td {
   text-align: left;
   padding: 0.6rem 0.5rem;

@@ -3,7 +3,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import { config } from "../config";
 import { atendenteAtual, definirProximoManualmente } from "../rotation";
-import { listarAtendentes, marcarInativo, reativarManualmente } from "../atendentes";
+import { listarAtendentes, marcarInativo, reativarManualmente, reordenarAtendentes } from "../atendentes";
 import { lerConfiguracoes, salvarConfiguracoes } from "../configuracoes";
 import { lerStatus } from "../status";
 import { lerHistorico } from "./logHistorico";
@@ -49,6 +49,17 @@ app.patch("/api/atendentes/:nome", (req, res) => {
     } else if (ativo === true) {
       reativarManualmente(nome);
     }
+    res.json(listarAtendentes());
+  } catch (err) {
+    res.status(400).json({ erro: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+app.put("/api/atendentes/ordem", (req, res) => {
+  const ordem = Array.isArray(req.body?.ordem) ? req.body.ordem : [];
+
+  try {
+    reordenarAtendentes(ordem);
     res.json(listarAtendentes());
   } catch (err) {
     res.status(400).json({ erro: err instanceof Error ? err.message : String(err) });

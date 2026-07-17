@@ -69,6 +69,26 @@ export function reativarManualmente(nome: string): void {
   salvar(atendentes);
 }
 
+/**
+ * Aplica uma nova ordem de rodizio (drag-and-drop no dashboard). A ordem do
+ * rodizio e a propria ordem do array em disco (ver rotation.ts), entao
+ * reordenar e so reescrever o arquivo com os mesmos atendentes na ordem
+ * recebida - nenhum outro campo muda.
+ */
+export function reordenarAtendentes(novaOrdem: string[]): void {
+  const atuais = listarAtendentes();
+  const porNome = new Map(atuais.map((a) => [a.nome, a]));
+
+  const mesmoConjunto =
+    novaOrdem.length === atuais.length && novaOrdem.every((nome) => porNome.has(nome)) && new Set(novaOrdem).size === novaOrdem.length;
+
+  if (!mesmoConjunto) {
+    throw new Error("A nova ordem precisa conter exatamente os mesmos atendentes cadastrados, sem repetir.");
+  }
+
+  salvar(novaOrdem.map((nome) => porNome.get(nome)!));
+}
+
 export function codigoDoAtendente(nome: string): number {
   const alvo = listarAtendentes().find((a) => a.nome === nome);
   if (!alvo) throw new Error(`Atendente nao encontrado: ${nome}`);
