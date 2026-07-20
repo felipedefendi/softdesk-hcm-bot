@@ -5,6 +5,8 @@ interface NotificacaoEncaminhamento {
   titulo: string;
   cliente: string;
   atendente: string;
+  /** E-mail (UPN) do atendente para marca-lo (@) no card. Vazio = so o nome, sem mencao. */
+  emailAtendente: string;
   minutosEncaminhamento: number;
 }
 
@@ -38,45 +40,67 @@ function linhaFato(rotulo: string, valor: string) {
 }
 
 function montarAdaptiveCard(info: NotificacaoEncaminhamento) {
+  // Para o Teams renderizar a mencao clicavel, o texto precisa conter a tag
+  // <at>...</at> e o card precisa declarar a entidade correspondente em
+  // msteams.entities apontando pro e-mail (UPN) do atendente. O texto da tag
+  // tem que bater exatamente com o "text" da entidade. Sem e-mail cadastrado,
+  // caimos no nome puro pra nao vazar a tag como texto solto.
+  const temMencao = info.emailAtendente.length > 0;
+  const marcacao = temMencao ? `<at>${info.atendente}</at>` : info.atendente;
+
+  const content: Record<string, unknown> = {
+    $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
+    type: "AdaptiveCard",
+    version: "1.4",
+    body: [
+      {
+        // Primeiro bloco de texto - a notificacao/preview do Teams costuma
+        // mostrar justamente este primeiro texto, entao deixamos a mencao ao
+        // atendente aqui pra ele ser marcado e ver a notificacao.
+        type: "TextBlock",
+        text: marcacao,
+        weight: "Bolder",
+        size: "Large",
+        wrap: true,
+      },
+      {
+        type: "TextBlock",
+        text: "🔔 Chamado encaminhado automaticamente",
+        wrap: true,
+        spacing: "Small",
+        isSubtle: true,
+      },
+      {
+        type: "TextBlock",
+        text: info.titulo,
+        wrap: true,
+        spacing: "Small",
+      },
+      linhaFato("Chamado:", `[#${info.chamado}](${urlChamado(info.chamado)})`),
+      linhaFato("Cliente:", info.cliente),
+      linhaFato("Encaminhamento:", `${info.minutosEncaminhamento} min`),
+    ],
+  };
+
+  if (temMencao) {
+    content.msteams = {
+      entities: [
+        {
+          type: "mention",
+          text: marcacao,
+          mentioned: { id: info.emailAtendente, name: info.atendente },
+        },
+      ],
+    };
+  }
+
   return {
     type: "message",
     attachments: [
       {
         contentType: "application/vnd.microsoft.card.adaptive",
         contentUrl: null,
-        content: {
-          $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
-          type: "AdaptiveCard",
-          version: "1.4",
-          body: [
-            {
-              // Primeiro bloco de texto - a notificacao/preview do Teams costuma
-              // mostrar justamente este primeiro texto, entao deixamos so o nome
-              // do atendente aqui pra facilitar a vida de quem ve a notificacao.
-              type: "TextBlock",
-              text: info.atendente,
-              weight: "Bolder",
-              size: "Large",
-              wrap: true,
-            },
-            {
-              type: "TextBlock",
-              text: "🔔 Chamado encaminhado automaticamente",
-              wrap: true,
-              spacing: "Small",
-              isSubtle: true,
-            },
-            {
-              type: "TextBlock",
-              text: info.titulo,
-              wrap: true,
-              spacing: "Small",
-            },
-            linhaFato("Chamado:", `[#${info.chamado}](${urlChamado(info.chamado)})`),
-            linhaFato("Cliente:", info.cliente),
-            linhaFato("Encaminhamento:", `${info.minutosEncaminhamento} min`),
-          ],
-        },
+        content,
       },
     ],
   };

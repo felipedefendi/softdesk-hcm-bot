@@ -4,6 +4,8 @@ import path from "node:path";
 export interface Atendente {
   nome: string;
   codigoAtendente: number;
+  /** E-mail corporativo (UPN do Microsoft 365) - usado para marcar (@) o atendente no card do Teams. */
+  email: string;
   ativo: boolean;
   motivoInatividade: string | null;
   /** Data no formato YYYY-MM-DD. Quando definida e ja passou, reativa automaticamente. */
@@ -93,4 +95,10 @@ export function codigoDoAtendente(nome: string): number {
   const alvo = listarAtendentes().find((a) => a.nome === nome);
   if (!alvo) throw new Error(`Atendente nao encontrado: ${nome}`);
   return alvo.codigoAtendente;
+}
+
+/** E-mail (UPN) do atendente para a mencao no Teams. Vazio quando nao cadastrado. */
+export function emailDoAtendente(nome: string): string {
+  const alvo = listarAtendentes().find((a) => a.nome === nome);
+  return alvo?.email ?? "";
 }

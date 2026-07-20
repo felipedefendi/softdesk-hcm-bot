@@ -1,6 +1,7 @@
 import { abrirSessao, encerrarSessao } from "./sessao";
 import { listarChamadosSemAtendente, buscarMinutosEncaminhamento } from "./tickets";
 import { atribuirChamado } from "./assign";
+import { emailDoAtendente } from "./atendentes";
 import { atendenteAtual, avancarRodizio } from "./rotation";
 import { registrarEncaminhamento, registrarDryRun, foiRegistradoNoDryRun } from "./log";
 import { notificarTeams } from "./teams";
@@ -71,6 +72,7 @@ export async function verificarChamados(): Promise<{ processados: number }> {
         titulo: chamado.titulo,
         cliente: chamado.cliente,
         atendente,
+        emailAtendente: emailDoAtendente(atendente),
         minutosEncaminhamento: minutos,
       });
       processados++;

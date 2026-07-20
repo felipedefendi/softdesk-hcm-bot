@@ -6,6 +6,7 @@ import { config } from "./config";
 import { abrirSessao, encerrarSessao } from "./sessao";
 import { listarChamadosSemAtendente, buscarMinutosEncaminhamento } from "./tickets";
 import { atribuirChamado } from "./assign";
+import { emailDoAtendente } from "./atendentes";
 import { atendenteAtual, avancarRodizio } from "./rotation";
 import { registrarEncaminhamento } from "./log";
 import { notificarTeams } from "./teams";
@@ -40,6 +41,7 @@ async function main() {
         titulo: chamado.titulo,
         cliente: chamado.cliente,
         atendente,
+        emailAtendente: emailDoAtendente(atendente),
         minutosEncaminhamento: minutos,
       });
       console.log(`    -> feito e registrado no log.`);
