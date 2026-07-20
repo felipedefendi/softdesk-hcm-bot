@@ -1,5 +1,5 @@
 import { abrirSessao, encerrarSessao } from "./sessao";
-import { listarChamadosSemAtendente, buscarMinutosEncaminhamento } from "./tickets";
+import { listarChamadosSemAtendente, buscarInfoEncaminhamento } from "./tickets";
 import { atribuirChamado } from "./assign";
 import { atendenteAtual, avancarRodizio } from "./rotation";
 import { emailTeamsDoAtendente } from "./atendentes";
@@ -38,7 +38,8 @@ export async function verificarChamados(): Promise<{ processados: number }> {
     const chamados = await listarChamadosSemAtendente(sessao);
 
     for (const chamado of chamados) {
-      const minutos = await buscarMinutosEncaminhamento(sessao, chamado.numero);
+      const info = await buscarInfoEncaminhamento(sessao, chamado.numero);
+      const minutos = info.minutos;
       if (minutos < cfg.encaminhamentoLimiteMinutos) continue;
 
       if (config.dryRun && foiRegistradoNoDryRun(chamado.numero)) {
@@ -75,6 +76,9 @@ export async function verificarChamados(): Promise<{ processados: number }> {
         atendente,
         emailAtendente: emailTeamsDoAtendente(atendente),
         minutosEncaminhamento: minutos,
+        solicitante: info.solicitante,
+        emailSolicitante: info.email,
+        telefoneSolicitante: info.telefone,
       });
       processados++;
     }

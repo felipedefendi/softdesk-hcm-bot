@@ -57,10 +57,18 @@ export async function buscarDetalheChamado(sessao: Sessao, numeroChamado: number
   return res.json();
 }
 
-/** Busca o SLA do chamado e retorna minutos de Encaminhamento. */
-export async function buscarMinutosEncaminhamento(sessao: Sessao, numeroChamado: number): Promise<number> {
-  const data = await buscarDetalheChamado(sessao, numeroChamado);
+export interface ContatoChamado {
+  solicitante: string | null;
+  email: string | null;
+  telefone: string | null;
+}
 
+export interface InfoEncaminhamento extends ContatoChamado {
+  minutos: number;
+}
+
+/** Minutos decorridos no SLA de "Encaminhamento", a partir do detalhe ja carregado. */
+function minutosEncaminhamentoDoDetalhe(data: Record<string, unknown>, numeroChamado: number): number {
   const sla = ((data.sla as Record<string, unknown>)?.sla ?? []) as Array<{ nome: string; decorrido: string }>;
   const encaminhamento = sla.find((s) => s.nome === "Encaminhamento");
   if (!encaminhamento) {
@@ -68,4 +76,39 @@ export async function buscarMinutosEncaminhamento(sessao: Sessao, numeroChamado:
   }
 
   return tempoDecorridoEmMinutos(encaminhamento.decorrido);
+}
+
+/** Normaliza um campo texto do SoftDesk: vazio ou so espacos vira null. */
+function textoOuNull(valor: unknown): string | null {
+  const s = typeof valor === "string" ? valor.trim() : "";
+  return s.length > 0 ? s : null;
+}
+
+/** Dados do solicitante (nome, e-mail, telefone) do objeto "chamado" do detalhe. */
+function contatoDoDetalhe(data: Record<string, unknown>): ContatoChamado {
+  const c = (data.chamado ?? {}) as Record<string, unknown>;
+  return {
+    solicitante: textoOuNull(c.nm_usuario),
+    email: textoOuNull(c.em_usuario),
+    telefone: textoOuNull(c.cel_usuario) ?? textoOuNull(c.fn_usuario),
+  };
+}
+
+/** Busca o SLA do chamado e retorna minutos de Encaminhamento. */
+export async function buscarMinutosEncaminhamento(sessao: Sessao, numeroChamado: number): Promise<number> {
+  const data = await buscarDetalheChamado(sessao, numeroChamado);
+  return minutosEncaminhamentoDoDetalhe(data, numeroChamado);
+}
+
+/**
+ * Uma unica ida ao detalhe do chamado devolvendo tudo que a notificacao precisa:
+ * minutos de encaminhamento (pra checar o SLA) mais os dados do solicitante.
+ * Evita buscar o detalhe duas vezes por chamado.
+ */
+export async function buscarInfoEncaminhamento(sessao: Sessao, numeroChamado: number): Promise<InfoEncaminhamento> {
+  const data = await buscarDetalheChamado(sessao, numeroChamado);
+  return {
+    minutos: minutosEncaminhamentoDoDetalhe(data, numeroChamado),
+    ...contatoDoDetalhe(data),
+  };
 }
