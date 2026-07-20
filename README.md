@@ -11,8 +11,8 @@ Rodando em produção 24/7 numa VM na nuvem (Oracle Cloud), monitorando e agindo
 - Monitoramento contínuo da fila de chamados sem atendente, com verificação de SLA
 - Atribuição automática por rodízio, pulando atendentes marcados como ausentes
 - Reativação automática de atendentes por data de retorno (fim de férias, etc.)
-- Notificação em tempo real no Microsoft Teams a cada atribuição
-- Dashboard web protegido por senha para gestão da equipe e monitoramento
+- Notificação em tempo real no Microsoft Teams a cada atribuição, com link direto para o chamado
+- Dashboard web protegido por senha para gestão da equipe e monitoramento, com ordem do rodízio ajustável por drag-and-drop
 - Log completo de auditoria de todas as atribuições feitas
 
 ## Arquitetura

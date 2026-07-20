@@ -1,8 +1,9 @@
 /**
- * Ponto de entrada para o Windows Task Scheduler: executa uma unica passada
- * do fluxo (lista -> SLA -> atribuicao -> log -> Teams) e encerra. O
- * agendamento de "a cada 5 minutos" e feito pelo proprio Task Scheduler, nao
- * por um loop dentro do processo.
+ * Ponto de entrada usado em producao pelo systemd timer (softdesk-bot.timer)
+ * na VM Oracle: executa uma unica passada do fluxo (lista -> SLA ->
+ * atribuicao -> log -> Teams) e encerra. O agendamento e feito pelo proprio
+ * timer (Seg-Sex, 07:00-18:00), nao por um loop dentro do processo. Tambem
+ * pode ser rodado manualmente via `npm run rodar`.
  */
 import { verificarChamados } from "./fluxo";
 
