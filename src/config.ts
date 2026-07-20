@@ -15,6 +15,9 @@ export const config = {
   encaminhamentoLimiteMinutos: 15,
   stateFile: path.join(__dirname, "..", "state", "rotation.json"),
   teamsWebhookUrl: process.env.TEAMS_WEBHOOK_URL ?? "",
+  // Dominio dos e-mails/UPN do Teams. Os atendentes guardam so o usuario
+  // (ex.: "felipe.prado") e o dominio e anexado aqui pra formar a @mention.
+  teamsEmailDomain: process.env.TEAMS_EMAIL_DOMAIN ?? "",
   dashboardPort: Number(process.env.DASHBOARD_PORT ?? 3001),
   dashboardPassword: process.env.DASHBOARD_PASSWORD ?? "",
 };

@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { config } from "./config";
 
 export interface Atendente {
   nome: string;
@@ -8,6 +9,12 @@ export interface Atendente {
   motivoInatividade: string | null;
   /** Data no formato YYYY-MM-DD. Quando definida e ja passou, reativa automaticamente. */
   retornaEm: string | null;
+  /**
+   * E-mail/UPN do atendente no Teams (Azure AD). Quando preenchido, o nome no
+   * card de notificacao vira uma @mention de verdade. Opcional: sem ele, o card
+   * mostra o nome como texto simples, sem quebrar nada.
+   */
+  emailTeams?: string | null;
 }
 
 const ARQUIVO = path.join(__dirname, "..", "state", "atendentes.json");
@@ -93,4 +100,19 @@ export function codigoDoAtendente(nome: string): number {
   const alvo = listarAtendentes().find((a) => a.nome === nome);
   if (!alvo) throw new Error(`Atendente nao encontrado: ${nome}`);
   return alvo.codigoAtendente;
+}
+
+/**
+ * UPN completo do atendente no Teams (para @mention no card), ou null se nao
+ * cadastrado. O cadastro guarda so o usuario (ex.: "felipe.prado") e o dominio
+ * (TEAMS_EMAIL_DOMAIN) e anexado aqui. Se o valor ja tiver "@", usa como esta;
+ * se nao houver dominio configurado, retorna null pra nao gerar menção quebrada.
+ */
+export function emailTeamsDoAtendente(nome: string): string | null {
+  const alvo = listarAtendentes().find((a) => a.nome === nome);
+  const usuario = alvo?.emailTeams?.trim();
+  if (!usuario) return null;
+  if (usuario.includes("@")) return usuario;
+  if (!config.teamsEmailDomain) return null;
+  return `${usuario}@${config.teamsEmailDomain}`;
 }
