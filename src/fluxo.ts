@@ -4,7 +4,7 @@ import { atribuirChamado } from "./assign";
 import { atendenteAtual, avancarRodizio } from "./rotation";
 import { emailTeamsDoAtendente } from "./atendentes";
 import { registrarEncaminhamento, registrarDryRun, foiRegistradoNoDryRun } from "./log";
-import { notificarTeams } from "./teams";
+import { notificarTeams, type NotificacaoEncaminhamento } from "./teams";
 import { lerConfiguracoes } from "./configuracoes";
 import { salvarStatus } from "./status";
 import { config } from "./config";
@@ -32,6 +32,7 @@ export async function verificarChamados(): Promise<{ processados: number }> {
 
   const sessao = await abrirSessao();
   let processados = 0;
+  const notificacoes: NotificacaoEncaminhamento[] = [];
 
   try {
     const chamados = await listarChamadosSemAtendente(sessao);
@@ -67,7 +68,7 @@ export async function verificarChamados(): Promise<{ processados: number }> {
       await atribuirChamado(sessao, chamado.numero, atendente);
       avancarRodizio(atendente);
       registrarEncaminhamento(chamado.numero, chamado.titulo, chamado.cliente, atendente);
-      await notificarTeams({
+      notificacoes.push({
         chamado: chamado.numero,
         titulo: chamado.titulo,
         cliente: chamado.cliente,
@@ -91,6 +92,11 @@ export async function verificarChamados(): Promise<{ processados: number }> {
     });
     throw err;
   } finally {
+    // Envia todas as notificacoes da passada num unico disparo, na ordem em
+    // que os chamados foram atribuidos - evita que o Power Automate reordene
+    // as mensagens quando ha 2+ chamados. No finally pra que, se a atribuicao
+    // de um chamado falhar no meio, os ja atribuidos ainda sejam notificados.
+    await notificarTeams(notificacoes);
     await encerrarSessao(sessao);
   }
 }

@@ -35,13 +35,15 @@ async function main() {
       await atribuirChamado(sessao, chamado.numero, atendente);
       avancarRodizio(atendente);
       registrarEncaminhamento(chamado.numero, chamado.titulo, chamado.cliente, atendente);
-      await notificarTeams({
-        chamado: chamado.numero,
-        titulo: chamado.titulo,
-        cliente: chamado.cliente,
-        atendente,
-        minutosEncaminhamento: minutos,
-      });
+      await notificarTeams([
+        {
+          chamado: chamado.numero,
+          titulo: chamado.titulo,
+          cliente: chamado.cliente,
+          atendente,
+          minutosEncaminhamento: minutos,
+        },
+      ]);
       console.log(`    -> feito e registrado no log.`);
     }
   } finally {
