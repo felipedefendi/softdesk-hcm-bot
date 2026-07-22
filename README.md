@@ -11,8 +11,10 @@ Rodando em produção 24/7 numa VM na nuvem (Oracle Cloud), monitorando e agindo
 - Monitoramento contínuo da fila de chamados sem atendente, com verificação de SLA
 - Atribuição automática por rodízio, pulando atendentes marcados como ausentes
 - Reativação automática de atendentes por data de retorno (fim de férias, etc.)
-- Notificação em tempo real no Microsoft Teams a cada atribuição, com link direto para o chamado
-- Dashboard web protegido por senha para gestão da equipe e monitoramento, com ordem do rodízio ajustável por drag-and-drop
+- Notificação em tempo real no Microsoft Teams a cada atribuição, mencionando (@) o atendente e trazendo link do chamado, dados do solicitante e contato clicável
+- Encaminhamentos de uma mesma execução agrupados numa única mensagem, preservando a ordem em que foram atribuídos
+- Dashboard web protegido por senha para gestão da equipe e monitoramento, com ordem do rodízio ajustável (drag-and-drop no desktop, setas no celular)
+- Interface responsiva, usável de verdade pelo celular
 - Log completo de auditoria de todas as atribuições feitas
 
 ## Arquitetura
@@ -57,6 +59,8 @@ Sem banco de dados — o estado (rodízio, atendentes, logs) é persistido em ar
 - **Separação entre cálculo e efeito colateral**: a lógica de "quem é o próximo do rodízio" e a de "avançar o rodízio" são funções separadas, e a segunda só é chamada depois de uma atribuição confirmada — evita que o rodízio avance para alguém que não recebeu o chamado de fato.
 - **Deploy sem custo, resiliente a reinício e sem expor senha do sistema**: publicado numa VM cloud gratuita, autenticando via chave SSH (sem senha de usuário armazenada), sobrevivendo a reinícios da máquina via `systemd`.
 - **Validação segura antes de produção**: um modo de simulação (dry-run) permitiu validar a automação rodando na nuvem, sem tomar nenhuma ação real, até confirmar que o comportamento estava correto antes do corte definitivo.
+- **Ordem das notificações fora do controle da aplicação**: quando dois ou mais chamados eram encaminhados na mesma execução, as mensagens chegavam ao Teams fora de ordem — mesmo com o bot enviando sequencialmente e aguardando cada resposta. A causa não estava no envio: o Power Automate trata cada disparo do webhook como uma execução assíncrona independente, sem garantia de ordem entre elas. Em vez de contornar com atrasos (que só reduziriam a probabilidade), os encaminhamentos passaram a ser agrupados num único disparo, com uma seção por chamado — sendo uma mensagem só, a ordem é garantida por construção.
+- **Tabela de dados numa tela de celular**: a tabela de atendentes fazia a página rolar 184px na horizontal e deformava o botão de ação, porque a coluna de ação precisava caber um painel inteiro. Abaixo de 900px as tabelas passaram a virar cartões empilhados, com cada célula exibindo o próprio rótulo. E como o drag-and-drop nativo do HTML5 não responde a toque, a reordenação do rodízio no celular ganhou setas que reaproveitam o mesmo endpoint do arrastar.
 
 ## Segurança
 
