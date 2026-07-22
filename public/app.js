@@ -104,16 +104,75 @@ async function carregarRotation() {
 
 let linhaArrastada = null;
 
+/** Persiste a ordem atual das linhas. Usado tanto pelo arrastar quanto pelas setas. */
+async function salvarOrdemAtual() {
+  const novaOrdem = [...document.querySelectorAll("#tabela-atendentes tbody tr")].map((r) => r.dataset.nome);
+  try {
+    await api("/atendentes/ordem", { method: "PUT", body: JSON.stringify({ ordem: novaOrdem }) });
+    await carregarRotation();
+  } catch (err) {
+    alert(err.message);
+    await carregarAtendentes();
+  }
+}
+
+/** Desabilita a seta de subir na primeira linha e a de descer na ultima. */
+function atualizarBotoesMover() {
+  const linhas = [...document.querySelectorAll("#tabela-atendentes tbody tr")];
+  linhas.forEach((tr, i) => {
+    const sobe = tr.querySelector(".botao-mover-sobe");
+    const desce = tr.querySelector(".botao-mover-desce");
+    if (sobe) sobe.disabled = i === 0;
+    if (desce) desce.disabled = i === linhas.length - 1;
+  });
+}
+
+async function moverAtendente(tr, direcao) {
+  const tbody = tr.parentElement;
+
+  if (direcao < 0) {
+    const anterior = tr.previousElementSibling;
+    if (!anterior) return;
+    tbody.insertBefore(tr, anterior);
+  } else {
+    const proximo = tr.nextElementSibling;
+    if (!proximo) return;
+    tbody.insertBefore(proximo, tr);
+  }
+
+  atualizarBotoesMover();
+  await salvarOrdemAtual();
+}
+
 function tornarArrastavel(tr, nome) {
   tr.dataset.nome = nome;
 
   const tdHandle = document.createElement("td");
   tdHandle.className = "handle-arrastar";
-  tdHandle.textContent = "⠿";
-  tdHandle.title = "Arraste para reordenar o rodizio";
-  tdHandle.addEventListener("mousedown", () => {
+
+  const alca = document.createElement("span");
+  alca.className = "alca-drag";
+  alca.textContent = "⠿";
+  alca.title = "Arraste para reordenar o rodizio";
+  alca.addEventListener("mousedown", () => {
     tr.draggable = true;
   });
+
+  // O drag-and-drop nativo do HTML5 nao responde a toque, entao no celular a
+  // reordenacao e feita por estas setas (mesmo endpoint do arrastar).
+  const btnSobe = document.createElement("button");
+  btnSobe.className = "botao-mover botao-mover-sobe";
+  btnSobe.textContent = "▲";
+  btnSobe.title = "Subir no rodizio";
+  btnSobe.addEventListener("click", () => moverAtendente(tr, -1));
+
+  const btnDesce = document.createElement("button");
+  btnDesce.className = "botao-mover botao-mover-desce";
+  btnDesce.textContent = "▼";
+  btnDesce.title = "Descer no rodizio";
+  btnDesce.addEventListener("click", () => moverAtendente(tr, 1));
+
+  tdHandle.append(alca, btnSobe, btnDesce);
 
   tr.addEventListener("dragstart", () => {
     linhaArrastada = tr;
@@ -125,14 +184,8 @@ function tornarArrastavel(tr, nome) {
     tr.classList.remove("arrastando");
     linhaArrastada = null;
 
-    const novaOrdem = [...document.querySelectorAll("#tabela-atendentes tbody tr")].map((r) => r.dataset.nome);
-    try {
-      await api("/atendentes/ordem", { method: "PUT", body: JSON.stringify({ ordem: novaOrdem }) });
-      await carregarRotation();
-    } catch (err) {
-      alert(err.message);
-      await carregarAtendentes();
-    }
+    atualizarBotoesMover();
+    await salvarOrdemAtual();
   });
 
   return tdHandle;
@@ -170,22 +223,29 @@ async function carregarAtendentes() {
     const tr = document.createElement("tr");
     tr.appendChild(tornarArrastavel(tr, a.nome));
 
+    // data-rotulo alimenta o rotulo de cada campo no layout mobile (ver style.css),
+    // onde a tabela vira um cartao empilhado e o cabecalho some.
     const tdNome = document.createElement("td");
+    tdNome.dataset.rotulo = "Nome";
     tdNome.textContent = a.nome;
 
     const tdStatus = document.createElement("td");
+    tdStatus.dataset.rotulo = "Status";
     const badge = document.createElement("span");
     badge.className = `badge ${a.ativo ? "badge-ativo" : "badge-inativo"}`;
     badge.textContent = a.ativo ? "Ativo" : "Inativo";
     tdStatus.appendChild(badge);
 
     const tdMotivo = document.createElement("td");
+    tdMotivo.dataset.rotulo = "Motivo";
     tdMotivo.textContent = a.motivoInatividade || "-";
 
     const tdRetorno = document.createElement("td");
+    tdRetorno.dataset.rotulo = "Retorna em";
     tdRetorno.textContent = a.retornaEm || "-";
 
     const tdAcao = document.createElement("td");
+    tdAcao.dataset.rotulo = "Ação";
     if (a.ativo) {
       const wrapAcao = document.createElement("div");
       wrapAcao.className = "acao-atendente";
@@ -199,7 +259,7 @@ async function carregarAtendentes() {
 
       const inputMotivo = document.createElement("input");
       inputMotivo.placeholder = "Motivo (ferias, falta...)";
-      inputMotivo.style.width = "160px";
+      inputMotivo.className = "input-motivo";
 
       const inputData = document.createElement("input");
       inputData.type = "date";
@@ -263,6 +323,8 @@ async function carregarAtendentes() {
     tr.append(tdNome, tdStatus, tdMotivo, tdRetorno, tdAcao);
     tbody.appendChild(tr);
   }
+
+  atualizarBotoesMover();
 }
 
 async function carregarConfiguracoes() {
@@ -298,11 +360,13 @@ async function carregarLog() {
       td.textContent = e.linhaOriginal;
       tr.appendChild(td);
     } else {
-      for (const valor of [e.horario, `#${e.chamado}`, e.clienteETitulo, e.atendente]) {
+      const rotulos = ["Horário", "Chamado", "Cliente / Título", "Atendente"];
+      [e.horario, `#${e.chamado}`, e.clienteETitulo, e.atendente].forEach((valor, i) => {
         const td = document.createElement("td");
+        td.dataset.rotulo = rotulos[i];
         td.textContent = valor;
         tr.appendChild(td);
-      }
+      });
     }
     tbody.appendChild(tr);
   }

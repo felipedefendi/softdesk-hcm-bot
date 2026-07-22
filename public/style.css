@@ -313,6 +313,12 @@ table {
   user-select: none;
 }
 
+/* Setas de reordenar: aparecem so em tela estreita, onde o arrastar nativo
+   do HTML5 nao funciona (nao responde a toque). */
+.botao-mover {
+  display: none;
+}
+
 tbody tr.arrastando {
   opacity: 0.4;
 }
@@ -362,6 +368,9 @@ tbody tr:hover {
 
 .acao-atendente > * {
   grid-area: 1 / 1;
+  /* Sem o align-self, o botao esticaria ate a altura do painel (que e mais
+     alto), virando uma elipse quando o painel quebra em varias linhas. */
+  align-self: start;
   transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
@@ -432,4 +441,211 @@ tbody tr:hover {
   border: 1px solid var(--hairline);
   background: var(--surface-2);
   color: var(--texto);
+}
+
+.input-motivo {
+  width: 160px;
+}
+
+/* ============================================================
+   Telas estreitas: as tabelas viram cartoes empilhados.
+   Nao existe largura pra 6 colunas, entao cada linha vira um bloco
+   e cada celula mostra o proprio rotulo (data-rotulo, definido no
+   app.js). O cabecalho da tabela some.
+
+   O corte e 900px porque a tabela so fica confortavel acima disso:
+   abaixo, a coluna "Acao" (painel de desativar) espreme as demais e
+   o nome quebra em duas linhas.
+   ============================================================ */
+@media (max-width: 900px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  .conteudo {
+    padding: 1rem 1rem 2.5rem;
+    gap: 1rem;
+  }
+
+  .cartao {
+    padding: 1.1rem 1rem;
+  }
+
+  /* Alvos de toque confortaveis (minimo ~44px) */
+  button {
+    min-height: 44px;
+    padding: 0.65rem 1.2rem;
+  }
+
+  input,
+  select {
+    min-height: 44px;
+    font-size: 1rem;
+  }
+
+  .stats-linha {
+    gap: 1.25rem;
+  }
+
+  .form-linha {
+    gap: 0.9rem;
+  }
+
+  .form-linha input,
+  #rodizio-select {
+    width: 100%;
+  }
+
+  /* --- Tabela vira cartoes --- */
+  table,
+  tbody,
+  tr,
+  td {
+    display: block;
+    width: 100%;
+  }
+
+  thead {
+    display: none;
+  }
+
+  tbody tr {
+    position: relative;
+    background: var(--surface-2);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-md);
+    padding: 0.85rem 0.9rem;
+    margin-bottom: 0.7rem;
+  }
+
+  tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  tbody tr:hover {
+    background: var(--surface-2);
+  }
+
+  td {
+    display: flex;
+    gap: 0.8rem;
+    align-items: baseline;
+    border-bottom: none;
+    padding: 0.28rem 0;
+    overflow-wrap: anywhere;
+  }
+
+  td::before {
+    content: attr(data-rotulo);
+    flex: 0 0 6.4rem;
+    color: var(--texto-fraco);
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  /* Celulas sem rotulo: handle de arrastar e linhas de log malformadas */
+  td:not([data-rotulo])::before {
+    content: none;
+  }
+
+  /* --- Atendentes --- */
+  /* Espaco a direita reservado pras setas de reordenar. */
+  #tabela-atendentes tbody tr {
+    padding-right: 3.8rem;
+  }
+
+  #tabela-atendentes .handle-arrastar {
+    position: absolute;
+    right: 0.6rem;
+    top: 0.6rem;
+    width: auto;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .alca-drag {
+    display: none;
+  }
+
+  .botao-mover {
+    display: block;
+    width: 44px;
+    min-height: 44px;
+    padding: 0;
+    font-size: 0.8rem;
+    line-height: 1;
+    background: var(--surface-3);
+    color: var(--texto);
+    border: 1px solid var(--hairline);
+  }
+
+  .botao-mover:hover:not(:disabled) {
+    background: var(--surface-3);
+  }
+
+  #tabela-atendentes td[data-rotulo="Nome"] {
+    font-size: 1.02rem;
+    font-weight: 600;
+    padding-top: 0;
+  }
+
+  #tabela-atendentes td[data-rotulo="Nome"]::before,
+  #tabela-atendentes td[data-rotulo="Status"]::before,
+  #tabela-atendentes td[data-rotulo="Ação"]::before {
+    content: none;
+  }
+
+  #tabela-atendentes td[data-rotulo="Ação"] {
+    display: block;
+    margin-top: 0.6rem;
+  }
+
+  /* Sem sobreposicao em grid no mobile: o painel troca de lugar com o
+     botao. E o grid empilhado que deixava a celula alta e o botao
+     deformado numa elipse. A animacao segue valendo no desktop. */
+  .acao-atendente {
+    display: block;
+  }
+
+  .acao-atendente > * {
+    grid-area: auto;
+    transition: none;
+  }
+
+  .acao-atendente > .linha-acao-painel {
+    display: none;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+
+  .acao-atendente.aberto > .btn-desativar-abrir {
+    display: none;
+  }
+
+  .acao-atendente.aberto > .linha-acao-painel {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .acao-atendente > .btn-desativar-abrir,
+  .linha-acao-painel button,
+  .input-motivo {
+    width: 100%;
+  }
+
+  /* --- Historico: titulo longo ganha a linha inteira --- */
+  #tabela-log td[data-rotulo="Cliente / Título"] {
+    display: block;
+  }
+
+  #tabela-log td[data-rotulo="Cliente / Título"]::before {
+    display: block;
+    margin-bottom: 0.15rem;
+  }
 }
