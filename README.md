@@ -2,7 +2,7 @@
 
 Automação de rodízio de chamados para o **SoftDesk** (sistema de chamados/suporte da **Senior**), construída para resolver um problema real do time de suporte HCM onde trabalho: chamados sem atendente ficavam parados na fila até alguém perceber manualmente e distribuir.
 
-O bot monitora a fila **"Sem atendente"**, e quando um chamado passa de 15 minutos sem ser encaminhado, atribui automaticamente ao próximo atendente disponível de uma lista em rodízio — notificando o time no Microsoft Teams. Inclui um dashboard web para gerenciar quem está ativo no rodízio (férias, faltas, ajustes de configuração).
+O bot monitora a fila **"Sem atendente"**, e quando um chamado passa de 15 minutos sem ser encaminhado, atribui automaticamente ao próximo atendente disponível de uma lista em rodízio — notificando o time no Microsoft Teams. Inclui um dashboard web para gerenciar quem está ativo no rodízio (férias, faltas, ajustes de configuração) e um relatório diário automático com o panorama dos chamados do dia.
 
 Rodando em produção 24/7 numa VM na nuvem (Oracle Cloud), monitorando e agindo em tempo real sobre o sistema real da equipe.
 
@@ -16,6 +16,8 @@ Rodando em produção 24/7 numa VM na nuvem (Oracle Cloud), monitorando e agindo
 - Dashboard web protegido por senha para gestão da equipe e monitoramento, com ordem do rodízio ajustável (drag-and-drop no desktop, setas no celular)
 - Interface responsiva, usável de verdade pelo celular
 - Log completo de auditoria de todas as atribuições feitas
+- Relatório diário automático no Teams (dias úteis, 17:45) com volume do dia, comparação com a média recente, situação dos chamados e faixa horária de pico
+- Aviso explícito quando o relatório não pôde ser gerado, para que o silêncio nunca seja confundido com "dia sem chamado"
 
 ## Arquitetura
 
@@ -60,6 +62,10 @@ Sem banco de dados — o estado (rodízio, atendentes, logs) é persistido em ar
 - **Deploy sem custo, resiliente a reinício e sem expor senha do sistema**: publicado numa VM cloud gratuita, autenticando via chave SSH (sem senha de usuário armazenada), sobrevivendo a reinícios da máquina via `systemd`.
 - **Validação segura antes de produção**: um modo de simulação (dry-run) permitiu validar a automação rodando na nuvem, sem tomar nenhuma ação real, até confirmar que o comportamento estava correto antes do corte definitivo.
 - **Ordem das notificações fora do controle da aplicação**: quando dois ou mais chamados eram encaminhados na mesma execução, as mensagens chegavam ao Teams fora de ordem — mesmo com o bot enviando sequencialmente e aguardando cada resposta. A causa não estava no envio: o Power Automate trata cada disparo do webhook como uma execução assíncrona independente, sem garantia de ordem entre elas. Em vez de contornar com atrasos (que só reduziriam a probabilidade), os encaminhamentos passaram a ser agrupados num único disparo, com uma seção por chamado — sendo uma mensagem só, a ordem é garantida por construção.
+- **Uma métrica que eu decidi não construir**: a primeira versão do relatório teria "quantos chamados cada atendente recebeu". Cortei antes de escrever a primeira linha. Um relatório recorrente que compara pessoas vira placar de produtividade e recria exatamente o atrito que o rodízio automático existe para eliminar. O atendente continua sendo gravado no log (o rodízio e a auditoria dependem disso), mas nenhum relatório agrupa por pessoa: todas as métricas são sobre a fila, não sobre quem atende.
+- **O histórico já existia — só não estava onde eu procurava**: o plano inicial era passar a gravar dados a cada execução e esperar semanas até ter volume para relatar. Antes disso, a engenharia reversa da tela de pesquisa revelou um endpoint que aceita intervalo de datas arbitrário: o histórico inteiro estava no próprio SoftDesk e podia ser consultado retroativamente. Isso eliminou a etapa de coleta e um arquivo de estado que nunca precisou existir. Como a resposta traz o total separado da página de resultados, as contagens saem com uma requisição de um registro só, em vez de baixar centenas.
+- **Um cookie de sessão vazando pelo caminho do erro**: em uma queda real de conexão durante os testes, apareceu que o cliente HTTP anexa o log completo da requisição na mensagem da exceção — incluindo os cookies de sessão. Como eu usava essa mensagem tanto no log quanto no card de falha, o segredo iria para o disco da VM e para dentro de uma mensagem no Teams. A mensagem passou a ser cortada na primeira linha, com um teste que falha se um cookie voltar a aparecer no resumo.
+- **Sucesso que o sistema lia como falha**: o relatório era enviado corretamente e ainda assim o processo terminava com código de erro — encerrar o programa explicitamente enquanto o cliente HTTP ainda fechava conexões derrubava o runtime. Como o agendador trata código diferente de zero como falha, o relatório apareceria como quebrado todos os dias e uma falha real ficaria enterrada no meio dos alarmes falsos. A correção foi deixar o processo terminar naturalmente.
 - **Tabela de dados numa tela de celular**: a tabela de atendentes fazia a página rolar 184px na horizontal e deformava o botão de ação, porque a coluna de ação precisava caber um painel inteiro. Abaixo de 900px as tabelas passaram a virar cartões empilhados, com cada célula exibindo o próprio rótulo. E como o drag-and-drop nativo do HTML5 não responde a toque, a reordenação do rodízio no celular ganhou setas que reaproveitam o mesmo endpoint do arrastar.
 
 ## Segurança
@@ -79,6 +85,10 @@ npm run build
 npm run dev         # loop continuo (desenvolvimento)
 npm run rodar        # uma passada so
 npm run dashboard     # dashboard em localhost:3001
+npm test               # testes das funcoes puras
+
+npm run relatorio -- --json    # gera o relatorio e imprime, sem enviar nada
+npm run relatorio -- --teste   # envia para um canal de testes separado
 ```
 
 Requer um arquivo `.env` com as credenciais do SoftDesk e demais configurações — ver `.env.example`.
@@ -89,13 +99,15 @@ Requer um arquivo `.env` com as credenciais do SoftDesk e demais configurações
 src/
 ├── sessao.ts        # login e sessao via API direta (Playwright em modo HTTP, sem navegador)
 ├── tickets.ts        # consumo da API JSON do SoftDesk
-├── assign.ts          # atribuicao de chamado via API direta
-├── rotation.ts         # logica do rodizio
-├── atendentes.ts        # gestao de atendentes (ativo/inativo)
-├── fluxo.ts               # orquestracao completa do fluxo
-├── teams.ts                # notificacao no Microsoft Teams
-└── dashboard/                # API + servidor do painel de administracao
-public/                        # frontend do dashboard (HTML/CSS/JS)
+├── pesquisa.ts        # consulta de chamados por periodo, com paginacao
+├── assign.ts           # atribuicao de chamado via API direta
+├── rotation.ts          # logica do rodizio
+├── atendentes.ts         # gestao de atendentes (ativo/inativo)
+├── fluxo.ts                # orquestracao completa do fluxo
+├── teams.ts                 # notificacao no Microsoft Teams
+├── relatorios/               # metricas, datas e cards dos relatorios (funcoes puras + testes)
+└── dashboard/                 # API + servidor do painel de administracao
+public/                         # frontend do dashboard (HTML/CSS/JS)
 ```
 
 ## Autor
