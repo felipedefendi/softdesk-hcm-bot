@@ -5,11 +5,11 @@ state/*.json
 state/encaminhamentos.log
 debug/
 *.log
+*.tsbuildinfo
 
-# planos internos (achados de seguranca, infra real com IP/dominio) - so uso local
-PLANO-SEGURANCA.md
-PLANO-DEPLOY-ORACLE.md
-PLANO-API-DIRETA.md
+# planos e anotacoes internas (achados de seguranca, infra real com IP/dominio,
+# planejamento de features) - so uso local
+PLANO-*.md
 
 # guia de estudo detalhado - so uso local, o README publico e outro
 ESTUDO.md
@@ -19,3 +19,17 @@ CLAUDE.md
 AGENTS.md
 .claude/
 hcmbotcontext.md
+
+# scripts descartaveis de teste/inspecao criados na raiz durante o desenvolvimento
+teste-*.ts
+inspecionar-*.ts
+
+# agendamento antigo via Task Scheduler do Windows, com caminho local hardcoded -
+# substituido pelo systemd timer na VM
+executar-tarefa.cmd
+
+# editor e sistema operacional
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
