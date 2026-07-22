@@ -94,12 +94,6 @@ function contatoDoDetalhe(data: Record<string, unknown>): ContatoChamado {
   };
 }
 
-/** Busca o SLA do chamado e retorna minutos de Encaminhamento. */
-export async function buscarMinutosEncaminhamento(sessao: Sessao, numeroChamado: number): Promise<number> {
-  const data = await buscarDetalheChamado(sessao, numeroChamado);
-  return minutosEncaminhamentoDoDetalhe(data, numeroChamado);
-}
-
 /**
  * Uma unica ida ao detalhe do chamado devolvendo tudo que a notificacao precisa:
  * minutos de encaminhamento (pra checar o SLA) mais os dados do solicitante.

@@ -7,7 +7,6 @@
     "dev": "ts-node src/index.ts",
     "rodar": "ts-node src/rodar-uma-vez.ts",
     "dashboard": "ts-node src/dashboard/server.ts",
-    "codegen": "playwright codegen https://js.soft4.com.br/chamado",
     "build": "tsc",
     "start": "node dist/index.js"
   },
