@@ -190,20 +190,38 @@ function montarAdaptiveCard(lista: NotificacaoEncaminhamento[]) {
  * encaminhados no SoftDesk antes desta funcao ser chamada. So loga o erro.
  */
 export async function notificarTeams(lista: NotificacaoEncaminhamento[]): Promise<void> {
-  if (!config.teamsWebhookUrl || lista.length === 0) return;
+  if (lista.length === 0) return;
 
   const numeros = lista.map((i) => i.chamado).join(", ");
+  await postarNoTeams(montarAdaptiveCard(lista), `os chamados ${numeros}`);
+}
+
+/**
+ * Envia um payload ja montado pro webhook do Teams. Compartilhado pelo
+ * encaminhamento e pelos relatorios.
+ *
+ * Nunca lanca excecao: uma falha aqui (Teams fora do ar, URL invalida etc.) nao
+ * pode derrubar quem chamou - no caso do rodizio, os chamados ja foram
+ * realmente encaminhados no SoftDesk antes desta funcao ser chamada. So loga.
+ */
+export async function postarNoTeams(
+  payload: unknown,
+  descricao: string,
+  urlWebhook = config.teamsWebhookUrl
+): Promise<void> {
+  if (!urlWebhook) return;
+
   try {
-    const res = await fetch(config.teamsWebhookUrl, {
+    const res = await fetch(urlWebhook, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(montarAdaptiveCard(lista)),
+      body: JSON.stringify(payload),
     });
 
     if (!res.ok) {
-      console.error(`Falha ao notificar o Teams (HTTP ${res.status}) para os chamados ${numeros}`);
+      console.error(`Falha ao postar no Teams (HTTP ${res.status}) para ${descricao}`);
     }
   } catch (err) {
-    console.error(`Erro ao notificar o Teams para os chamados ${numeros}:`, err);
+    console.error(`Erro ao postar no Teams para ${descricao}:`, err);
   }
 }

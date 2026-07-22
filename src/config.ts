@@ -14,6 +14,9 @@ export const config = {
   encaminhamentoLimiteMinutos: 15,
   stateFile: path.join(__dirname, "..", "state", "rotation.json"),
   teamsWebhookUrl: process.env.TEAMS_WEBHOOK_URL ?? "",
+  // Webhook de um canal separado, usado pra validar a aparencia de um card novo
+  // sem poluir o canal real. Consumido so pelo `npm run relatorio -- --teste`.
+  teamsWebhookTesteUrl: process.env.TEAMS_WEBHOOK_TESTE_URL ?? "",
   // Dominio dos e-mails/UPN do Teams. Os atendentes guardam so o usuario
   // (ex.: "felipe.prado") e o dominio e anexado aqui pra formar a @mention.
   teamsEmailDomain: process.env.TEAMS_EMAIL_DOMAIN ?? "",
