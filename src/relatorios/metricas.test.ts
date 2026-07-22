@@ -53,14 +53,14 @@ test("empate na contagem desempata pelo rotulo", () => {
 
 test("porPrioridade usa ordem de severidade, nao de volume", () => {
   const chamados = [
-    chamado({ prioridade: "Baixa", corPrioridade: "#azul" }),
-    chamado({ prioridade: "Baixa", corPrioridade: "#azul" }),
-    chamado({ prioridade: "Crítica", corPrioridade: "#vermelho" }),
+    chamado({ prioridade: "Baixa" }),
+    chamado({ prioridade: "Baixa" }),
+    chamado({ prioridade: "Crítica" }),
   ];
 
   assert.deepEqual(porPrioridade(chamados), [
-    { rotulo: "Crítica", quantidade: 1, cor: "#vermelho" },
-    { rotulo: "Baixa", quantidade: 2, cor: "#azul" },
+    { rotulo: "Crítica", quantidade: 1 },
+    { rotulo: "Baixa", quantidade: 2 },
   ]);
 });
 

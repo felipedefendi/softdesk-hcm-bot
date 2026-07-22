@@ -16,10 +16,6 @@ export interface ContagemComPercentual extends Contagem {
   percentual: number;
 }
 
-export interface ContagemPrioridade extends Contagem {
-  cor: string;
-}
-
 /** Da severidade maior pra menor - le melhor no card do que ordenar por volume. */
 const ORDEM_PRIORIDADE = ["Crítica", "Alta", "Média", "Baixa"];
 
@@ -54,21 +50,18 @@ export function porCurvaAbc(chamados: ChamadoPesquisa[]): Contagem[] {
   );
 }
 
-/** Mantem a cor nativa do SoftDesk pra colorir o card. */
-export function porPrioridade(chamados: ChamadoPesquisa[]): ContagemPrioridade[] {
-  const cores = new Map<string, string>();
-  for (const c of chamados) {
-    if (c.prioridade && !cores.has(c.prioridade)) cores.set(c.prioridade, c.corPrioridade);
-  }
-
-  return contarPor(chamados, (c) => c.prioridade)
-    .map((item) => ({ ...item, cor: cores.get(item.rotulo) ?? "" }))
-    .sort((a, b) => {
-      const pa = ORDEM_PRIORIDADE.indexOf(a.rotulo);
-      const pb = ORDEM_PRIORIDADE.indexOf(b.rotulo);
-      // Prioridade desconhecida vai pro fim, nao pro comeco.
-      return (pa === -1 ? 99 : pa) - (pb === -1 ? 99 : pb);
-    });
+/**
+ * Ordenado por severidade. O `cor_prioridade` que a API devolve (hex) nao e
+ * aproveitado: Adaptive Card so aceita cores nomeadas em texto, nao hex - a
+ * propria ordem da lista ja transmite a hierarquia.
+ */
+export function porPrioridade(chamados: ChamadoPesquisa[]): Contagem[] {
+  return contarPor(chamados, (c) => c.prioridade).sort((a, b) => {
+    const pa = ORDEM_PRIORIDADE.indexOf(a.rotulo);
+    const pb = ORDEM_PRIORIDADE.indexOf(b.rotulo);
+    // Prioridade desconhecida vai pro fim, nao pro comeco.
+    return (pa === -1 ? 99 : pa) - (pb === -1 ? 99 : pb);
+  });
 }
 
 /** Os `quantos` clientes com mais chamados, com o peso de cada um no total. */
