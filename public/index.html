@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rodizio HCM - Painel Administrativo</title>
+  <title>Rodízio HCM - Painel Administrativo</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="tela-login" class="tela">
     <form id="form-login" class="cartao cartao-login">
-      <h1>Rodizio HCM</h1>
+      <h1>Rodízio HCM</h1>
       <p>Digite a senha do dashboard</p>
       <input type="password" id="senha" placeholder="Senha" autofocus />
       <button type="submit">Entrar</button>
@@ -21,7 +21,7 @@
   <div id="tela-dashboard" class="tela oculto">
     <header>
       <div class="header-titulo">
-        <h1>Rodizio HCM</h1>
+        <h1>Rodízio HCM</h1>
         <span id="chip-automacao" class="chip">-</span>
       </div>
       <button id="btn-logout" class="botao-secundario">Sair</button>
@@ -52,7 +52,7 @@
 
           <div class="linha-controle">
             <label class="toggle">
-              <input type="checkbox" id="toggle-automacao" />
+              <input type="checkbox" id="toggle-automacao" aria-label="Ativar ou pausar a automação" />
               <span class="toggle-trilho"></span>
             </label>
             <span id="toggle-automacao-rotulo">Automação</span>
@@ -66,10 +66,9 @@
 
         <section class="cartao">
           <h2>Rodízio</h2>
-          <p class="texto-fraco">Próximo atendente</p>
-          <p class="valor-destaque" id="rodizio-proximo">-</p>
+          <ol id="rodizio-fila" class="fila-rodizio"></ol>
           <div class="linha-acao">
-            <select id="rodizio-select"></select>
+            <select id="rodizio-select" aria-label="Escolher próximo atendente"></select>
             <button id="btn-definir-proximo">Definir como próximo</button>
           </div>
           <p id="rodizio-resultado" class="erro"></p>

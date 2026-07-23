@@ -93,13 +93,61 @@ document.getElementById("toggle-automacao").addEventListener("change", async (ev
   }
 });
 
+let proximoRodizio = null;
+
+// A ordem do rodizio e a propria ordem das linhas da tabela de atendentes, e o
+// status (ativo/inativo) vem do badge de cada linha - entao a fila e derivada
+// direto do DOM da tabela, sempre em sincronia com ela (inclusive apos arrastar).
+function ordemAtivosDaTabela() {
+  return [...document.querySelectorAll("#tabela-atendentes tbody tr")]
+    .filter((tr) => tr.querySelector(".badge-ativo"))
+    .map((tr) => tr.dataset.nome);
+}
+
+// Monta a fila comecando em quem recebe o proximo chamado e seguindo a ordem,
+// dando a volta no fim. O proximo fica em destaque; o resto, so listado em ordem.
+function renderFilaRodizio() {
+  const fila = document.getElementById("rodizio-fila");
+  fila.innerHTML = "";
+
+  if (proximoRodizio === null) {
+    const li = document.createElement("li");
+    li.className = "fila-item";
+    li.textContent = "Rodízio indisponível";
+    fila.appendChild(li);
+    return;
+  }
+
+  const ativos = ordemAtivosDaTabela();
+  const inicio = ativos.indexOf(proximoRodizio);
+  // Se os atendentes ainda nao carregaram (ou o proximo nao esta na lista),
+  // mostra so o proximo, sem a sequencia - a fila completa aparece no refresh.
+  const sequencia =
+    inicio === -1 ? [proximoRodizio] : ativos.slice(inicio).concat(ativos.slice(0, inicio));
+
+  sequencia.forEach((nome, i) => {
+    const li = document.createElement("li");
+    li.className = i === 0 ? "fila-item fila-proximo" : "fila-item";
+    if (i === 0) {
+      const marca = document.createElement("span");
+      marca.className = "fila-marca";
+      marca.textContent = "Próximo";
+      li.append(marca, document.createTextNode(nome));
+    } else {
+      li.textContent = nome;
+    }
+    fila.appendChild(li);
+  });
+}
+
 async function carregarRotation() {
   try {
     const rotation = await api("/rotation");
-    document.getElementById("rodizio-proximo").textContent = rotation.proximo;
+    proximoRodizio = rotation.proximo;
   } catch {
-    document.getElementById("rodizio-proximo").textContent = "indisponivel";
+    proximoRodizio = null;
   }
+  renderFilaRodizio();
 }
 
 let linhaArrastada = null;
@@ -325,6 +373,8 @@ async function carregarAtendentes() {
   }
 
   atualizarBotoesMover();
+  renderFilaRodizio();
+  renderAlertaRodizio();
 }
 
 async function carregarConfiguracoes() {
@@ -350,10 +400,22 @@ document.getElementById("form-config").addEventListener("submit", async (ev) => 
 // Alerta de rodizio travado: so aparece quando ha atendente ativo ha muito tempo
 // sem receber. Nao e ranking - nao mostra quantos cada um recebeu, so ha quanto
 // tempo o rodizio nao chega nele. Diagnostico de defeito, nunca vai pro Teams.
+let dadosAlerta = null;
+
 async function carregarAlertaRodizio() {
-  const { limite, atendentes } = await api("/alerta-rodizio");
+  dadosAlerta = await api("/alerta-rodizio");
+  renderAlertaRodizio();
+}
+
+// Separado do fetch porque depende da tabela de atendentes ja estar no DOM
+// (pra saber o total de ativos). E re-chamado ao fim de carregarAtendentes,
+// senao numa carga paralela o alerta leria a tabela ainda vazia.
+function renderAlertaRodizio() {
+  if (!dadosAlerta) return;
+  const { limite, atendentes } = dadosAlerta;
   const cartao = document.getElementById("alerta-rodizio");
   const lista = document.getElementById("alerta-rodizio-lista");
+  const texto = document.getElementById("alerta-rodizio-texto");
   lista.innerHTML = "";
 
   if (atendentes.length === 0) {
@@ -361,7 +423,21 @@ async function carregarAlertaRodizio() {
     return;
   }
 
-  document.getElementById("alerta-rodizio-texto").textContent =
+  const totalAtivos = ordemAtivosDaTabela().length;
+
+  // Quando praticamente todo o time esta sem receber, o problema nao e um
+  // ponteiro travado numa pessoa - e volume baixo (ou o bot parado). Listar
+  // cada um como se estivesse sendo pulado seria enganoso, entao colapsa numa
+  // linha so. O totalAtivos > 0 protege o caso da tabela ainda nao ter
+  // carregado (senao colapsaria por engano).
+  if (totalAtivos > 0 && atendentes.length >= totalAtivos) {
+    texto.textContent =
+      `Ninguém recebeu chamado nos últimos ${limite}+ dias úteis. Pode ser volume baixo ou a automação parada — vale conferir.`;
+    cartao.classList.remove("oculto");
+    return;
+  }
+
+  texto.textContent =
     `Atendente(s) ativo(s) sem receber chamado há ${limite}+ dias úteis. Vale conferir se o rodízio está funcionando.`;
 
   for (const a of atendentes) {

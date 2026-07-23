@@ -1,3 +1,15 @@
+/* Inter auto-hospedada (subset Latin, variavel 100-900). A CSP bloqueia CDN,
+   entao a fonte vive no proprio repo. Vem depois de -apple-system na stack: no
+   Mac o SF Pro real ainda ganha; no Windows, onde -apple-system/SF Pro nao
+   resolvem, a Inter entra no lugar da Segoe UI. */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("fonts/inter-latin-variable.woff2") format("woff2");
+}
+
 :root {
   color-scheme: dark;
 
@@ -35,7 +47,7 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, "SF Pro Text", "Segoe UI", Inter, Roboto, sans-serif;
+  font-family: -apple-system, "SF Pro Text", "Inter", "Segoe UI", Roboto, sans-serif;
   background: var(--bg);
   color: var(--texto);
   line-height: 1.47;
@@ -167,6 +179,19 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* Foco visivel pra navegacao por teclado (nao aparece no clique de mouse,
+   gracas ao :focus-visible). O toggle esconde o input real, entao o anel vai
+   no trilho. */
+:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+}
+
+.toggle input:focus-visible + .toggle-trilho {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+}
+
 .erro {
   color: var(--erro);
   min-height: 1.2em;
@@ -247,6 +272,46 @@ button:disabled {
   margin: 0.15rem 0 1rem;
 }
 
+/* Fila do rodizio: o proximo em destaque, o resto listado na ordem de
+   passagem, separados por hairline. Torna visivel a sequencia inteira -
+   antes so aparecia o proximo. */
+.fila-rodizio {
+  list-style: none;
+  margin: 0 0 1.25rem;
+  padding: 0;
+}
+
+.fila-item {
+  padding: 0.45rem 0;
+  color: var(--texto-fraco);
+  font-size: 0.95rem;
+  border-bottom: 1px solid var(--divider-soft);
+}
+
+.fila-item:last-child {
+  border-bottom: none;
+}
+
+.fila-proximo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--texto);
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.fila-marca {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--acento);
+  background: rgba(41, 151, 255, 0.12);
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-pill);
+}
+
 .divisor {
   height: 1px;
   background: var(--hairline);
@@ -315,6 +380,15 @@ table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 0.5rem;
+}
+
+/* Figuras tabulares nos contextos de dado: horarios, numeros de chamado,
+   contagens e os "ha N dias" do alerta passam a ter largura de digito
+   constante, entao as colunas alinham verticalmente. */
+table,
+.stats-linha,
+.cartao-alerta li {
+  font-variant-numeric: tabular-nums;
 }
 
 .col-arrastar {
@@ -663,5 +737,18 @@ tbody tr:hover {
   #tabela-log td[data-rotulo="Cliente / Título"]::before {
     display: block;
     margin-bottom: 0.15rem;
+  }
+}
+
+/* Respeita quem pediu menos movimento no sistema: neutraliza as transicoes
+   (crossfade do painel, scale dos botoes, toggle) sem quebrar os estados
+   finais - tudo passa a trocar instantaneamente, sem animar. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }
