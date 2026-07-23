@@ -89,6 +89,26 @@ export function deISO(texto: string): DiaCivil {
   return { ano, mes, dia };
 }
 
+/** Teto de seguranca da contagem de dias uteis, pra nunca virar laco infinito. */
+const MAXIMO_DE_DIAS_CONTADOS = 400;
+
+/**
+ * Dias uteis no intervalo (`de`, `ate`] - exclui o dia inicial e inclui o final.
+ * "Recebeu hoje" da 0; "recebeu no ultimo dia util" da 1.
+ */
+export function diasUteisEntre(de: DiaCivil, ate: DiaCivil): number {
+  let dias = 0;
+  let atual = de;
+
+  for (let passo = 0; passo < MAXIMO_DE_DIAS_CONTADOS; passo++) {
+    if (paraUTC(atual) >= paraUTC(ate)) break;
+    atual = somarDias(atual, 1);
+    if (ehDiaUtil(atual)) dias++;
+  }
+
+  return dias;
+}
+
 /**
  * Os N dias uteis imediatamente anteriores a `d` (nao inclui `d`).
  * Usado na comparacao do relatorio diario contra a media recente.

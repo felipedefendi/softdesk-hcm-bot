@@ -13,11 +13,13 @@ import {
   diaEmSaoPaulo,
   diasUteisAnteriores,
   horaEmSaoPaulo,
+  mesAnteriorFechado,
   semanaSegASexta,
   somarDias,
   type DiaCivil,
 } from "./periodos";
 import {
+  concentracaoTopClientes,
   faixaDePico,
   media,
   porCurvaAbc,
@@ -34,7 +36,10 @@ import { resumirErro } from "./erros";
 const DIAS_DE_COMPARACAO = 5;
 /** Quantos clientes aparecem no bloco de concentracao do semanal. */
 const CLIENTES_NO_TOPO = 3;
+/** No mensal a amostra e bem maior, entao cabe um top mais largo. */
+const CLIENTES_NO_TOPO_MENSAL = 5;
 const SEXTA = 5;
+const PRIMEIRO_DIA_DO_MES = 1;
 
 const TENTATIVAS = 3;
 const ESPERA_ENTRE_TENTATIVAS_MS = 30_000;
@@ -62,10 +67,24 @@ export interface RelatorioSemanal {
   prioridades: Contagem[];
 }
 
+export interface RelatorioMensal {
+  /** Primeiro dia do mes reportado - so ano e mes importam pro rotulo. */
+  mes: DiaCivil;
+  total: number;
+  totalAnterior: number;
+  variacao: number | null;
+  clientes: ContagemComPercentual[];
+  /** Quanto do volume os clientes do topo concentram, em percentual. */
+  concentracao: number;
+  curvaAbc: Contagem[];
+}
+
 export interface Relatorios {
   diario: RelatorioDiario;
   /** Null nos dias que nao sao sexta. */
   semanal: RelatorioSemanal | null;
+  /** Null nos dias que nao sao o primeiro do mes. */
+  mensal: RelatorioMensal | null;
 }
 
 const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -146,13 +165,39 @@ async function coletarSemanal(sessao: Sessao, dia: DiaCivil): Promise<RelatorioS
 }
 
 /**
- * Coleta o que a data pede: diario todo dia util, e o semanal tambem na sexta.
- * `forcarSemanal` existe pra conseguir conferir o card semanal fora de sexta,
- * sem esperar o fim da semana.
+ * Mes anterior fechado, comparado com o mes antes dele. Roda no dia 1, quando o
+ * mes reportado ja terminou - nunca compara mes parcial com mes inteiro.
+ */
+async function coletarMensal(sessao: Sessao, dia: DiaCivil): Promise<RelatorioMensal> {
+  const mes = mesAnteriorFechado(dia);
+  const chamados = await listarTodos(sessao, mes);
+
+  const totalAnterior = await contarChamados(sessao, mesAnteriorFechado(mes.inicio));
+
+  return {
+    mes: mes.inicio,
+    total: chamados.length,
+    totalAnterior,
+    variacao: variacaoPercentual(chamados.length, totalAnterior),
+    clientes: topClientes(chamados, CLIENTES_NO_TOPO_MENSAL),
+    concentracao: concentracaoTopClientes(chamados, CLIENTES_NO_TOPO_MENSAL),
+    curvaAbc: porCurvaAbc(chamados),
+  };
+}
+
+export interface ForcarCadencias {
+  semanal?: boolean;
+  mensal?: boolean;
+}
+
+/**
+ * Coleta o que a data pede: diario todo dia util, semanal tambem na sexta e
+ * mensal tambem no dia 1. Os `forcar` existem pra conferir os cards fora da
+ * data certa, sem esperar a semana ou o mes virar.
  */
 export async function gerarRelatorios(
   agora: Date = new Date(),
-  forcarSemanal = false
+  forcar: ForcarCadencias = {}
 ): Promise<Relatorios> {
   const sessao = await abrirSessao();
 
@@ -160,10 +205,12 @@ export async function gerarRelatorios(
     const diario = await coletarDiario(sessao, agora);
     const dia = diaEmSaoPaulo(agora);
     const ehSexta = diaDaSemana(dia) === SEXTA;
+    const ehDiaUm = dia.dia === PRIMEIRO_DIA_DO_MES;
 
     return {
       diario,
-      semanal: ehSexta || forcarSemanal ? await coletarSemanal(sessao, dia) : null,
+      semanal: ehSexta || forcar.semanal ? await coletarSemanal(sessao, dia) : null,
+      mensal: ehDiaUm || forcar.mensal ? await coletarMensal(sessao, dia) : null,
     };
   } finally {
     await encerrarSessao(sessao);

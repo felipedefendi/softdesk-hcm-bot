@@ -69,7 +69,7 @@ test("prioridade desconhecida vai pro fim da lista", () => {
   assert.deepEqual(porPrioridade(chamados).map((c) => c.rotulo), ["Alta", "Inventada"]);
 });
 
-test("porCurvaAbc ordena alfabeticamente", () => {
+test("porCurvaAbc ordena A-B-C e joga o sem curva pro fim", () => {
   const chamados = [
     chamado({ curvaAbc: "C" }),
     chamado({ curvaAbc: "A" }),
@@ -77,7 +77,7 @@ test("porCurvaAbc ordena alfabeticamente", () => {
     chamado({ curvaAbc: null }),
   ];
 
-  assert.deepEqual(porCurvaAbc(chamados).map((c) => c.rotulo), ["(nao informado)", "A", "C"]);
+  assert.deepEqual(porCurvaAbc(chamados).map((c) => c.rotulo), ["A", "C", "(nao informado)"]);
 });
 
 test("topClientes limita a quantidade e calcula o peso no total", () => {

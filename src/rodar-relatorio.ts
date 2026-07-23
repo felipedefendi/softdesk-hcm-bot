@@ -2,12 +2,14 @@
  * Entry point dos relatorios, chamado pelo systemd timer na VM
  * (`dist/rodar-relatorio.js`). Uma execucao, sem loop - o agendamento e do timer.
  *
- * O diario sai todo dia util; na sexta o semanal vai junto, na mesma mensagem.
+ * O diario sai todo dia util; na sexta o semanal vai junto e no dia 1 o mensal,
+ * sempre na mesma mensagem.
  *
  * Opcoes:
  *   --teste    posta no TEAMS_WEBHOOK_TESTE_URL em vez do canal real
  *   --json     imprime o payload do card e NAO envia nada
  *   --semanal  inclui o bloco semanal mesmo fora de sexta (pra conferir o card)
+ *   --mensal   inclui o bloco mensal mesmo fora do dia 1 (idem)
  */
 import { config } from "./config";
 import { postarNoTeams } from "./teams";
@@ -23,7 +25,10 @@ function agora(): string {
 async function main(): Promise<void> {
   const soImprimir = process.argv.includes("--json");
   const usarTeste = process.argv.includes("--teste");
-  const forcarSemanal = process.argv.includes("--semanal");
+  const forcar = {
+    semanal: process.argv.includes("--semanal"),
+    mensal: process.argv.includes("--mensal"),
+  };
   const webhook = usarTeste ? config.teamsWebhookTesteUrl : config.teamsWebhookUrl;
 
   if (usarTeste && !webhook) {
@@ -32,7 +37,7 @@ async function main(): Promise<void> {
 
   const momento = new Date();
 
-  if (forcarSemanal) {
+  if (forcar.semanal) {
     console.warn(
       "[relatorio] --semanal fora de sexta compara uma semana incompleta com uma semana " +
         "inteira: a variacao vai parecer uma queda que nao existe. Use so pra conferir o card."
@@ -40,7 +45,7 @@ async function main(): Promise<void> {
   }
 
   try {
-    const relatorios = await comRetentativa(() => gerarRelatorios(momento, forcarSemanal));
+    const relatorios = await comRetentativa(() => gerarRelatorios(momento, forcar));
     const card = montarCardRelatorios(relatorios);
 
     if (soImprimir) {
@@ -48,11 +53,16 @@ async function main(): Promise<void> {
       return;
     }
 
-    const cadencia = relatorios.semanal ? "diario + semanal" : "diario";
+    const cadencia = ["diario", relatorios.semanal && "semanal", relatorios.mensal && "mensal"]
+      .filter(Boolean)
+      .join(" + ");
+
     await postarNoTeams(card, `o relatorio ${cadencia}`, webhook);
     console.log(
       `[${agora()}] Relatorio ${cadencia} enviado: ${relatorios.diario.total} chamado(s) no dia` +
-        (relatorios.semanal ? `, ${relatorios.semanal.total} na semana.` : ".")
+        (relatorios.semanal ? `, ${relatorios.semanal.total} na semana` : "") +
+        (relatorios.mensal ? `, ${relatorios.mensal.total} no mes` : "") +
+        "."
     );
   } catch (err) {
     // O silencio seria lido como "dia sem chamado" - avisar que falhou e melhor

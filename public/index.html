@@ -76,6 +76,12 @@
         </section>
       </div>
 
+      <section class="cartao cartao-alerta oculto" id="alerta-rodizio">
+        <h2>⚠️ Possível rodízio travado</h2>
+        <p class="texto-fraco" id="alerta-rodizio-texto"></p>
+        <ul id="alerta-rodizio-lista"></ul>
+      </section>
+
       <section class="cartao">
         <h2>Atendentes</h2>
         <table id="tabela-atendentes">
@@ -103,6 +109,10 @@
           <label>
             Limite SLA (min)
             <input type="number" id="cfg-limite" min="1" />
+          </label>
+          <label>
+            Alerta de rodízio (dias úteis)
+            <input type="number" id="cfg-dias-alerta" min="1" />
           </label>
           <button type="submit">Salvar</button>
         </form>

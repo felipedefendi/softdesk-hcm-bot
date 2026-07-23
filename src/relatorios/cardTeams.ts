@@ -9,8 +9,23 @@
  * assim no teams.ts).
  */
 import { diaDaSemana, type DiaCivil } from "./periodos";
-import type { RelatorioDiario, RelatorioSemanal, Relatorios } from "./gerar";
+import type { RelatorioDiario, RelatorioMensal, RelatorioSemanal, Relatorios } from "./gerar";
 import type { Contagem } from "./metricas";
+
+const MESES = [
+  "janeiro",
+  "fevereiro",
+  "março",
+  "abril",
+  "maio",
+  "junho",
+  "julho",
+  "agosto",
+  "setembro",
+  "outubro",
+  "novembro",
+  "dezembro",
+];
 
 const DIAS_DA_SEMANA = [
   "domingo",
@@ -48,7 +63,7 @@ function listaInline(itens: Contagem[]): string {
  * "bom/ruim"): volume alto nao e culpa de ninguem, e o relatorio nao existe pra
  * pressionar o time.
  */
-/** `base` deve comecar com "a " ("a semana anterior"), pra formar "da semana anterior". */
+/** `base` deve comecar com artigo ("a semana anterior", "o mes anterior"): "d" + base. */
 function textoVariacao(variacao: number | null, base: string): string | null {
   if (variacao === null) return null;
   if (variacao === 0) return `Em linha com ${base}`;
@@ -209,9 +224,37 @@ function secaoSemanal(r: RelatorioSemanal, separador: boolean): Record<string, u
   return itens;
 }
 
+function secaoMensal(r: RelatorioMensal, separador: boolean): Record<string, unknown>[] {
+  const itens: Record<string, unknown>[] = [
+    cabecalho("📆", "RELATÓRIO MENSAL", `${MESES[r.mes.mes - 1]} de ${r.mes.ano}`, separador),
+    destaque(`${plural(r.total, "chamado aberto", "chamados abertos")} no mês`),
+  ];
+
+  const comparacao = textoVariacao(r.variacao, `o mês anterior (${r.totalAnterior})`);
+  if (comparacao) {
+    itens.push({ type: "TextBlock", text: comparacao, isSubtle: true, wrap: true, spacing: "None" });
+  }
+
+  if (r.clientes.length > 0) {
+    itens.push(
+      legenda(`Clientes com mais chamados — os ${r.clientes.length} concentram ${r.concentracao}% do volume`)
+    );
+    itens.push(
+      painel(r.clientes.map((c) => linhaContagem(c.rotulo, `${c.quantidade} (${c.percentual}%)`)))
+    );
+  }
+
+  if (r.curvaAbc.length > 0) {
+    itens.push(dado(`Curva ABC do cliente — ${listaInline(r.curvaAbc)}`, "Medium"));
+  }
+
+  return itens;
+}
+
 export function montarCardRelatorios(relatorios: Relatorios) {
   const body = [...secaoDiaria(relatorios.diario, false)];
   if (relatorios.semanal) body.push(...secaoSemanal(relatorios.semanal, true));
+  if (relatorios.mensal) body.push(...secaoMensal(relatorios.mensal, true));
   return envelope(body);
 }
 

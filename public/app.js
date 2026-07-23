@@ -331,19 +331,51 @@ async function carregarConfiguracoes() {
   const cfg = await api("/configuracoes");
   document.getElementById("cfg-intervalo").value = cfg.pollIntervalMinutes;
   document.getElementById("cfg-limite").value = cfg.encaminhamentoLimiteMinutos;
+  document.getElementById("cfg-dias-alerta").value = cfg.diasSemReceberParaAlerta;
 }
 
 document.getElementById("form-config").addEventListener("submit", async (ev) => {
   ev.preventDefault();
   const pollIntervalMinutes = Number(document.getElementById("cfg-intervalo").value);
   const encaminhamentoLimiteMinutos = Number(document.getElementById("cfg-limite").value);
+  const diasSemReceberParaAlerta = Number(document.getElementById("cfg-dias-alerta").value);
 
   await api("/configuracoes", {
     method: "PATCH",
-    body: JSON.stringify({ pollIntervalMinutes, encaminhamentoLimiteMinutos }),
+    body: JSON.stringify({ pollIntervalMinutes, encaminhamentoLimiteMinutos, diasSemReceberParaAlerta }),
   });
   alert("Configuracoes salvas. Valem a partir do proximo ciclo do bot.");
 });
+
+// Alerta de rodizio travado: so aparece quando ha atendente ativo ha muito tempo
+// sem receber. Nao e ranking - nao mostra quantos cada um recebeu, so ha quanto
+// tempo o rodizio nao chega nele. Diagnostico de defeito, nunca vai pro Teams.
+async function carregarAlertaRodizio() {
+  const { limite, atendentes } = await api("/alerta-rodizio");
+  const cartao = document.getElementById("alerta-rodizio");
+  const lista = document.getElementById("alerta-rodizio-lista");
+  lista.innerHTML = "";
+
+  if (atendentes.length === 0) {
+    cartao.classList.add("oculto");
+    return;
+  }
+
+  document.getElementById("alerta-rodizio-texto").textContent =
+    `Atendente(s) ativo(s) sem receber chamado há ${limite}+ dias úteis. Vale conferir se o rodízio está funcionando.`;
+
+  for (const a of atendentes) {
+    const li = document.createElement("li");
+    const quando =
+      a.diasUteis === null
+        ? "nunca recebeu um chamado pelo rodízio"
+        : `sem receber há ${a.diasUteis} dias úteis`;
+    li.textContent = `${a.atendente} — ${quando}`;
+    lista.appendChild(li);
+  }
+
+  cartao.classList.remove("oculto");
+}
 
 let qtdLogVisiveis = 50;
 
@@ -417,7 +449,7 @@ function usuarioEditandoDentroDe(seletor) {
 }
 
 async function carregarTudo() {
-  const tarefas = [carregarStatus(), carregarAutomacao(), carregarRotation(), carregarLog()];
+  const tarefas = [carregarStatus(), carregarAutomacao(), carregarRotation(), carregarLog(), carregarAlertaRodizio()];
   if (!usuarioEditandoDentroDe("#tabela-atendentes")) tarefas.push(carregarAtendentes());
   if (!usuarioEditandoDentroDe("#form-config")) tarefas.push(carregarConfiguracoes());
   await Promise.all(tarefas);

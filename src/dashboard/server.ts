@@ -3,7 +3,9 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import { config } from "../config";
 import { atendenteAtual, definirProximoManualmente } from "../rotation";
-import { listarAtendentes, marcarInativo, reativarManualmente, reordenarAtendentes } from "../atendentes";
+import { atendentesAtivos, listarAtendentes, marcarInativo, reativarManualmente, reordenarAtendentes } from "../atendentes";
+import { detectarRodizioTravado } from "../alertaRodizio";
+import { diaEmSaoPaulo } from "../relatorios/periodos";
 import { lerConfiguracoes, salvarConfiguracoes } from "../configuracoes";
 import { lerStatus } from "../status";
 import { lerHistorico } from "./logHistorico";
@@ -93,18 +95,34 @@ app.get("/api/status", (req, res) => {
   res.json(lerStatus());
 });
 
+/**
+ * Atendentes ativos que ha muito tempo nao recebem chamado - sinal de rodizio
+ * travado. Fica so aqui, nunca vai pro Teams: e diagnostico de defeito, nao
+ * comparacao entre pessoas.
+ */
+app.get("/api/alerta-rodizio", (req, res) => {
+  try {
+    const limite = lerConfiguracoes().diasSemReceberParaAlerta;
+    const ativos = atendentesAtivos().map((a) => a.nome);
+    res.json({ limite, atendentes: detectarRodizioTravado(lerHistorico(), ativos, diaEmSaoPaulo(), limite) });
+  } catch (err) {
+    res.status(500).json({ erro: err instanceof Error ? err.message : String(err) });
+  }
+});
+
 app.get("/api/configuracoes", (req, res) => {
   res.json(lerConfiguracoes());
 });
 
 app.patch("/api/configuracoes", (req, res) => {
-  const { pollIntervalMinutes, encaminhamentoLimiteMinutos } = req.body ?? {};
+  const { pollIntervalMinutes, encaminhamentoLimiteMinutos, diasSemReceberParaAlerta } = req.body ?? {};
   const atual = lerConfiguracoes();
 
   salvarConfiguracoes({
     ...atual,
     pollIntervalMinutes: Number(pollIntervalMinutes) || atual.pollIntervalMinutes,
     encaminhamentoLimiteMinutos: Number(encaminhamentoLimiteMinutos) || atual.encaminhamentoLimiteMinutos,
+    diasSemReceberParaAlerta: Number(diasSemReceberParaAlerta) || atual.diasSemReceberParaAlerta,
   });
   res.json(lerConfiguracoes());
 });

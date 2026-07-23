@@ -44,10 +44,13 @@ export function porStatus(chamados: ChamadoPesquisa[]): Contagem[] {
   return contarPor(chamados, (c) => c.status);
 }
 
+/** A, B, C em ordem; sem curva cadastrada vai pro fim (senao lideraria a lista). */
 export function porCurvaAbc(chamados: ChamadoPesquisa[]): Contagem[] {
-  return contarPor(chamados, (c) => c.curvaAbc ?? SEM_VALOR).sort((a, b) =>
-    a.rotulo.localeCompare(b.rotulo)
-  );
+  return contarPor(chamados, (c) => c.curvaAbc ?? SEM_VALOR).sort((a, b) => {
+    if (a.rotulo === SEM_VALOR) return 1;
+    if (b.rotulo === SEM_VALOR) return -1;
+    return a.rotulo.localeCompare(b.rotulo);
+  });
 }
 
 /**

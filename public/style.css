@@ -173,6 +173,22 @@ button:disabled {
   font-size: 0.9rem;
 }
 
+/* Cartao de alerta de rodizio travado: borda ambar discreta, some quando nao ha
+   nada a sinalizar (a classe .oculto e removida pelo app.js). */
+.cartao-alerta {
+  border-color: rgba(255, 179, 64, 0.5);
+  background: rgba(255, 179, 64, 0.06);
+}
+
+.cartao-alerta ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.cartao-alerta li {
+  margin: 0.3rem 0;
+}
+
 .texto-fraco {
   color: var(--texto-fraco);
   font-size: 0.85rem;
