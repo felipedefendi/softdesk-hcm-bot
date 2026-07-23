@@ -28,6 +28,9 @@ inspecionar-*.ts
 # substituido pelo systemd timer na VM
 executar-tarefa.cmd
 
+# script de backup do state/ da VM pro PC - tem IP da VM e caminho local da chave SSH
+backup-state.ps1
+
 # editor e sistema operacional
 .vscode/
 .idea/
