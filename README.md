@@ -70,14 +70,17 @@ Sem banco de dados — o estado (rodízio, atendentes, logs) é persistido em ar
 - **Um cache que teria gravado senhas em disco**: o relatório mensal precisaria traduzir códigos de categoria em nomes, e o endpoint que faz esse dicionário devolve, no mesmo payload, a lista de atendentes — com hashes de senha e contatos. Cachear essa resposta em disco, como estava planejado, teria persistido credenciais em arquivo. Ao inspecionar o retorno real antes de implementar, descobri que a categoria nem vinha nesse endpoint: o cache inteiro era desnecessário. A funcionalidade foi cortada em vez de construída, e o dado sensível nunca tocou o disco.
 - **Sucesso que o sistema lia como falha**: o relatório era enviado corretamente e ainda assim o processo terminava com código de erro — encerrar o programa explicitamente enquanto o cliente HTTP ainda fechava conexões derrubava o runtime. Como o agendador trata código diferente de zero como falha, o relatório apareceria como quebrado todos os dias e uma falha real ficaria enterrada no meio dos alarmes falsos. A correção foi deixar o processo terminar naturalmente.
 - **Tabela de dados numa tela de celular**: a tabela de atendentes fazia a página rolar 184px na horizontal e deformava o botão de ação, porque a coluna de ação precisava caber um painel inteiro. Abaixo de 900px as tabelas passaram a virar cartões empilhados, com cada célula exibindo o próprio rótulo. E como o drag-and-drop nativo do HTML5 não responde a toque, a reordenação do rodízio no celular ganhou setas que reaproveitam o mesmo endpoint do arrastar.
+- **Uma auditoria de segurança que virou ação, não relatório**: revisei a exposição real da VM (quem consegue se conectar hoje, com o quê) e priorizei os achados por impacto real dividido por esforço, não por categoria abstrata. Cada mudança foi testada antes de assumida como concluída: a nova regra de firewall restringindo SSH por IP foi trocada de forma atômica e testada com uma conexão nova antes de ser persistida, pra nunca correr o risco de perder acesso à própria VM. A prova de que a exposição era real, não teórica: assim que o bloqueio automático de tentativas de login entrou no ar, já encontrou e baniu IPs de scanners reais tentando força bruta contra o SSH.
 
 ## Segurança
 
-- Segredos (credenciais, senha do dashboard) nunca versionados, carregados via variáveis de ambiente
-- Acesso à infraestrutura só por chave SSH (sem autenticação por senha)
-- Dashboard protegido por senha e HTTPS (certificado renovado automaticamente)
-- Cookies de sessão `httpOnly`
+- Segredos (credenciais, senha do dashboard) nunca versionados, carregados via variáveis de ambiente, com permissão de arquivo restrita ao dono na VM
+- Acesso SSH à infraestrutura só por chave, restrito por IP de origem, com bloqueio automático de IPs insistindo em login (SSH e dashboard)
+- Dashboard protegido por senha, HTTPS e limite de tentativas de login por IP
+- Cookies de sessão `httpOnly` e `secure`, com expiração automática
+- Cabeçalhos HTTP de segurança (proteção contra clickjacking, MIME-sniffing, HSTS)
 - Atualizações de segurança do sistema operacional aplicadas automaticamente
+- Backup diário do estado da aplicação, com rotação de logs pra não crescer indefinidamente
 
 ## Como rodar localmente
 
