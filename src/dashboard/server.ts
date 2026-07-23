@@ -1,6 +1,7 @@
 import path from "node:path";
 import express from "express";
 import cookieParser from "cookie-parser";
+import rateLimit from "express-rate-limit";
 import { config } from "../config";
 import { atendenteAtual, definirProximoManualmente } from "../rotation";
 import { atendentesAtivos, listarAtendentes, marcarInativo, reativarManualmente, reordenarAtendentes } from "../atendentes";
@@ -13,18 +14,29 @@ import { verificarChamados } from "../fluxo";
 import { autenticar, exigirLogin, invalidarToken, NOME_COOKIE } from "./auth";
 
 const app = express();
+// Necessario atras do nginx: sem isso o Express nao confia no X-Forwarded-For
+// (rate limiting por IP e o req.ip em geral ficariam errados).
+app.set("trust proxy", 1);
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "..", "..", "public")));
 
-app.post("/api/login", (req, res) => {
+const limitadorLogin = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { erro: "Muitas tentativas. Aguarde um minuto." },
+});
+
+app.post("/api/login", limitadorLogin, (req, res) => {
   const senha = typeof req.body?.senha === "string" ? req.body.senha : "";
   const token = autenticar(senha);
   if (!token) {
     res.status(401).json({ erro: "Senha incorreta" });
     return;
   }
-  res.cookie(NOME_COOKIE, token, { httpOnly: true, sameSite: "lax" });
+  res.cookie(NOME_COOKIE, token, { httpOnly: true, sameSite: "lax", secure: true });
   res.json({ ok: true });
 });
 
