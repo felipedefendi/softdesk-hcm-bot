@@ -12,6 +12,7 @@ import {
   type CredencialEntrada,
 } from "../cofre/cofre";
 import { listarSistemas, criarSistema, desativarSistema, reativarSistema } from "../cofre/sistemas";
+import { registrarAcao } from "../cofre/auditoria";
 
 /**
  * Rotas do cofre de senhas de clientes. Montadas em /api/cofre no server.ts,
@@ -99,6 +100,10 @@ function paramId(req: Request): string {
   return req.params.id as string;
 }
 
+function nomeSistema(id: string): string {
+  return listarSistemas().find((s) => s.id === id)?.nome ?? id;
+}
+
 function entradaCredencial(body: unknown): CredencialEntrada {
   const b = (body ?? {}) as Record<string, unknown>;
   return {
@@ -151,7 +156,9 @@ cofreRouter.get("/credenciais", (req, res) => {
 
 cofreRouter.post("/credenciais", exigirOrigemValida, (req, res) => {
   try {
-    res.json(criarCredencial(entradaCredencial(req.body)));
+    const criada = criarCredencial(entradaCredencial(req.body));
+    registrarAcao("criar", criada.id, criada.cliente, nomeSistema(criada.sistemaId));
+    res.json(criada);
   } catch (err) {
     res.status(400).json({ erro: err instanceof Error ? err.message : String(err) });
   }
@@ -159,7 +166,9 @@ cofreRouter.post("/credenciais", exigirOrigemValida, (req, res) => {
 
 cofreRouter.patch("/credenciais/:id", exigirOrigemValida, (req, res) => {
   try {
-    res.json(editarCredencial(paramId(req), entradaCredencial(req.body)));
+    const editada = editarCredencial(paramId(req), entradaCredencial(req.body));
+    registrarAcao("editar", editada.id, editada.cliente, nomeSistema(editada.sistemaId));
+    res.json(editada);
   } catch (err) {
     res.status(400).json({ erro: err instanceof Error ? err.message : String(err) });
   }
@@ -167,7 +176,8 @@ cofreRouter.patch("/credenciais/:id", exigirOrigemValida, (req, res) => {
 
 cofreRouter.post("/credenciais/:id/arquivar", exigirOrigemValida, (req, res) => {
   try {
-    arquivarCredencial(paramId(req));
+    const arquivada = arquivarCredencial(paramId(req));
+    registrarAcao("arquivar", arquivada.id, arquivada.cliente, nomeSistema(arquivada.sistemaId));
     res.json(listarMetadados());
   } catch (err) {
     res.status(400).json({ erro: err instanceof Error ? err.message : String(err) });
@@ -176,7 +186,8 @@ cofreRouter.post("/credenciais/:id/arquivar", exigirOrigemValida, (req, res) => 
 
 cofreRouter.post("/credenciais/:id/restaurar", exigirOrigemValida, (req, res) => {
   try {
-    restaurarCredencial(paramId(req));
+    const restaurada = restaurarCredencial(paramId(req));
+    registrarAcao("restaurar", restaurada.id, restaurada.cliente, nomeSistema(restaurada.sistemaId));
     res.json(listarMetadados());
   } catch (err) {
     res.status(400).json({ erro: err instanceof Error ? err.message : String(err) });
@@ -208,8 +219,12 @@ cofreRouter.post("/trancar", (req, res) => {
 
 cofreRouter.get("/credenciais/:id/revelar", limitadorRevelar, exigirOrigemValida, exigirDestrave, (req, res) => {
   res.set("Cache-Control", "no-store");
+  const id = paramId(req);
   try {
-    res.json(revelarCredencial(paramId(req)));
+    const dados = revelarCredencial(id);
+    const meta = listarMetadados().find((c) => c.id === id);
+    if (meta) registrarAcao("revelar", meta.id, meta.cliente, nomeSistema(meta.sistemaId));
+    res.json(dados);
   } catch {
     // Mensagem generica de proposito: nao vazar detalhe interno de cripto
     // (ex.: falha do authTag por adulteracao) pra quem chama a rota.

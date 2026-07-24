@@ -185,8 +185,8 @@ export function revelarCredencial(id: string): CredencialRevelada {
   };
 }
 
-/** Arquiva (soft-delete): sai da listagem mas fica recuperavel. */
-export function arquivarCredencial(id: string): void {
+/** Arquiva (soft-delete): sai da listagem mas fica recuperavel. Retorna os metadados pra quem chamar poder auditar. */
+export function arquivarCredencial(id: string): CredencialMetadados {
   const lista = ler();
   const indice = lista.findIndex((c) => c.id === id);
   if (indice === -1) {
@@ -194,9 +194,10 @@ export function arquivarCredencial(id: string): void {
   }
   lista[indice] = { ...lista[indice], arquivado: true, atualizadoEm: new Date().toISOString() };
   escreverAtomico(lista);
+  return paraMetadados(lista[indice]);
 }
 
-export function restaurarCredencial(id: string): void {
+export function restaurarCredencial(id: string): CredencialMetadados {
   const lista = ler();
   const indice = lista.findIndex((c) => c.id === id);
   if (indice === -1) {
@@ -204,4 +205,5 @@ export function restaurarCredencial(id: string): void {
   }
   lista[indice] = { ...lista[indice], arquivado: false, atualizadoEm: new Date().toISOString() };
   escreverAtomico(lista);
+  return paraMetadados(lista[indice]);
 }
