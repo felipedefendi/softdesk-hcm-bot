@@ -22,6 +22,10 @@ export const config = {
   teamsEmailDomain: process.env.TEAMS_EMAIL_DOMAIN ?? "",
   dashboardPort: Number(process.env.DASHBOARD_PORT ?? 3001),
   dashboardPassword: process.env.DASHBOARD_PASSWORD ?? "",
+  // Chave do cofre de senhas de clientes (AES-256-GCM, 32 bytes em base64).
+  // Opcional aqui de proposito: sem ela, so o cofre fica indisponivel - o
+  // resto do bot continua funcionando. Gerar com `npm run cofre:gerar-chave`.
+  cofreChave: process.env.COFRE_CHAVE ?? "",
 };
 
 if (!config.email || !config.password) {
