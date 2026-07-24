@@ -134,9 +134,129 @@
           <button id="btn-carregar-mais-log" class="botao-secundario oculto">Carregar mais</button>
         </div>
       </section>
+
+      <section class="cartao" id="cofre-cartao">
+        <div class="cofre-cabecalho">
+          <h2>Cofre de Senhas</h2>
+          <div class="cofre-cabecalho-acoes">
+            <span id="cofre-chip-trava" class="chip chip-inativo">Travado</span>
+            <button id="btn-cofre-trancar" class="botao-secundario oculto" type="button">Trancar</button>
+            <button id="btn-cofre-sistemas" class="botao-secundario" type="button">Sistemas</button>
+            <button id="btn-cofre-novo" class="botao-secundario" type="button">Novo acesso</button>
+          </div>
+        </div>
+
+        <input
+          type="search"
+          id="cofre-busca"
+          class="cofre-busca"
+          placeholder="Buscar por cliente ou sistema"
+          aria-label="Buscar credenciais do cofre"
+        />
+
+        <table id="tabela-cofre">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Sistema</th>
+              <th>Link</th>
+              <th>Validade</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <p id="cofre-vazio" class="texto-fraco oculto">Nenhuma credencial cadastrada ainda.</p>
+      </section>
     </main>
   </div>
 
+  <div id="modal-cofre-destravar" class="modal-overlay oculto">
+    <form id="form-cofre-destravar" class="cartao modal-caixa">
+      <h2>Destravar cofre</h2>
+      <p class="texto-fraco">Digite a senha do painel para revelar senhas por 5 minutos.</p>
+      <input
+        type="password"
+        id="cofre-destravar-senha"
+        placeholder="Senha do painel"
+        autocomplete="current-password"
+      />
+      <p id="cofre-destravar-erro" class="erro"></p>
+      <div class="linha-acao">
+        <button type="submit">Destravar</button>
+        <button type="button" class="botao-secundario" id="btn-cofre-destravar-cancelar">Cancelar</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="modal-cofre-credencial" class="modal-overlay oculto">
+    <form id="form-cofre-credencial" class="cartao modal-caixa">
+      <h2 id="cofre-credencial-titulo">Novo acesso</h2>
+      <input type="hidden" id="cofre-credencial-id" />
+
+      <label class="modal-campo">
+        Cliente
+        <input type="text" id="cofre-cliente" required />
+      </label>
+
+      <label class="modal-campo">
+        Sistema
+        <select id="cofre-sistema" required></select>
+      </label>
+
+      <label class="modal-campo">
+        Link (opcional)
+        <input type="url" id="cofre-link" placeholder="https://..." />
+      </label>
+
+      <label class="modal-campo">
+        Validade (opcional)
+        <input type="date" id="cofre-validade" />
+      </label>
+
+      <label class="modal-campo">
+        Login
+        <input type="text" id="cofre-login" autocomplete="new-password" />
+      </label>
+
+      <label class="modal-campo">
+        Senha
+        <input type="password" id="cofre-senha" autocomplete="new-password" />
+      </label>
+
+      <p id="cofre-credencial-ajuda-senha" class="texto-fraco oculto">
+        Deixe login e senha em branco para manter os valores atuais.
+      </p>
+
+      <label class="modal-campo">
+        Observações (opcional)
+        <textarea id="cofre-observacoes" rows="2"></textarea>
+      </label>
+
+      <p id="cofre-credencial-erro" class="erro"></p>
+      <div class="linha-acao">
+        <button type="submit">Salvar</button>
+        <button type="button" class="botao-secundario" id="btn-cofre-credencial-cancelar">Cancelar</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="modal-cofre-sistemas" class="modal-overlay oculto">
+    <div class="cartao modal-caixa">
+      <h2>Sistemas cadastrados</h2>
+      <ul id="lista-cofre-sistemas" class="cofre-lista-sistemas"></ul>
+      <form id="form-cofre-novo-sistema" class="linha-acao">
+        <input type="text" id="cofre-novo-sistema-nome" placeholder="Nome do sistema" aria-label="Nome do novo sistema" />
+        <button type="submit">Adicionar</button>
+      </form>
+      <p id="cofre-sistemas-erro" class="erro"></p>
+      <div class="linha-acao">
+        <button type="button" class="botao-secundario" id="btn-cofre-sistemas-fechar">Fechar</button>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
+  <script src="cofre.js"></script>
 </body>
 </html>

@@ -738,6 +738,178 @@ tbody tr:hover {
     display: block;
     margin-bottom: 0.15rem;
   }
+
+  /* --- Cofre: campo revelado empilha em vez de tentar caber numa linha --- */
+  .cofre-campo-revelado {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cofre-rotulo-revelado {
+    flex: none;
+  }
+
+  .modal-overlay {
+    padding: 1rem;
+  }
+}
+
+/* ============================================================
+   Cofre de senhas
+   ============================================================ */
+.cofre-cabecalho {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.cofre-cabecalho h2 {
+  margin: 0;
+}
+
+.cofre-cabecalho-acoes {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.cofre-busca {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  margin-bottom: 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--hairline);
+  background: var(--surface-2);
+  color: var(--texto);
+}
+
+.cofre-acoes-linha {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.cofre-linha-revelada td {
+  padding: 0;
+  border-bottom: 1px solid var(--divider-soft);
+}
+
+.cofre-painel-revelado {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1rem;
+  margin: 0.4rem 0;
+}
+
+.cofre-campo-revelado {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.cofre-rotulo-revelado {
+  flex: 0 0 4.5rem;
+  color: var(--texto-fraco);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.cofre-valor-revelado {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cofre-valor-mono {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.cofre-aviso-exposicao {
+  margin: 0.2rem 0 0;
+}
+
+/* Modais: overlay fixo com fundo escurecido, caixa centralizada. Padrao novo
+   no dashboard (as telas existentes sao tudo inline) - usado so pelo cofre. */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 100;
+}
+
+.modal-caixa {
+  width: 100%;
+  max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.modal-caixa h2 {
+  margin: 0;
+}
+
+.modal-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: var(--texto-fraco);
+  font-size: 0.85rem;
+}
+
+.modal-campo input,
+.modal-campo select,
+.modal-campo textarea {
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--hairline);
+  background: var(--surface-2);
+  color: var(--texto);
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.modal-campo textarea {
+  resize: vertical;
+}
+
+.cofre-lista-sistemas {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.cofre-sistema-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.65rem;
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
 }
 
 /* Respeita quem pediu menos movimento no sistema: neutraliza as transicoes

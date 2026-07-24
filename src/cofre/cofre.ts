@@ -93,11 +93,9 @@ function linkValido(link: string): boolean {
   }
 }
 
-/** Valida a entrada antes de tocar em cripto/config - falha rapido com mensagem clara. */
-function validarEntrada(entrada: CredencialEntrada): void {
+/** Campos que valem tanto pra criar quanto pra editar - falha rapido com mensagem clara. */
+function validarCamposComuns(entrada: CredencialEntrada): void {
   if (!entrada.cliente?.trim()) throw new Error("Cliente e obrigatorio");
-  if (!entrada.login?.trim()) throw new Error("Login e obrigatorio");
-  if (!entrada.senha) throw new Error("Senha e obrigatoria");
   if (entrada.link?.trim() && !linkValido(entrada.link.trim())) {
     throw new Error("Link precisa comecar com http:// ou https://");
   }
@@ -114,7 +112,9 @@ export function listarMetadados(): CredencialMetadados[] {
 }
 
 export function criarCredencial(entrada: CredencialEntrada): CredencialMetadados {
-  validarEntrada(entrada);
+  validarCamposComuns(entrada);
+  if (!entrada.login?.trim()) throw new Error("Login e obrigatorio");
+  if (!entrada.senha) throw new Error("Senha e obrigatoria");
   const chave = chaveOuFalha();
   const lista = ler();
   const agora = new Date().toISOString();
@@ -137,24 +137,31 @@ export function criarCredencial(entrada: CredencialEntrada): CredencialMetadados
   return paraMetadados(credencial);
 }
 
+/**
+ * Edita uma credencial. login/senha/observacoes sao opcionais aqui de
+ * proposito: em branco, mantem os valores atuais - editar o link ou o
+ * cliente nao deveria exigir destravar/revelar so pra reenviar os campos
+ * cifrados de volta (a tela de edicao rapida nao os pre-preenche).
+ */
 export function editarCredencial(id: string, entrada: CredencialEntrada): CredencialMetadados {
-  validarEntrada(entrada);
+  validarCamposComuns(entrada);
   const chave = chaveOuFalha();
   const lista = ler();
   const indice = lista.findIndex((c) => c.id === id);
   if (indice === -1) {
     throw new Error("Credencial nao encontrada");
   }
+  const atual = lista[indice];
 
   const atualizada: CredencialArmazenada = {
-    ...lista[indice],
+    ...atual,
     cliente: entrada.cliente.trim(),
     sistemaId: entrada.sistemaId,
     link: entrada.link?.trim() || null,
     validade: entrada.validade || null,
-    login: cifrar(entrada.login, chave),
-    senha: cifrar(entrada.senha, chave),
-    observacoes: entrada.observacoes ? cifrar(entrada.observacoes, chave) : null,
+    login: entrada.login?.trim() ? cifrar(entrada.login, chave) : atual.login,
+    senha: entrada.senha ? cifrar(entrada.senha, chave) : atual.senha,
+    observacoes: entrada.observacoes ? cifrar(entrada.observacoes, chave) : atual.observacoes,
     atualizadoEm: new Date().toISOString(),
   };
 
