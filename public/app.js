@@ -28,6 +28,24 @@ function mostrarDashboard() {
   carregarTudo();
 }
 
+// Alternador Painel/Cofre: so troca o que aparece na tela, sem navegar - os
+// dois continuam carregando dados em segundo plano nos seus proprios ciclos.
+const abaPainel = document.getElementById("aba-painel");
+const abaCofre = document.getElementById("aba-cofre");
+const btnAbaPainel = document.getElementById("btn-aba-painel");
+const btnAbaCofre = document.getElementById("btn-aba-cofre");
+
+function mostrarAba(nome) {
+  const ehCofre = nome === "cofre";
+  abaPainel.classList.toggle("oculto", ehCofre);
+  abaCofre.classList.toggle("oculto", !ehCofre);
+  btnAbaPainel.classList.toggle("aba-ativa", !ehCofre);
+  btnAbaCofre.classList.toggle("aba-ativa", ehCofre);
+}
+
+btnAbaPainel.addEventListener("click", () => mostrarAba("painel"));
+btnAbaCofre.addEventListener("click", () => mostrarAba("cofre"));
+
 document.getElementById("form-login").addEventListener("submit", async (ev) => {
   ev.preventDefault();
   const senha = document.getElementById("senha").value;

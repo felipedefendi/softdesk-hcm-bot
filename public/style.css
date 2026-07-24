@@ -101,6 +101,47 @@ h2 {
   padding: 1.5rem 2rem 3rem;
 }
 
+/* Alternador Painel/Cofre: os dois wrappers viram flex items do .conteudo,
+   entao precisam do mesmo display+gap que os cards soltos tinham antes. */
+#aba-painel,
+#aba-cofre {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.abas-principais {
+  display: flex;
+  gap: 1.5rem;
+  border-bottom: 1px solid var(--hairline);
+}
+
+button.aba-botao {
+  background: transparent;
+  color: var(--texto-fraco);
+  border: none;
+  border-radius: 0;
+  padding: 0.6rem 0.1rem;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+button.aba-botao:hover:not(:disabled) {
+  background: transparent;
+  color: var(--texto);
+}
+
+button.aba-botao:active:not(:disabled) {
+  transform: none;
+}
+
+button.aba-botao.aba-ativa {
+  color: var(--texto);
+  border-bottom-color: var(--acento);
+}
+
 .grade-2col {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -565,6 +606,11 @@ tbody tr:hover {
   button {
     min-height: 44px;
     padding: 0.65rem 1.2rem;
+  }
+
+  button.aba-botao {
+    min-height: 44px;
+    padding: 0.6rem 0.1rem;
   }
 
   input,

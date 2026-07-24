@@ -28,6 +28,12 @@
     </header>
 
     <main class="conteudo">
+      <nav class="abas-principais">
+        <button id="btn-aba-painel" class="aba-botao aba-ativa" type="button">Painel</button>
+        <button id="btn-aba-cofre" class="aba-botao" type="button">Cofre</button>
+      </nav>
+
+      <div id="aba-painel">
       <div class="grade-2col">
         <section class="cartao">
           <h2>Status da automação</h2>
@@ -134,7 +140,9 @@
           <button id="btn-carregar-mais-log" class="botao-secundario oculto">Carregar mais</button>
         </div>
       </section>
+      </div>
 
+      <div id="aba-cofre" class="oculto">
       <section class="cartao" id="cofre-cartao">
         <div class="cofre-cabecalho">
           <h2>Cofre de Senhas</h2>
@@ -168,6 +176,7 @@
         </table>
         <p id="cofre-vazio" class="texto-fraco oculto">Nenhuma credencial cadastrada ainda.</p>
       </section>
+      </div>
     </main>
   </div>
 
