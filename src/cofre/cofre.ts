@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { cifrar, decifrar, type CampoCifrado } from "./cripto";
+import { listarSistemas } from "./sistemas";
 import { config } from "../config";
 
 /**
@@ -83,6 +84,28 @@ function paraMetadados(c: CredencialArmazenada): CredencialMetadados {
   return metadados;
 }
 
+function linkValido(link: string): boolean {
+  try {
+    const url = new URL(link);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+/** Valida a entrada antes de tocar em cripto/config - falha rapido com mensagem clara. */
+function validarEntrada(entrada: CredencialEntrada): void {
+  if (!entrada.cliente?.trim()) throw new Error("Cliente e obrigatorio");
+  if (!entrada.login?.trim()) throw new Error("Login e obrigatorio");
+  if (!entrada.senha) throw new Error("Senha e obrigatoria");
+  if (entrada.link?.trim() && !linkValido(entrada.link.trim())) {
+    throw new Error("Link precisa comecar com http:// ou https://");
+  }
+  if (!listarSistemas().some((s) => s.id === entrada.sistemaId)) {
+    throw new Error("Sistema nao encontrado");
+  }
+}
+
 /** Todas as credenciais nao arquivadas, sem login/senha/observacoes. */
 export function listarMetadados(): CredencialMetadados[] {
   return ler()
@@ -91,6 +114,7 @@ export function listarMetadados(): CredencialMetadados[] {
 }
 
 export function criarCredencial(entrada: CredencialEntrada): CredencialMetadados {
+  validarEntrada(entrada);
   const chave = chaveOuFalha();
   const lista = ler();
   const agora = new Date().toISOString();
@@ -114,6 +138,7 @@ export function criarCredencial(entrada: CredencialEntrada): CredencialMetadados
 }
 
 export function editarCredencial(id: string, entrada: CredencialEntrada): CredencialMetadados {
+  validarEntrada(entrada);
   const chave = chaveOuFalha();
   const lista = ler();
   const indice = lista.findIndex((c) => c.id === id);

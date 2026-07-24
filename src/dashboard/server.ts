@@ -12,6 +12,7 @@ import { lerStatus } from "../status";
 import { lerHistorico } from "./logHistorico";
 import { verificarChamados } from "../fluxo";
 import { autenticar, exigirLogin, invalidarToken, NOME_COOKIE } from "./auth";
+import { cofreRouter } from "./cofreRotas";
 
 const app = express();
 // Necessario atras do nginx: sem isso o Express nao confia no X-Forwarded-For
@@ -48,6 +49,7 @@ app.post("/api/logout", (req, res) => {
 });
 
 app.use("/api", exigirLogin);
+app.use("/api/cofre", cofreRouter);
 
 app.get("/api/atendentes", (req, res) => {
   res.json(listarAtendentes());
