@@ -1,0 +1,29 @@
+.painel {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.painel input {
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--hairline);
+  background: var(--surface-2);
+  color: var(--texto);
+}
+
+.inputMotivo {
+  width: 160px;
+}
+
+@media (max-width: 900px) {
+  .painel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .inputMotivo {
+    width: 100%;
+  }
+}

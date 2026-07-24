@@ -18,3 +18,40 @@ export interface Automacao {
 export interface ErroApi {
   erro: string;
 }
+
+export interface Atendente {
+  nome: string;
+  codigoAtendente: number;
+  ativo: boolean;
+  motivoInatividade: string | null;
+  /** Data no formato YYYY-MM-DD. */
+  retornaEm: string | null;
+  emailTeams?: string | null;
+}
+
+export interface Rotation {
+  proximo: string;
+}
+
+export interface EntradaLog {
+  linhaOriginal: string;
+  horario: string | null;
+  chamado: number | null;
+  clienteETitulo: string | null;
+  atendente: string | null;
+}
+
+export interface AtendenteSemReceber {
+  atendente: string;
+  /** Dias uteis desde o ultimo chamado. null = nao aparece no historico. */
+  diasUteis: number | null;
+}
+
+export interface AlertaRodizio {
+  limite: number;
+  atendentes: AtendenteSemReceber[];
+}
+
+export interface VerificarAgoraResultado {
+  processados: number;
+}

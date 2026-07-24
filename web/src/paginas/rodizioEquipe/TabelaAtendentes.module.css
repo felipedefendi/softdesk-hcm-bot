@@ -1,0 +1,94 @@
+.cartao {
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
+
+.titulo {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  margin: 0 0 var(--space-2);
+}
+
+.erro {
+  color: var(--erro);
+  min-height: 1.2em;
+  font-size: var(--fs-sm);
+  margin: 0;
+}
+
+.colArrastar {
+  width: 28px;
+}
+
+.handleArrastar {
+  width: 28px;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.alca {
+  color: var(--texto-fraco);
+  cursor: grab;
+  user-select: none;
+}
+
+.botaoMover {
+  display: none;
+}
+
+.celulaNome {
+  font-weight: 500;
+}
+
+tr.arrastando {
+  opacity: 0.4;
+}
+
+.badgeAtivo,
+.badgeInativo {
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+.badgeAtivo {
+  background: var(--ok-fraco);
+  color: var(--ok);
+}
+
+.badgeInativo {
+  background: var(--erro-fraco);
+  color: var(--erro);
+}
+
+@media (max-width: 900px) {
+  .alca {
+    display: none;
+  }
+
+  .handleArrastar {
+    justify-content: flex-end;
+    gap: 0.4rem;
+  }
+
+  .botaoMover {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    min-height: 40px;
+    padding: 0;
+    font-size: 0.8rem;
+    background: var(--surface-3);
+    color: var(--texto);
+    border: 1px solid var(--hairline);
+  }
+
+  .botaoMover:hover:not(:disabled) {
+    background: var(--surface-3);
+  }
+}

@@ -1,10 +1,14 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useApi } from "../api/useApi";
 import type { Automacao } from "../api/tipos";
 
 const INTERVALO_MS = 30_000;
 
-/** Chip do header e visivel em toda pagina - polling proprio, independente da rota atual. */
+/**
+ * Chip do header e o toggle da Visao geral usam o mesmo hook, cada um com o
+ * proprio polling (sem estado global) - ver "sem biblioteca de estado global"
+ * no prompt do redesign.
+ */
 export function useAutomacao() {
   const api = useApi();
   const [ativa, setAtiva] = useState<boolean | null>(null);
@@ -29,5 +33,15 @@ export function useAutomacao() {
     };
   }, [api]);
 
-  return { ativa };
+  const pausar = useCallback(async () => {
+    const dados = await api<Automacao>("/automacao/pausar", { method: "POST" });
+    setAtiva(dados.ativa);
+  }, [api]);
+
+  const retomar = useCallback(async () => {
+    const dados = await api<Automacao>("/automacao/retomar", { method: "POST" });
+    setAtiva(dados.ativa);
+  }, [api]);
+
+  return { ativa, pausar, retomar };
 }

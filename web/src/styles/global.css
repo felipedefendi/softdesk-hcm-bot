@@ -33,14 +33,150 @@ textarea {
   font-family: inherit;
 }
 
+/* Base global de botao (pill, acento unico) - paginas/componentes so
+   sobrescrevem quando precisam de algo diferente (ex.: botao so-icone). */
+button {
+  background: var(--acento);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 0.55rem 1.3rem;
+  cursor: pointer;
+  font-weight: 400;
+  font-size: var(--fs-base);
+  transition: transform 0.1s ease, background 0.15s ease;
+}
+
+button:hover:not(:disabled) {
+  background: var(--acento-forte);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.botao-secundario {
+  background: transparent;
+  color: var(--acento);
+  border: 1px solid var(--acento);
+}
+
+button.botao-secundario:hover:not(:disabled) {
+  background: rgba(41, 151, 255, 0.1);
+}
+
 table,
 .tabular {
   font-variant-numeric: tabular-nums;
 }
 
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--space-2);
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.6rem 0.5rem;
+  border-bottom: 1px solid var(--divider-soft);
+  font-size: var(--fs-sm);
+}
+
+th {
+  color: var(--texto-fraco);
+  font-weight: 600;
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+tbody tr:hover {
+  background: var(--divider-soft);
+}
+
 :focus-visible {
   outline: 2px solid var(--acento);
   outline-offset: 2px;
+}
+
+/* Tabelas viram cartoes empilhados abaixo de 900px (regra do redesign,
+   padrao que o painel antigo ja estabeleceu): thead some, cada <tr> vira um
+   bloco e cada <td> exibe o proprio rotulo via data-rotulo. Vale pra
+   qualquer tabela do app, sem precisar repetir isso por pagina. */
+@media (max-width: 900px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  table,
+  tbody,
+  tr,
+  td {
+    display: block;
+    width: 100%;
+  }
+
+  thead {
+    display: none;
+  }
+
+  tbody tr {
+    background: var(--surface-2);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-md);
+    padding: 0.85rem 0.9rem;
+    margin-bottom: 0.7rem;
+  }
+
+  tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  tbody tr:hover {
+    background: var(--surface-2);
+  }
+
+  td {
+    display: flex;
+    gap: 0.8rem;
+    align-items: baseline;
+    border-bottom: none;
+    padding: 0.28rem 0;
+    overflow-wrap: anywhere;
+  }
+
+  td::before {
+    content: attr(data-rotulo);
+    flex: 0 0 6.4rem;
+    color: var(--texto-fraco);
+    font-size: var(--fs-2xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  td:not([data-rotulo])::before {
+    content: none;
+  }
+
+  /* Alvos de toque confortaveis (minimo ~44px) */
+  button {
+    min-height: 44px;
+    padding: 0.65rem 1.2rem;
+  }
+
+  input,
+  select {
+    min-height: 44px;
+    font-size: 1rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

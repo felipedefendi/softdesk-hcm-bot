@@ -1,0 +1,11 @@
+.titulo {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  margin: 0 0 var(--space-2);
+}
+
+.vazio {
+  color: var(--texto-fraco);
+  font-size: var(--fs-sm);
+  margin: 0;
+}

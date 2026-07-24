@@ -1,0 +1,60 @@
+.titulo {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  margin: 0 0 var(--space-4);
+}
+
+.stats {
+  display: flex;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-2);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.rotulo {
+  font-size: var(--fs-2xs);
+  color: var(--texto-fraco);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.valor {
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+
+.erro {
+  color: var(--erro);
+  min-height: 1.2em;
+  font-size: var(--fs-sm);
+}
+
+.divisor {
+  height: 1px;
+  background: var(--hairline);
+  margin: var(--space-5) 0;
+}
+
+.controle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.acao {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.resultado {
+  color: var(--texto-fraco);
+  font-size: var(--fs-sm);
+  margin: var(--space-2) 0 0;
+}

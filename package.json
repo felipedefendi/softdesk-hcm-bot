@@ -11,6 +11,7 @@
     "cofre:gerar-chave": "ts-node src/cofre/gerar-chave.ts",
     "dev:web": "npm run dev --prefix web",
     "build:web": "npm run build --prefix web",
+    "test:web": "npm run test --prefix web",
     "build": "tsc",
     "test": "tsc && node --test dist/relatorios/periodos.test.js dist/relatorios/metricas.test.js dist/relatorios/erros.test.js dist/alertaRodizio.test.js dist/cofre/cripto.test.js",
     "start": "node dist/index.js"

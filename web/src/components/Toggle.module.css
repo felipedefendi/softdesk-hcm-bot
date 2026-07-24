@@ -1,0 +1,54 @@
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.trilho {
+  position: absolute;
+  inset: 0;
+  background: var(--surface-3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.trilho::before {
+  content: "";
+  position: absolute;
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  top: 3px;
+  background: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.15s ease;
+}
+
+.toggle input:checked + .trilho {
+  background: var(--acento);
+  border-color: var(--acento);
+}
+
+.toggle input:checked + .trilho::before {
+  transform: translateX(18px);
+}
+
+.toggle input:disabled + .trilho {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.toggle input:focus-visible + .trilho {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+}
