@@ -1,0 +1,113 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--hairline);
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.esquerda {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.titulo {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.botaoMenu {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--texto);
+  padding: var(--space-1);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.direita {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+.chip {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  padding: 0.25rem 0.7rem;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  color: var(--texto-fraco);
+  white-space: nowrap;
+}
+
+.chipAtivo {
+  background: var(--ok-fraco);
+  color: var(--ok);
+}
+
+.chipInativo {
+  background: var(--erro-fraco);
+  color: var(--erro);
+}
+
+.botaoIcone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  color: var(--texto);
+  cursor: pointer;
+}
+
+.botaoIcone:hover {
+  background: var(--surface-2);
+}
+
+.botaoSecundario {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: transparent;
+  color: var(--acento);
+  border: 1px solid var(--acento);
+  border-radius: var(--radius-pill);
+  padding: 0.5rem 1rem;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.botaoSecundario:hover {
+  background: rgba(41, 151, 255, 0.1);
+}
+
+@media (max-width: 900px) {
+  .botaoMenu {
+    display: flex;
+  }
+
+  .header {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .titulo {
+    font-size: var(--fs-md);
+  }
+}

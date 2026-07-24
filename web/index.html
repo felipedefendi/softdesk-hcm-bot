@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rodízio HCM</title>
+    <script>
+      // Define o tema antes do primeiro paint - senao a pagina pisca no tema
+      // errado entre o HTML cru e o React aplicar o data-theme certo.
+      (function () {
+        var salvo = localStorage.getItem("tema");
+        var tema =
+          salvo === "dark" || salvo === "light"
+            ? salvo
+            : window.matchMedia("(prefers-color-scheme: light)").matches
+              ? "light"
+              : "dark";
+        document.documentElement.setAttribute("data-theme", tema);
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

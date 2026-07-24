@@ -1,0 +1,62 @@
+/* Tokens de tema (dark/light) e escalas de tipografia/espacamento/raio,
+   evoluidos do public/style.css do painel antigo. Aplicados via [data-theme]
+   no <html> - o script inline em index.html define o atributo antes do
+   primeiro paint, pra nunca piscar de tema errado. */
+
+:root {
+  /* Acento unico, igual nos dois temas */
+  --acento: #2997ff;
+  --acento-forte: #0071e3;
+  --erro-fraco: rgba(255, 105, 97, 0.15);
+  --ok-fraco: rgba(50, 215, 75, 0.15);
+
+  --radius-sm: 8px;
+  --radius-md: 11px;
+  --radius-lg: 18px;
+  --radius-pill: 9999px;
+
+  --fs-2xs: 0.72rem;
+  --fs-xs: 0.78rem;
+  --fs-sm: 0.85rem;
+  --fs-base: 0.95rem;
+  --fs-md: 1.05rem;
+  --fs-lg: 1.3rem;
+  --fs-xl: 1.6rem;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.75rem;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #000000;
+  --surface-1: #1c1c1e;
+  --surface-2: #232326;
+  --surface-3: #2a2a2c;
+  --hairline: rgba(255, 255, 255, 0.09);
+  --divider-soft: rgba(255, 255, 255, 0.05);
+  --texto: #f5f5f7;
+  --texto-fraco: #98989d;
+  --texto-tenue: #6e6e73;
+  --erro: #ff6961;
+  --ok: #32d74b;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f5f5f7;
+  --surface-1: #ffffff;
+  --surface-2: #f2f2f5;
+  --surface-3: #e5e5ea;
+  --hairline: rgba(0, 0, 0, 0.08);
+  --divider-soft: rgba(0, 0, 0, 0.04);
+  --texto: #1d1d1f;
+  --texto-fraco: #6e6e73;
+  --texto-tenue: #86868b;
+  --erro: #ff3b30;
+  --ok: #34c759;
+}

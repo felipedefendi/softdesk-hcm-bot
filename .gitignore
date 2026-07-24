@@ -10,6 +10,7 @@ debug/
 # planos e anotacoes internas (achados de seguranca, infra real com IP/dominio,
 # planejamento de features) - so uso local
 PLANO-*.md
+PROMPT-*.md
 
 # guia de estudo detalhado - so uso local, o README publico e outro
 ESTUDO.md

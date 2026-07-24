@@ -1,0 +1,141 @@
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-1);
+  border-right: 1px solid var(--hairline);
+  padding: var(--space-4) var(--space-3);
+  transition: width 0.18s ease;
+}
+
+.colapsada {
+  width: 68px;
+}
+
+.colapsada .rotulo,
+.colapsada .marca {
+  display: none;
+}
+
+.cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-2) var(--space-4);
+  min-height: 28px;
+}
+
+.marca {
+  font-weight: 600;
+  font-size: var(--fs-base);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.fecharDrawer {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--texto-fraco);
+  padding: var(--space-1);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--texto-fraco);
+  text-decoration: none;
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.item:hover {
+  background: var(--surface-2);
+  color: var(--texto);
+}
+
+.ativo {
+  background: var(--surface-2);
+  color: var(--texto);
+  font-weight: 600;
+}
+
+.rotulo {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.botaoColapsar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: transparent;
+  border: none;
+  color: var(--texto-fraco);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+  margin-top: auto;
+}
+
+.botaoColapsar:hover {
+  background: var(--surface-2);
+  color: var(--texto);
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 50;
+    width: 260px;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+  }
+
+  .sidebar.drawerAberta {
+    transform: translateX(0);
+  }
+
+  .colapsada {
+    width: 260px;
+  }
+
+  .colapsada .rotulo,
+  .colapsada .marca {
+    display: block;
+  }
+
+  .fecharDrawer {
+    display: flex;
+  }
+
+  .botaoColapsar {
+    display: none;
+  }
+
+  .fundo {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 40;
+  }
+}
