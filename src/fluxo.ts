@@ -7,6 +7,8 @@ import { registrarEncaminhamento, registrarDryRun, foiRegistradoNoDryRun } from 
 import { notificarTeams, type NotificacaoEncaminhamento } from "./teams";
 import { lerConfiguracoes } from "./configuracoes";
 import { salvarStatus } from "./status";
+import { registrarExecucao } from "./execucoes";
+import { resumirErro } from "./relatorios/erros";
 import { config } from "./config";
 
 /**
@@ -18,6 +20,7 @@ import { config } from "./config";
  * dashboard.
  */
 export async function verificarChamados(): Promise<{ processados: number }> {
+  const inicio = new Date();
   const cfg = lerConfiguracoes();
 
   if (!cfg.automacaoAtiva) {
@@ -27,6 +30,7 @@ export async function verificarChamados(): Promise<{ processados: number }> {
       ultimoErro: null,
       chamadosProcessadosUltimaExecucao: 0,
     });
+    registrarExecucao({ inicio: inicio.toISOString(), duracaoMs: Date.now() - inicio.getTime(), processados: 0, erro: null });
     return { processados: 0 };
   }
 
@@ -88,12 +92,17 @@ export async function verificarChamados(): Promise<{ processados: number }> {
       ultimoErro: null,
       chamadosProcessadosUltimaExecucao: processados,
     });
+    registrarExecucao({ inicio: inicio.toISOString(), duracaoMs: Date.now() - inicio.getTime(), processados, erro: null });
     return { processados };
   } catch (err) {
+    // resumirErro corta o call log do Playwright (que carrega o cookie de sessao) antes
+    // de qualquer coisa persistir esse erro - status.json e servido pelo /api/status.
+    const mensagem = resumirErro(err);
     salvarStatus({
       ultimaExecucao: new Date().toISOString(),
-      ultimoErro: err instanceof Error ? err.message : String(err),
+      ultimoErro: mensagem,
     });
+    registrarExecucao({ inicio: inicio.toISOString(), duracaoMs: Date.now() - inicio.getTime(), processados, erro: mensagem });
     throw err;
   } finally {
     // Envia todas as notificacoes da passada num unico disparo, na ordem em

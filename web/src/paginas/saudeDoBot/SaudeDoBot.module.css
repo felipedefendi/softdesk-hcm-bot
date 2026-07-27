@@ -1,0 +1,89 @@
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: rgba(255, 179, 64, 0.06);
+  border: 1px solid rgba(255, 179, 64, 0.5);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  color: var(--texto);
+  font-size: var(--fs-sm);
+}
+
+.banner svg {
+  flex-shrink: 0;
+  color: #ffb340;
+}
+
+.titulo {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  margin: 0 0 var(--space-4);
+}
+
+.vazio,
+.erroCarregamento {
+  color: var(--texto-fraco);
+  font-size: var(--fs-sm);
+  margin: 0;
+}
+
+.erroCarregamento {
+  color: var(--erro);
+}
+
+.semErros {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--texto-fraco);
+  padding: var(--space-5) 0;
+  text-align: center;
+}
+
+.semErros p {
+  margin: 0;
+  font-size: var(--fs-sm);
+}
+
+.listaErros {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.itemErro {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--erro-fraco);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+}
+
+.erroQuando {
+  color: var(--texto-fraco);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.erroTexto {
+  color: var(--texto);
+}
+
+@media (max-width: 900px) {
+  .itemErro {
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+}

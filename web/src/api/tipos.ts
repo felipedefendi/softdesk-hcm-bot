@@ -87,6 +87,14 @@ export interface CredencialRevelada {
   observacoes: string | null;
 }
 
+export interface Execucao {
+  /** ISO. */
+  inicio: string;
+  duracaoMs: number;
+  processados: number;
+  erro: string | null;
+}
+
 export interface ItemFila {
   numero: number;
   titulo: string;
