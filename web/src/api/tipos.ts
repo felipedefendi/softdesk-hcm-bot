@@ -62,3 +62,38 @@ export interface Configuracoes {
   automacaoAtiva: boolean;
   diasSemReceberParaAlerta: number;
 }
+
+export interface Sistema {
+  id: string;
+  nome: string;
+  ativo: boolean;
+}
+
+export interface CredencialMetadados {
+  id: string;
+  cliente: string;
+  sistemaId: string;
+  link: string | null;
+  /** Data no formato YYYY-MM-DD, ou null = sem validade cadastrada. */
+  validade: string | null;
+  arquivado: boolean;
+  criadoEm: string;
+  atualizadoEm: string;
+}
+
+export interface CredencialRevelada {
+  login: string;
+  senha: string;
+  observacoes: string | null;
+}
+
+export interface CredencialEntrada {
+  cliente: string;
+  sistemaId: string;
+  link?: string | null;
+  validade?: string | null;
+  /** Na edicao, em branco mantem o valor atual (ver editarCredencial no backend). */
+  login: string;
+  senha: string;
+  observacoes?: string | null;
+}

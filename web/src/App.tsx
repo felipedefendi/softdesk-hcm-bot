@@ -8,7 +8,7 @@ import { FilaAoVivo } from "./paginas/FilaAoVivo";
 import { RodizioEquipe } from "./paginas/rodizioEquipe/RodizioEquipe";
 import { Historico } from "./paginas/historico/Historico";
 import { SaudeDoBot } from "./paginas/SaudeDoBot";
-import { Cofre } from "./paginas/Cofre";
+import { Cofre } from "./paginas/cofre/Cofre";
 import { Configuracoes } from "./paginas/configuracoes/Configuracoes";
 
 function Conteudo() {
