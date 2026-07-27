@@ -30,9 +30,15 @@
 }
 
 .alca {
+  display: inline-flex;
+  align-items: center;
   color: var(--texto-fraco);
   cursor: grab;
   user-select: none;
+}
+
+.alca:active {
+  cursor: grabbing;
 }
 
 .botaoMover {
@@ -45,6 +51,17 @@
 
 tr.arrastando {
   opacity: 0.4;
+}
+
+/* Marca onde a linha vai encaixar durante o arraste. box-shadow inset em vez de
+   border porque a tabela usa border-collapse - uma borda extra empurraria a
+   linha 2px e a tabela inteira tremeria a cada passagem do cursor. */
+tr.alvoAcima td {
+  box-shadow: inset 0 2px 0 var(--acento);
+}
+
+tr.alvoAbaixo td {
+  box-shadow: inset 0 -2px 0 var(--acento);
 }
 
 .badgeAtivo,

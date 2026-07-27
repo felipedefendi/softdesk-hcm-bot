@@ -70,6 +70,9 @@
   justify-content: center;
   width: 36px;
   height: 36px;
+  /* zera o padding da base global de botao - com box-sizing: border-box ele
+     nao caberia nos 36px e espremia o icone ate sumir */
+  padding: 0;
   background: transparent;
   border: 1px solid var(--hairline);
   border-radius: var(--radius-md);

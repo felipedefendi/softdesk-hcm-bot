@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { GripVertical } from "lucide-react";
 import type { Atendente } from "../../api/tipos";
 import { Esqueleto } from "../../components/Esqueleto";
 import { ErroCarregamento } from "../../components/ErroCarregamento";
@@ -23,6 +24,7 @@ interface Props {
 export function TabelaAtendentes({ atendentes, erro, onTentarNovamente, onReordenar, onDesativar, onReativar, onMudou }: Props) {
   const [lista, setLista] = useState<Atendente[]>([]);
   const [arrastandoIndice, setArrastandoIndice] = useState<number | null>(null);
+  const [sobreIndice, setSobreIndice] = useState<number | null>(null);
   const [erroOrdem, setErroOrdem] = useState<string | null>(null);
 
   useEffect(() => {
@@ -50,7 +52,32 @@ export function TabelaAtendentes({ atendentes, erro, onTentarNovamente, onReorde
     salvarOrdem(nova);
   }
 
+  /**
+   * O fantasma de arraste padrao do HTML5 e um retrato do elemento arrastado -
+   * como so a alca e draggable, sairia uma caixinha torta com o icone dentro.
+   * Trocando a imagem pela <tr> inteira, o que segue o cursor e a propria linha.
+   */
+  function aoIniciarArraste(ev: React.DragEvent<HTMLSpanElement>, indice: number) {
+    setArrastandoIndice(indice);
+    ev.dataTransfer.effectAllowed = "move";
+    const linha = ev.currentTarget.closest("tr");
+    if (linha) ev.dataTransfer.setDragImage(linha, 24, linha.clientHeight / 2);
+  }
+
+  function encerrarArraste() {
+    setArrastandoIndice(null);
+    setSobreIndice(null);
+  }
+
+  function classeDaLinha(i: number): string | undefined {
+    if (arrastandoIndice === i) return styles.arrastando;
+    if (arrastandoIndice === null || sobreIndice !== i) return undefined;
+    // A marca vai na borda por onde a linha entra: descendo, encaixa embaixo.
+    return arrastandoIndice < i ? styles.alvoAbaixo : styles.alvoAcima;
+  }
+
   function aoSoltar(indiceDestino: number) {
+    setSobreIndice(null);
     if (arrastandoIndice === null || arrastandoIndice === indiceDestino) {
       setArrastandoIndice(null);
       return;
@@ -96,19 +123,22 @@ export function TabelaAtendentes({ atendentes, erro, onTentarNovamente, onReorde
             {lista.map((a, i) => (
               <tr
                 key={a.nome}
-                className={arrastandoIndice === i ? styles.arrastando : undefined}
-                onDragOver={(ev) => ev.preventDefault()}
+                className={classeDaLinha(i)}
+                onDragOver={(ev) => {
+                  ev.preventDefault();
+                  setSobreIndice(i);
+                }}
                 onDrop={() => aoSoltar(i)}
               >
                 <td className={styles.handleArrastar}>
                   <span
                     className={styles.alca}
                     draggable
-                    onDragStart={() => setArrastandoIndice(i)}
-                    onDragEnd={() => setArrastandoIndice(null)}
+                    onDragStart={(ev) => aoIniciarArraste(ev, i)}
+                    onDragEnd={encerrarArraste}
                     title="Arraste para reordenar o rodízio"
                   >
-                    ⠿
+                    <GripVertical size={16} strokeWidth={1.5} />
                   </span>
                   <button
                     type="button"
