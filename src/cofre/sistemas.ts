@@ -25,12 +25,19 @@ const SEED: Sistema[] = [
   { id: crypto.randomUUID(), nome: "WildFly", ativo: true },
 ];
 
-/** Le o cadastro; se o arquivo ainda nao existe, comeca do seed inicial (nao persiste sozinho). */
+/**
+ * Le o cadastro; se o arquivo ainda nao existe, grava o seed inicial antes
+ * de devolve-lo. Sem isso, cada reinicio do servidor sem o arquivo no disco
+ * gerava UUIDs novos pros mesmos sistemas (crypto.randomUUID() no SEED e
+ * calculado uma vez por processo), orfanando o sistemaId de credenciais ja
+ * cadastradas.
+ */
 function ler(): Sistema[] {
   try {
     const raw = fs.readFileSync(ARQUIVO, "utf-8");
     return JSON.parse(raw) as Sistema[];
   } catch {
+    escreverAtomico(SEED);
     return SEED;
   }
 }
