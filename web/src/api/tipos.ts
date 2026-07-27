@@ -87,6 +87,24 @@ export interface CredencialRevelada {
   observacoes: string | null;
 }
 
+export interface ItemFila {
+  numero: number;
+  titulo: string;
+  cliente: string;
+  link: string;
+  /** ISO. */
+  abertoEm: string;
+  minutosDecorridosSla: number;
+}
+
+export interface Fila {
+  /** ISO - momento em que a lista foi de fato buscada no SoftDesk (o backend cacheia por 60s). */
+  consultadoEm: string;
+  limiteMinutos: number;
+  proximoAtendente: string | null;
+  chamados: ItemFila[];
+}
+
 export interface CredencialEntrada {
   cliente: string;
   sistemaId: string;

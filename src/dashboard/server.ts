@@ -11,6 +11,7 @@ import { lerConfiguracoes, salvarConfiguracoes } from "../configuracoes";
 import { lerStatus } from "../status";
 import { lerHistorico } from "./logHistorico";
 import { verificarChamados } from "../fluxo";
+import { obterFila } from "../fila";
 import { autenticar, exigirLogin, invalidarToken, NOME_COOKIE } from "./auth";
 import { cofreRouter } from "./cofreRotas";
 
@@ -107,6 +108,14 @@ app.get("/api/log", (req, res) => {
 
 app.get("/api/status", (req, res) => {
   res.json(lerStatus());
+});
+
+app.get("/api/fila", async (req, res) => {
+  try {
+    res.json(await obterFila());
+  } catch (err) {
+    res.status(500).json({ erro: err instanceof Error ? err.message : String(err) });
+  }
 });
 
 /**
