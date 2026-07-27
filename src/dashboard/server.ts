@@ -174,6 +174,18 @@ app.post("/api/verificar-agora", async (req, res) => {
   }
 });
 
+/**
+ * Fallback de SPA: o frontend (web/) usa roteamento client-side (React
+ * Router), entao uma rota como /historico so existe depois do JS carregar -
+ * nao e um arquivo real. Sem isso, recarregar a pagina numa rota que nao a
+ * raiz (ou abrir um link direto pra ela) cai em 404, porque express.static
+ * so serve arquivo que existe de verdade. Fica por ultimo de proposito: so
+ * e alcancado se nada antes (estatico ou /api) ja respondeu.
+ */
+app.get(/^(?!\/api\/).*/, (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "..", "public", "index.html"));
+});
+
 app.listen(config.dashboardPort, () => {
   console.log(`Dashboard rodando em http://localhost:${config.dashboardPort}`);
 });

@@ -6,10 +6,10 @@ import { CarregandoSessao } from "./paginas/CarregandoSessao";
 import { VisaoGeral } from "./paginas/visaoGeral/VisaoGeral";
 import { FilaAoVivo } from "./paginas/FilaAoVivo";
 import { RodizioEquipe } from "./paginas/rodizioEquipe/RodizioEquipe";
-import { Historico } from "./paginas/Historico";
+import { Historico } from "./paginas/historico/Historico";
 import { SaudeDoBot } from "./paginas/SaudeDoBot";
 import { Cofre } from "./paginas/Cofre";
-import { Configuracoes } from "./paginas/Configuracoes";
+import { Configuracoes } from "./paginas/configuracoes/Configuracoes";
 
 function Conteudo() {
   const { autenticado } = useAuth();

@@ -1,5 +1,8 @@
 node_modules/
 dist/
+# build do frontend (web/) - o Express serve daqui, mas a fonte de verdade
+# agora e web/src/. Passa a ser artefato gerado, nao mais versionado a mao.
+public/
 .env
 state/*.json
 state/encaminhamentos.log

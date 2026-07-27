@@ -55,3 +55,10 @@ export interface AlertaRodizio {
 export interface VerificarAgoraResultado {
   processados: number;
 }
+
+export interface Configuracoes {
+  pollIntervalMinutes: number;
+  encaminhamentoLimiteMinutos: number;
+  automacaoAtiva: boolean;
+  diasSemReceberParaAlerta: number;
+}
