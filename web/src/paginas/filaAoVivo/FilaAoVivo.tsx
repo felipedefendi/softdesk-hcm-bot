@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Inbox } from "lucide-react";
 import { Cartao } from "../../components/Cartao";
+import { Esqueleto } from "../../components/Esqueleto";
+import { ErroCarregamento } from "../../components/ErroCarregamento";
 import { useFila } from "../../hooks/useFila";
 import { situacaoSla, formatarDuracaoMinutos } from "../../lib/calcularSla";
 import styles from "./FilaAoVivo.module.css";
@@ -10,7 +12,7 @@ function segundosDesde(iso: string, agora: Date): number {
 }
 
 export function FilaAoVivo() {
-  const { fila, erro } = useFila();
+  const { fila, erro, recarregar } = useFila();
   const [agora, setAgora] = useState(() => new Date());
 
   useEffect(() => {
@@ -32,8 +34,8 @@ export function FilaAoVivo() {
       </Cartao>
 
       <Cartao>
-        {erro && <p className={styles.erro}>{erro}</p>}
-        {!fila && !erro && <p className={styles.vazio}>Carregando...</p>}
+        {!fila && erro && <ErroCarregamento mensagem={erro} onTentarNovamente={recarregar} />}
+        {!fila && !erro && <Esqueleto linhas={4} />}
 
         {fila && fila.chamados.length === 0 && (
           <div className={styles.filaLimpa}>

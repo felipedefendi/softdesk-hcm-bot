@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Cartao } from "../../components/Cartao";
+import { Esqueleto } from "../../components/Esqueleto";
+import { ErroCarregamento } from "../../components/ErroCarregamento";
 import { useLog } from "../../hooks/useLog";
 import { filtrarHistorico } from "../../lib/filtrarHistorico";
 import styles from "./Historico.module.css";
@@ -7,7 +9,7 @@ import styles from "./Historico.module.css";
 const INCREMENTO = 50;
 
 export function Historico() {
-  const entradas = useLog();
+  const { entradas, erro, recarregar } = useLog();
   const [busca, setBusca] = useState("");
   const [desde, setDesde] = useState("");
   const [ate, setAte] = useState("");
@@ -50,7 +52,8 @@ export function Historico() {
         </label>
       </div>
 
-      {entradas === null && <p className={styles.vazio}>Carregando...</p>}
+      {entradas === null && erro && <ErroCarregamento mensagem={erro} onTentarNovamente={recarregar} />}
+      {entradas === null && !erro && <Esqueleto linhas={5} />}
       {entradas !== null && filtradas.length === 0 && <p className={styles.vazio}>Nenhum encaminhamento encontrado.</p>}
 
       {visiveis.length > 0 && (

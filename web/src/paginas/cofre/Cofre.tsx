@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { Search, Copy, Pencil, Archive, Lock, LockOpen, Plus } from "lucide-react";
 import { Cartao } from "../../components/Cartao";
 import { DrawerLateral } from "../../components/DrawerLateral";
+import { Esqueleto } from "../../components/Esqueleto";
+import { ErroCarregamento } from "../../components/ErroCarregamento";
 import { useCofreCredenciais } from "../../hooks/useCofreCredenciais";
 import { useCofreSistemas } from "../../hooks/useCofreSistemas";
 import { useCofreDestrave } from "../../hooks/useCofreDestrave";
@@ -26,7 +28,7 @@ function formatarDataCurta(data: string): string {
 }
 
 export function Cofre() {
-  const { credenciais, erro, criar, editar, arquivar } = useCofreCredenciais();
+  const { credenciais, erro, recarregar, criar, editar, arquivar } = useCofreCredenciais();
   const sistemas = useCofreSistemas();
   const { destravado, segundosRestantes, destravar, trancar } = useCofreDestrave();
   const { revelar } = useCofreRevelar();
@@ -168,8 +170,8 @@ export function Cofre() {
           />
         </div>
 
-        {erro && <p className={styles.erro}>{erro}</p>}
-        {credenciais === null && !erro && <p className={styles.vazio}>Carregando...</p>}
+        {credenciais === null && erro && <ErroCarregamento mensagem={erro} onTentarNovamente={recarregar} />}
+        {credenciais === null && !erro && <Esqueleto linhas={3} />}
         {credenciais !== null && grupos.length === 0 && (
           <p className={styles.vazio}>
             {busca ? "Nenhuma credencial encontrada para a busca." : "Nenhuma credencial cadastrada ainda."}
@@ -214,6 +216,7 @@ export function Cofre() {
                           type="button"
                           className={styles.botaoIcone}
                           title={destravado ? "Copiar login" : "Destrave o cofre para copiar"}
+                          aria-label={`Copiar login de ${c.cliente}`}
                           disabled={!destravado || copiando === `${c.id}-login`}
                           onClick={() => copiar(c.id, "login")}
                         >
@@ -223,6 +226,7 @@ export function Cofre() {
                           type="button"
                           className={styles.botaoIcone}
                           title={destravado ? "Copiar senha" : "Destrave o cofre para copiar"}
+                          aria-label={`Copiar senha de ${c.cliente}`}
                           disabled={!destravado || copiando === `${c.id}-senha`}
                           onClick={() => copiar(c.id, "senha")}
                         >
@@ -232,11 +236,18 @@ export function Cofre() {
                           type="button"
                           className={styles.botaoIcone}
                           title="Editar"
+                          aria-label={`Editar credencial de ${c.cliente}`}
                           onClick={() => setDrawer({ aberto: true, editando: c })}
                         >
                           <Pencil size={14} strokeWidth={1.5} />
                         </button>
-                        <button type="button" className={styles.botaoIcone} title="Arquivar" onClick={() => aoArquivar(c)}>
+                        <button
+                          type="button"
+                          className={styles.botaoIcone}
+                          title="Arquivar"
+                          aria-label={`Arquivar credencial de ${c.cliente}`}
+                          onClick={() => aoArquivar(c)}
+                        >
                           <Archive size={14} strokeWidth={1.5} />
                         </button>
                       </td>

@@ -27,15 +27,10 @@
   margin: 0 0 var(--space-4);
 }
 
-.vazio,
-.erroCarregamento {
+.vazio {
   color: var(--texto-fraco);
   font-size: var(--fs-sm);
   margin: 0;
-}
-
-.erroCarregamento {
-  color: var(--erro);
 }
 
 .semErros {

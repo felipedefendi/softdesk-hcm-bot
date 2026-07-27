@@ -1,0 +1,12 @@
+.grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.linha {
+  display: block;
+  height: 0.9rem;
+  background: var(--surface-3);
+  border-radius: var(--radius-sm);
+}

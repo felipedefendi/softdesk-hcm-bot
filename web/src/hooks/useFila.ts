@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useApi } from "../api/useApi";
 import type { Fila } from "../api/tipos";
 
@@ -10,28 +10,21 @@ export function useFila() {
   const [fila, setFila] = useState<Fila | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelado = false;
-
-    async function carregar() {
-      try {
-        const dados = await api<Fila>("/fila");
-        if (!cancelado) {
-          setFila(dados);
-          setErro(null);
-        }
-      } catch (err) {
-        if (!cancelado) setErro(err instanceof Error ? err.message : String(err));
-      }
+  const carregar = useCallback(async () => {
+    try {
+      const dados = await api<Fila>("/fila");
+      setFila(dados);
+      setErro(null);
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : String(err));
     }
-
-    carregar();
-    const id = setInterval(carregar, INTERVALO_MS);
-    return () => {
-      cancelado = true;
-      clearInterval(id);
-    };
   }, [api]);
 
-  return { fila, erro };
+  useEffect(() => {
+    carregar();
+    const id = setInterval(carregar, INTERVALO_MS);
+    return () => clearInterval(id);
+  }, [carregar]);
+
+  return { fila, erro, recarregar: carregar };
 }

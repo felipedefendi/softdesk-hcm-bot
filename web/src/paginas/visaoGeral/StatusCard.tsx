@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Cartao } from "../../components/Cartao";
 import { Toggle } from "../../components/Toggle";
+import { Esqueleto } from "../../components/Esqueleto";
+import { ErroCarregamento } from "../../components/ErroCarregamento";
 import { useStatus } from "../../hooks/useStatus";
 import { useAutomacao } from "../../hooks/useAutomacao";
 import { useApi } from "../../api/useApi";
@@ -9,7 +11,7 @@ import type { VerificarAgoraResultado } from "../../api/tipos";
 import styles from "./StatusCard.module.css";
 
 export function StatusCard() {
-  const status = useStatus();
+  const { status, erro: erroStatus, recarregar } = useStatus();
   const { ativa, pausar, retomar } = useAutomacao();
   const api = useApi();
   const [verificando, setVerificando] = useState(false);
@@ -41,22 +43,29 @@ export function StatusCard() {
     <Cartao>
       <h2 className={styles.titulo}>Status da automação</h2>
 
-      <div className={styles.stats}>
-        <div className={styles.stat}>
-          <span className={styles.rotulo}>Última execução</span>
-          <span className={styles.valor}>{status ? formatarData(status.ultimaExecucao) : "-"}</span>
-        </div>
-        <div className={styles.stat}>
-          <span className={styles.rotulo}>Próxima execução</span>
-          <span className={styles.valor}>{status ? formatarData(status.proximaExecucaoPrevista) : "-"}</span>
-        </div>
-        <div className={styles.stat}>
-          <span className={styles.rotulo}>Processados</span>
-          <span className={styles.valor}>{status?.chamadosProcessadosUltimaExecucao ?? "-"}</span>
-        </div>
-      </div>
+      {status === null && erroStatus && <ErroCarregamento mensagem={erroStatus} onTentarNovamente={recarregar} />}
+      {status === null && !erroStatus && <Esqueleto linhas={3} />}
 
-      <p className={styles.erro}>{status?.ultimoErro ? `Último erro: ${status.ultimoErro}` : ""}</p>
+      {status !== null && (
+        <>
+          <div className={styles.stats}>
+            <div className={styles.stat}>
+              <span className={styles.rotulo}>Última execução</span>
+              <span className={styles.valor}>{formatarData(status.ultimaExecucao)}</span>
+            </div>
+            <div className={styles.stat}>
+              <span className={styles.rotulo}>Próxima execução</span>
+              <span className={styles.valor}>{formatarData(status.proximaExecucaoPrevista)}</span>
+            </div>
+            <div className={styles.stat}>
+              <span className={styles.rotulo}>Processados</span>
+              <span className={styles.valor}>{status.chamadosProcessadosUltimaExecucao}</span>
+            </div>
+          </div>
+
+          <p className={styles.erro}>{status.ultimoErro ? `Último erro: ${status.ultimoErro}` : ""}</p>
+        </>
+      )}
 
       <div className={styles.divisor} />
 

@@ -45,18 +45,6 @@
   letter-spacing: -0.02em;
 }
 
-.erro {
-  color: var(--erro);
-  font-size: var(--fs-sm);
-  margin: 0;
-}
-
-.vazio {
-  color: var(--texto-fraco);
-  font-size: var(--fs-sm);
-  margin: 0;
-}
-
 .filaLimpa {
   display: flex;
   flex-direction: column;

@@ -46,5 +46,5 @@ export function useCofreCredenciais() {
     [api]
   );
 
-  return { credenciais, erro, criar, editar, arquivar };
+  return { credenciais, erro, recarregar, criar, editar, arquivar };
 }

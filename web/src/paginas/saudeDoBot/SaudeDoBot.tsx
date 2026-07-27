@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import { AlertTriangle, Inbox } from "lucide-react";
 import { Cartao } from "../../components/Cartao";
+import { Esqueleto } from "../../components/Esqueleto";
+import { ErroCarregamento } from "../../components/ErroCarregamento";
 import { useStatus } from "../../hooks/useStatus";
 import { useConfiguracoes } from "../../hooks/useConfiguracoes";
 import { useExecucoes } from "../../hooks/useExecucoes";
@@ -20,9 +22,9 @@ function formatarDuracao(ms: number): string {
 }
 
 export function SaudeDoBot() {
-  const status = useStatus();
+  const { status } = useStatus();
   const { config } = useConfiguracoes();
-  const { execucoes, erro } = useExecucoes();
+  const { execucoes, erro, recarregar } = useExecucoes();
 
   const atrasada = status !== null && config !== null && estaAtrasada(status.ultimaExecucao, config.pollIntervalMinutes, new Date());
 
@@ -44,13 +46,14 @@ export function SaudeDoBot() {
 
       <Cartao>
         <h2 className={styles.titulo}>Chamados processados (14 dias)</h2>
+        {!execucoes && !erro && <Esqueleto linhas={1} altura="90px" />}
         {execucoes && <GraficoProcessados dados={grafico} />}
       </Cartao>
 
       <Cartao>
         <h2 className={styles.titulo}>Linha do tempo</h2>
-        {erro && <p className={styles.erroCarregamento}>{erro}</p>}
-        {!execucoes && !erro && <p className={styles.vazio}>Carregando...</p>}
+        {!execucoes && erro && <ErroCarregamento mensagem={erro} onTentarNovamente={recarregar} />}
+        {!execucoes && !erro && <Esqueleto linhas={4} />}
         {execucoes && execucoes.length === 0 && <p className={styles.vazio}>Nenhuma execução registrada ainda.</p>}
 
         {linhaDoTempo.length > 0 && (

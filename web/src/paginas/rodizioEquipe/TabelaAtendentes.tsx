@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import type { Atendente } from "../../api/tipos";
+import { Esqueleto } from "../../components/Esqueleto";
+import { ErroCarregamento } from "../../components/ErroCarregamento";
 import { AcaoAtendente } from "./AcaoAtendente";
 import styles from "./TabelaAtendentes.module.css";
 
 interface Props {
   atendentes: Atendente[] | null;
   erro: string | null;
+  onTentarNovamente: () => void;
   onReordenar: (ordem: string[]) => Promise<void>;
   onDesativar: (nome: string, motivo: string, retornaEm: string | null) => Promise<void>;
   onReativar: (nome: string) => Promise<void>;
@@ -17,7 +20,7 @@ interface Props {
  * touch (o DnD nativo nao responde a toque) - mesmo padrao do painel
  * antigo, os dois caminhos chamam a mesma mutacao.
  */
-export function TabelaAtendentes({ atendentes, erro, onReordenar, onDesativar, onReativar, onMudou }: Props) {
+export function TabelaAtendentes({ atendentes, erro, onTentarNovamente, onReordenar, onDesativar, onReativar, onMudou }: Props) {
   const [lista, setLista] = useState<Atendente[]>([]);
   const [arrastandoIndice, setArrastandoIndice] = useState<number | null>(null);
   const [erroOrdem, setErroOrdem] = useState<string | null>(null);
@@ -72,75 +75,80 @@ export function TabelaAtendentes({ atendentes, erro, onReordenar, onDesativar, o
   return (
     <section className={styles.cartao}>
       <h2 className={styles.titulo}>Atendentes</h2>
-      <p className={styles.erro}>{erro ?? erroOrdem ?? ""}</p>
 
-      <table>
-        <thead>
-          <tr>
-            <th className={styles.colArrastar}></th>
-            <th>Nome</th>
-            <th>Status</th>
-            <th>Motivo</th>
-            <th>Retorna em</th>
-            <th>Ação</th>
-          </tr>
-        </thead>
-        <tbody>
-          {lista.map((a, i) => (
-            <tr
-              key={a.nome}
-              className={arrastandoIndice === i ? styles.arrastando : undefined}
-              onDragOver={(ev) => ev.preventDefault()}
-              onDrop={() => aoSoltar(i)}
-            >
-              <td className={styles.handleArrastar}>
-                <span
-                  className={styles.alca}
-                  draggable
-                  onDragStart={() => setArrastandoIndice(i)}
-                  onDragEnd={() => setArrastandoIndice(null)}
-                  title="Arraste para reordenar o rodízio"
-                >
-                  ⠿
-                </span>
-                <button
-                  type="button"
-                  className={styles.botaoMover}
-                  onClick={() => mover(i, -1)}
-                  disabled={i === 0}
-                  aria-label="Subir no rodízio"
-                >
-                  ▲
-                </button>
-                <button
-                  type="button"
-                  className={styles.botaoMover}
-                  onClick={() => mover(i, 1)}
-                  disabled={i === lista.length - 1}
-                  aria-label="Descer no rodízio"
-                >
-                  ▼
-                </button>
-              </td>
-              <td data-rotulo="Nome" className={styles.celulaNome}>
-                {a.nome}
-              </td>
-              <td data-rotulo="Status">
-                <span className={a.ativo ? styles.badgeAtivo : styles.badgeInativo}>{a.ativo ? "Ativo" : "Inativo"}</span>
-              </td>
-              <td data-rotulo="Motivo">{a.motivoInatividade || "-"}</td>
-              <td data-rotulo="Retorna em">{a.retornaEm || "-"}</td>
-              <td data-rotulo="Ação">
-                <AcaoAtendente
-                  atendente={a}
-                  onDesativar={(motivo, retornaEm) => desativar(a.nome, motivo, retornaEm)}
-                  onReativar={() => reativar(a.nome)}
-                />
-              </td>
+      {atendentes === null && erro && <ErroCarregamento mensagem={erro} onTentarNovamente={onTentarNovamente} />}
+      {atendentes === null && !erro && <Esqueleto linhas={4} />}
+      {erroOrdem && <p className={styles.erro}>{erroOrdem}</p>}
+
+      {atendentes !== null && (
+        <table>
+          <thead>
+            <tr>
+              <th className={styles.colArrastar}></th>
+              <th>Nome</th>
+              <th>Status</th>
+              <th>Motivo</th>
+              <th>Retorna em</th>
+              <th>Ação</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {lista.map((a, i) => (
+              <tr
+                key={a.nome}
+                className={arrastandoIndice === i ? styles.arrastando : undefined}
+                onDragOver={(ev) => ev.preventDefault()}
+                onDrop={() => aoSoltar(i)}
+              >
+                <td className={styles.handleArrastar}>
+                  <span
+                    className={styles.alca}
+                    draggable
+                    onDragStart={() => setArrastandoIndice(i)}
+                    onDragEnd={() => setArrastandoIndice(null)}
+                    title="Arraste para reordenar o rodízio"
+                  >
+                    ⠿
+                  </span>
+                  <button
+                    type="button"
+                    className={styles.botaoMover}
+                    onClick={() => mover(i, -1)}
+                    disabled={i === 0}
+                    aria-label="Subir no rodízio"
+                  >
+                    ▲
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.botaoMover}
+                    onClick={() => mover(i, 1)}
+                    disabled={i === lista.length - 1}
+                    aria-label="Descer no rodízio"
+                  >
+                    ▼
+                  </button>
+                </td>
+                <td data-rotulo="Nome" className={styles.celulaNome}>
+                  {a.nome}
+                </td>
+                <td data-rotulo="Status">
+                  <span className={a.ativo ? styles.badgeAtivo : styles.badgeInativo}>{a.ativo ? "Ativo" : "Inativo"}</span>
+                </td>
+                <td data-rotulo="Motivo">{a.motivoInatividade || "-"}</td>
+                <td data-rotulo="Retorna em">{a.retornaEm || "-"}</td>
+                <td data-rotulo="Ação">
+                  <AcaoAtendente
+                    atendente={a}
+                    onDesativar={(motivo, retornaEm) => desativar(a.nome, motivo, retornaEm)}
+                    onReativar={() => reativar(a.nome)}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </section>
   );
 }

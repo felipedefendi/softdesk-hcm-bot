@@ -78,11 +78,6 @@
   font-size: var(--fs-sm);
 }
 
-.erro {
-  color: var(--erro);
-  font-size: var(--fs-sm);
-}
-
 .grupo {
   margin-bottom: var(--space-5);
 }

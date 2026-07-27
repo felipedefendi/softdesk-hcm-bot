@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useApi } from "../api/useApi";
 import type { EntradaLog } from "../api/tipos";
 
@@ -8,26 +8,23 @@ const INTERVALO_MS = 30_000;
 export function useLog() {
   const api = useApi();
   const [entradas, setEntradas] = useState<EntradaLog[] | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelado = false;
-
-    async function carregar() {
-      try {
-        const dados = await api<EntradaLog[]>("/log");
-        if (!cancelado) setEntradas(dados);
-      } catch {
-        // Silencioso - o proximo poll tenta de novo.
-      }
+  const carregar = useCallback(async () => {
+    try {
+      const dados = await api<EntradaLog[]>("/log");
+      setEntradas(dados);
+      setErro(null);
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : String(err));
     }
-
-    carregar();
-    const id = setInterval(carregar, INTERVALO_MS);
-    return () => {
-      cancelado = true;
-      clearInterval(id);
-    };
   }, [api]);
 
-  return entradas;
+  useEffect(() => {
+    carregar();
+    const id = setInterval(carregar, INTERVALO_MS);
+    return () => clearInterval(id);
+  }, [carregar]);
+
+  return { entradas, erro, recarregar: carregar };
 }

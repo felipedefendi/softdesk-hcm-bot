@@ -35,12 +35,6 @@
   width: 130px;
 }
 
-.erro {
-  color: var(--erro);
-  font-size: var(--fs-sm);
-  margin: 0 0 var(--space-3);
-}
-
 .mensagem {
   color: var(--texto-fraco);
   font-size: var(--fs-sm);

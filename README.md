@@ -13,7 +13,9 @@ Rodando em produção 24/7 numa VM na nuvem (Oracle Cloud), monitorando e agindo
 - Reativação automática de atendentes por data de retorno (fim de férias, etc.)
 - Notificação em tempo real no Microsoft Teams a cada atribuição, mencionando (@) o atendente e trazendo link do chamado, dados do solicitante e contato clicável
 - Encaminhamentos de uma mesma execução agrupados numa única mensagem, preservando a ordem em que foram atribuídos
-- Dashboard web protegido por senha para gestão da equipe e monitoramento, com ordem do rodízio ajustável (drag-and-drop no desktop, setas no celular)
+- Dashboard web protegido por senha, com sete telas (visão geral, fila ao vivo, rodízio & equipe, histórico, saúde do bot, cofre, configurações), ordem do rodízio ajustável (drag-and-drop no desktop, setas no celular) e tema claro/escuro
+- Tela "Fila ao vivo" com contagem regressiva de SLA por chamado e "Saúde do bot" com linha do tempo das execuções e alerta de atraso — pra responder "está tudo bem?" sem abrir log nenhum
+- Cofre de senhas de clientes cifradas (AES-256-GCM), com destrave temporário e separado da sessão do painel — ver "Desafios técnicos"
 - Interface responsiva, usável de verdade pelo celular
 - Log completo de auditoria de todas as atribuições feitas
 - Relatório diário automático no Teams (dias úteis, 17:45) com volume do dia, comparação com a média recente, situação dos chamados e faixa horária de pico
@@ -50,6 +52,8 @@ Bot e dashboard são processos independentes, comunicando-se só através de arq
 | **Node.js + TypeScript** | Runtime e linguagem de todo o projeto |
 | **Playwright** (modo API, sem navegador) | Cliente HTTP com gestão automática de cookies, usado pra autenticar e consumir a API interna do SoftDesk — sem abrir Chromium |
 | **Express** | API REST do dashboard de administração |
+| **React + Vite + TypeScript** | Frontend do dashboard — CSS Modules com tokens de tema em CSS puro, sem framework de UI |
+| **Vitest** | Testes das funções puras do frontend (o bot usa o runner nativo do Node) |
 | **systemd** | Agendamento do bot e supervisão do dashboard em produção |
 | **nginx + Let's Encrypt** | Proxy reverso e HTTPS do dashboard público |
 | **Microsoft Teams (Power Automate)** | Notificações via webhook + Adaptive Cards |
@@ -71,6 +75,8 @@ Sem banco de dados — o estado (rodízio, atendentes, logs) é persistido em ar
 - **Sucesso que o sistema lia como falha**: o relatório era enviado corretamente e ainda assim o processo terminava com código de erro — encerrar o programa explicitamente enquanto o cliente HTTP ainda fechava conexões derrubava o runtime. Como o agendador trata código diferente de zero como falha, o relatório apareceria como quebrado todos os dias e uma falha real ficaria enterrada no meio dos alarmes falsos. A correção foi deixar o processo terminar naturalmente.
 - **Tabela de dados numa tela de celular**: a tabela de atendentes fazia a página rolar 184px na horizontal e deformava o botão de ação, porque a coluna de ação precisava caber um painel inteiro. Abaixo de 900px as tabelas passaram a virar cartões empilhados, com cada célula exibindo o próprio rótulo. E como o drag-and-drop nativo do HTML5 não responde a toque, a reordenação do rodízio no celular ganhou setas que reaproveitam o mesmo endpoint do arrastar.
 - **Uma auditoria de segurança que virou ação, não relatório**: revisei a exposição real da VM (quem consegue se conectar hoje, com o quê) e priorizei os achados por impacto real dividido por esforço, não por categoria abstrata. Cada mudança foi testada antes de assumida como concluída: a nova regra de firewall restringindo SSH por IP foi trocada de forma atômica e testada com uma conexão nova antes de ser persistida, pra nunca correr o risco de perder acesso à própria VM. A prova de que a exposição era real, não teórica: assim que o bloqueio automático de tentativas de login entrou no ar, já encontrou e baniu IPs de scanners reais tentando força bruta contra o SSH.
+- **Reescrever o frontend inteiro sem parar o bot em produção**: o dashboard migrou de JS puro pra React + Vite + TypeScript em fases — fundação, paridade de funcionalidade tela por tela contra a API real e só então o corte, trocando o que o Express serve pela saída do build. O painel antigo ficou no ar o tempo todo, então cada fase precisava terminar em algo que funcionasse de verdade, não só compilasse. O único bug real apareceu no corte: navegar direto pra uma rota interna (ou recarregar a página nela) devolvia 404, porque o roteamento client-side do React só existe depois do JavaScript carregar, e o Express não sabia disso — o dev server do Vite resolvia sozinho, produção não. Corrigido com um fallback de SPA no servidor.
+- **Cofre de senhas: revelar é a exceção, não a regra**: cliente, sistema, link e validade de cada credencial ficam sempre visíveis e buscáveis sem senha nenhuma — só ver ou copiar login/senha exige um segundo destrave (a mesma senha do painel), com expiração própria de 5 minutos, verificada de novo no servidor a cada tentativa e independente da sessão de login. Login/senha nunca ficam em texto plano em disco (AES-256-GCM) nem aparecem na tela ao copiar: o valor vai direto pro clipboard.
 
 ## Segurança
 
@@ -78,6 +84,7 @@ Sem banco de dados — o estado (rodízio, atendentes, logs) é persistido em ar
 - Acesso SSH à infraestrutura só por chave, restrito por IP de origem, com bloqueio automático de IPs insistindo em login (SSH e dashboard)
 - Dashboard protegido por senha, HTTPS e limite de tentativas de login por IP
 - Cookies de sessão `httpOnly` e `secure`, com expiração automática
+- Credenciais de clientes cifradas em repouso (AES-256-GCM) no cofre, com destrave próprio de 5 minutos, separado da sessão do painel
 - Cabeçalhos HTTP de segurança (proteção contra clickjacking, MIME-sniffing, HSTS)
 - Atualizações de segurança do sistema operacional aplicadas automaticamente
 - Backup diário do estado da aplicação, com rotação de logs pra não crescer indefinidamente
@@ -88,16 +95,22 @@ Sem banco de dados — o estado (rodízio, atendentes, logs) é persistido em ar
 npm install
 npm run build
 
-npm run dev         # loop continuo (desenvolvimento)
+npm run dev          # loop continuo do bot (desenvolvimento)
 npm run rodar        # uma passada so
-npm run dashboard     # dashboard em localhost:3001
-npm test               # testes das funcoes puras
+npm run dashboard    # backend do dashboard em localhost:3001
+npm test             # testes do bot (runner nativo do Node)
+
+npm run dev:web      # frontend do dashboard em localhost:5173, com proxy de /api
+npm run build:web    # build de producao do frontend, sai em public/
+npm run test:web     # testes do frontend (Vitest)
 
 npm run relatorio -- --json    # gera o relatorio e imprime, sem enviar nada
 npm run relatorio -- --teste   # envia para um canal de testes separado
 ```
 
-Requer um arquivo `.env` com as credenciais do SoftDesk e demais configurações — ver `.env.example`.
+Requer um arquivo `.env` com as credenciais do SoftDesk e demais configurações — ver `.env.example`. A chave do cofre é opcional: sem ela, só a tela de credenciais fica indisponível, o resto do bot funciona normal.
+
+`public/` é artefato de build (gerado por `npm run build:web`), não fica versionado — o Express serve estático dali sem precisar de nenhuma mudança de código entre um build e outro.
 
 ## Estrutura do projeto
 
@@ -110,10 +123,17 @@ src/
 ├── rotation.ts          # logica do rodizio
 ├── atendentes.ts         # gestao de atendentes (ativo/inativo)
 ├── fluxo.ts                # orquestracao completa do fluxo
-├── teams.ts                 # notificacao no Microsoft Teams
-├── relatorios/               # metricas, datas e cards dos relatorios (funcoes puras + testes)
-└── dashboard/                 # API + servidor do painel de administracao
-public/                         # frontend do dashboard (HTML/CSS/JS)
+├── fila.ts                  # fila "sem atendente" sob demanda, so leitura, com cache
+├── execucoes.ts               # historico de execucoes do bot
+├── teams.ts                    # notificacao no Microsoft Teams
+├── cofre/                       # cofre de senhas: cifragem, credenciais, catalogo de sistemas
+├── relatorios/                   # metricas, datas e cards dos relatorios (funcoes puras + testes)
+└── dashboard/                     # API do painel de administracao
+web/                                # frontend do dashboard (React + Vite + TypeScript)
+├── src/paginas/                    # uma pasta por tela da sidebar
+├── src/hooks/                      # acesso a dados (fetch + polling), sem estado global
+└── src/lib/                        # funcoes puras (calculo, formatacao, filtro), com teste
+public/                             # build de producao do frontend (gerado, nao versionado)
 ```
 
 ## Autor

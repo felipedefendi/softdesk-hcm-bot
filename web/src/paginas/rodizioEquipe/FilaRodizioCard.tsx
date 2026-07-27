@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Cartao } from "../../components/Cartao";
+import { Esqueleto } from "../../components/Esqueleto";
+import { ErroCarregamento } from "../../components/ErroCarregamento";
 import { filaRodizio } from "../../lib/filaRodizio";
 import type { Atendente } from "../../api/tipos";
 import styles from "./FilaRodizioCard.module.css";
@@ -8,10 +10,12 @@ interface Props {
   atendentes: Atendente[] | null;
   proximo: string | null;
   erro: string | null;
+  onTentarNovamente: () => void;
   onDefinirProximo: (nome: string) => Promise<void>;
 }
 
-export function FilaRodizioCard({ atendentes, proximo, erro, onDefinirProximo }: Props) {
+export function FilaRodizioCard({ atendentes, proximo, erro, onTentarNovamente, onDefinirProximo }: Props) {
+  const carregando = atendentes === null && proximo === null;
   const ativos = (atendentes ?? []).filter((a) => a.ativo).map((a) => a.nome);
   const fila = filaRodizio(ativos, proximo);
 
@@ -37,8 +41,10 @@ export function FilaRodizioCard({ atendentes, proximo, erro, onDefinirProximo }:
     <Cartao>
       <h2 className={styles.titulo}>Rodízio</h2>
 
-      {erro && <p className={styles.erro}>{erro}</p>}
-      {!erro && fila.length === 0 && <p className={styles.vazio}>Rodízio indisponível</p>}
+      {carregando && erro && <ErroCarregamento mensagem={erro} onTentarNovamente={onTentarNovamente} />}
+      {carregando && !erro && <Esqueleto linhas={3} />}
+      {!carregando && erro && <p className={styles.erro}>{erro}</p>}
+      {!carregando && !erro && fila.length === 0 && <p className={styles.vazio}>Rodízio indisponível</p>}
 
       {fila.length > 0 && (
         <ol className={styles.fila}>

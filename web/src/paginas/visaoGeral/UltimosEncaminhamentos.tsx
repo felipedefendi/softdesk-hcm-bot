@@ -1,18 +1,21 @@
 import { Cartao } from "../../components/Cartao";
+import { Esqueleto } from "../../components/Esqueleto";
+import { ErroCarregamento } from "../../components/ErroCarregamento";
 import { useLog } from "../../hooks/useLog";
 import styles from "./UltimosEncaminhamentos.module.css";
 
 const QUANTIDADE = 5;
 
 export function UltimosEncaminhamentos() {
-  const entradas = useLog();
+  const { entradas, erro, recarregar } = useLog();
   const ultimas = entradas?.slice(0, QUANTIDADE) ?? [];
 
   return (
     <Cartao>
       <h2 className={styles.titulo}>Últimos encaminhamentos</h2>
 
-      {entradas === null && <p className={styles.vazio}>Carregando...</p>}
+      {entradas === null && erro && <ErroCarregamento mensagem={erro} onTentarNovamente={recarregar} />}
+      {entradas === null && !erro && <Esqueleto linhas={3} />}
       {entradas !== null && ultimas.length === 0 && <p className={styles.vazio}>Nenhum encaminhamento ainda.</p>}
 
       {ultimas.length > 0 && (
