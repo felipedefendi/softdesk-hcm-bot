@@ -14,10 +14,20 @@
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
+# Vira $true no momento em que a VM passa a ser alterada. Sem isso a mensagem de
+# aborto mente: falhar na conferencia final e muito diferente de falhar num
+# portao, e quem esta lendo precisa saber se tem ou nao o que reverter.
+$script:vmTocada = $false
+
 function Abortar($mensagem) {
   Write-Host ""
   Write-Host "DEPLOY ABORTADO - $mensagem" -ForegroundColor Red
-  Write-Host "Nada foi alterado na VM." -ForegroundColor Red
+  if ($script:vmTocada) {
+    Write-Host "A VM JA FOI ALTERADA. Para reverter tudo:" -ForegroundColor Yellow
+    Write-Host "  ssh -i `"$chave`" $vm 'cd ~/softdesk-hcm-bot && git reset --hard `$(cat ~/commit-anterior.txt) && npm run build && rm -rf public && tar xzf ~/public-anterior.tar.gz && sudo systemctl restart softdesk-dashboard.service'" -ForegroundColor Yellow
+  } else {
+    Write-Host "Nada foi alterado na VM." -ForegroundColor Red
+  }
   exit 1
 }
 
@@ -72,6 +82,7 @@ Write-Host "ok - bundle $bundleEsperado"
 # --- A partir daqui a VM e alterada ---
 
 Etapa 4 "Enviando o build para a area de staging"
+$script:vmTocada = $true
 ssh -i $chave $vm "rm -rf /home/ubuntu/deploy-staging"
 if ($LASTEXITCODE -ne 0) { Abortar "nao consegui limpar a area de staging na VM" }
 scp -r -i $chave "public" "${vm}:/home/ubuntu/deploy-staging"
@@ -81,22 +92,30 @@ Etapa 5 "Atualizando codigo e publicando na VM"
 scp -i $chave "scripts\deploy-remoto.sh" "${vm}:/tmp/deploy-remoto.sh"
 if ($LASTEXITCODE -ne 0) { Abortar "nao consegui enviar o script remoto" }
 ssh -i $chave $vm "bash /tmp/deploy-remoto.sh $commitLocal"
-if ($LASTEXITCODE -ne 0) {
-  Write-Host ""
-  Write-Host "A VM pode ter ficado num estado intermediario. Para reverter:" -ForegroundColor Yellow
-  Write-Host "  ssh -i `"$chave`" $vm 'cd ~/softdesk-hcm-bot && git reset --hard `$(cat ~/commit-anterior.txt) && npm run build && rm -rf public && tar xzf ~/public-anterior.tar.gz && sudo systemctl restart softdesk-dashboard.service'"
-  Abortar "o deploy na VM falhou"
-}
+if ($LASTEXITCODE -ne 0) { Abortar "o deploy na VM falhou" }
 
 Etapa 6 "Conferindo pelo HTTPS publico"
 # Conferir pelo nginx, e nao pelo disco da VM: e o nginx que diz a verdade
 # sobre o que foi realmente publicado.
-try {
-  $resposta = Invoke-WebRequest -Uri "$url/" -UseBasicParsing -TimeoutSec 20
-} catch {
-  Abortar "o site nao respondeu em $url - $($_.Exception.Message)"
+#
+# Com espera, porque o dashboard sobe via ts-node e leva alguns segundos pra
+# compilar numa VM de 1GB. Conferir logo depois do restart pega 502 do nginx com
+# o backend ainda subindo, e o deploy seria dado como falho tendo dado certo.
+$resposta = $null
+$ultimoErro = "sem resposta"
+$limite = (Get-Date).AddSeconds(90)
+while ($true) {
+  try {
+    $resposta = Invoke-WebRequest -Uri "$url/" -UseBasicParsing -TimeoutSec 15
+    if ($resposta.StatusCode -eq 200) { break }
+    $ultimoErro = "HTTP $($resposta.StatusCode)"
+  } catch {
+    $ultimoErro = $_.Exception.Message
+  }
+  if ((Get-Date) -gt $limite) { Abortar "o site nao voltou em 90s - ultimo erro: $ultimoErro" }
+  Write-Host "aguardando o dashboard subir..." -ForegroundColor DarkGray
+  Start-Sleep -Seconds 5
 }
-if ($resposta.StatusCode -ne 200) { Abortar "o site respondeu $($resposta.StatusCode)" }
 if ($resposta.Content -notmatch [regex]::Escape($bundleEsperado)) {
   Abortar "o HTML servido nao referencia $bundleEsperado - o build antigo continua no ar"
 }
