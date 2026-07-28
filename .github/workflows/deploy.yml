@@ -50,8 +50,15 @@ jobs:
           HOST: ${{ secrets.VM_HOST }}
         run: |
           mkdir -p ~/.ssh
-          printf '%s\n' "$CHAVE" > ~/.ssh/deploy.key
+          # tr e sed contra CR e BOM. Colar a chave num campo de formulario a
+          # partir de um editor do Windows costuma trazer os dois, e o efeito e
+          # uma chave que o ssh ignora em silencio, com "Permission denied" que
+          # nao explica nada. Aconteceu ao instalar a chave publica na VM: o
+          # pipe do PowerShell injetou um BOM e o ssh-keygen nem reconheceu a
+          # linha.
+          printf '%s\n' "$CHAVE" | tr -d '\r' | sed '1s/^\xEF\xBB\xBF//' > ~/.ssh/deploy.key
           chmod 600 ~/.ssh/deploy.key
+          ssh-keygen -lf ~/.ssh/deploy.key
           # ssh-keyscan aceita a chave que o host apresentar agora, em vez de
           # comparar com uma conhecida. Para um alvo unico e fixo como este vale
           # a troca, mas nao protege de man-in-the-middle na primeira conexao -

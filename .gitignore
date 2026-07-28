@@ -35,6 +35,14 @@ executar-tarefa.cmd
 # script de backup do state/ da VM pro PC - tem IP da VM e caminho local da chave SSH
 backup-state.ps1
 
+# chaves privadas, em qualquer circunstancia. Nao e paranoia: um ssh-keygen com
+# caminho em barra invertida rodado no Git Bash (que trata \ como escape) gerou
+# o par dentro desta pasta em vez de ~/.ssh, e o deploy usa git add -A.
+*.key
+*.pem
+id_rsa*
+id_ed25519*
+
 # editor e sistema operacional
 .vscode/
 .idea/
