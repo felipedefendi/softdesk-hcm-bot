@@ -58,7 +58,12 @@ jobs:
           # linha.
           printf '%s\n' "$CHAVE" | tr -d '\r' | sed '1s/^\xEF\xBB\xBF//' > ~/.ssh/deploy.key
           chmod 600 ~/.ssh/deploy.key
-          ssh-keygen -lf ~/.ssh/deploy.key
+          # Deriva a chave publica a partir da privada. Alem de gerar o .pub que
+          # o ssh-keygen -lf precisa, isso e a propria validacao: se a privada
+          # estiver truncada ou suja, o -y falha aqui, com mensagem clara, em vez
+          # de virar "Permission denied (publickey)" tres passos adiante.
+          ssh-keygen -y -f ~/.ssh/deploy.key > ~/.ssh/deploy.key.pub
+          ssh-keygen -lf ~/.ssh/deploy.key.pub
           # ssh-keyscan aceita a chave que o host apresentar agora, em vez de
           # comparar com uma conhecida. Para um alvo unico e fixo como este vale
           # a troca, mas nao protege de man-in-the-middle na primeira conexao -
