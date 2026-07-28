@@ -37,7 +37,7 @@ textarea {
    sobrescrevem quando precisam de algo diferente (ex.: botao so-icone). */
 button {
   background: var(--acento);
-  color: #ffffff;
+  color: var(--acento-texto);
   border: none;
   border-radius: var(--radius-pill);
   padding: 0.55rem 1.3rem;
@@ -67,7 +67,7 @@ button.botao-secundario {
 }
 
 button.botao-secundario:hover:not(:disabled) {
-  background: rgba(41, 151, 255, 0.1);
+  background: var(--acento-fraco);
 }
 
 table,

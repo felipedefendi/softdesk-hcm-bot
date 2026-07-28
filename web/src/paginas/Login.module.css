@@ -15,11 +15,25 @@
   padding: var(--space-6);
 }
 
+.marca {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--space-3);
+}
+
 .titulo {
   font-size: var(--fs-lg);
   font-weight: 600;
   letter-spacing: -0.02em;
-  margin: 0 0 var(--space-2);
+  margin: 0;
+}
+
+.sigla {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--texto-fraco);
+  margin: var(--space-1) 0 var(--space-2);
 }
 
 .subtitulo {
@@ -42,7 +56,7 @@
 .botao {
   width: 100%;
   background: var(--acento);
-  color: #ffffff;
+  color: var(--acento-texto);
   border: none;
   border-radius: var(--radius-pill);
   padding: 0.6rem 1.3rem;

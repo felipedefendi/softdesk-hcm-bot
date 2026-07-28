@@ -4,9 +4,11 @@
    primeiro paint, pra nunca piscar de tema errado. */
 
 :root {
-  /* Acento unico, igual nos dois temas */
-  --acento: #2997ff;
-  --acento-forte: #0071e3;
+  /* O acento e o verde da Senior, mas nao da pra usar o mesmo hex nos dois
+     temas: #00a06b sobre branco da 3,4:1 e reprova o AA, inclusive como fundo
+     de botao com texto branco. Entao cada tema leva sua variacao - mais fechada
+     no claro, mais aberta no escuro - e cada uma passa de 4,5:1 no seu fundo. */
+  --acento-fraco: rgba(0, 168, 112, 0.12);
   --erro-fraco: rgba(255, 105, 97, 0.15);
   --ok-fraco: rgba(50, 215, 75, 0.15);
 
@@ -33,6 +35,11 @@
 
 [data-theme="dark"] {
   color-scheme: dark;
+  --acento: #00b87c;
+  --acento-forte: #00a06b;
+  /* Texto por cima do acento. No escuro o verde e claro demais pra carregar
+     texto branco (2,6:1), entao quem vai por cima e um verde quase preto. */
+  --acento-texto: #04241b;
   --bg: #000000;
   --surface-1: #1c1c1e;
   --surface-2: #232326;
@@ -48,6 +55,9 @@
 
 [data-theme="light"] {
   color-scheme: light;
+  --acento: #00875a;
+  --acento-forte: #006f49;
+  --acento-texto: #ffffff;
   --bg: #f5f5f7;
   --surface-1: #ffffff;
   --surface-2: #f2f2f5;

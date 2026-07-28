@@ -38,7 +38,7 @@
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--acento);
-  background: rgba(41, 151, 255, 0.12);
+  background: var(--acento-fraco);
   padding: 0.15rem 0.5rem;
   border-radius: var(--radius-pill);
 }

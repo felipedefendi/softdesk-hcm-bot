@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useAuth } from "../auth/AuthContext";
+import { Marca } from "../components/Marca";
 import styles from "./Login.module.css";
 
 export function Login() {
@@ -22,7 +23,11 @@ export function Login() {
   return (
     <div className={styles.tela}>
       <form className={styles.cartao} onSubmit={aoEnviar}>
-        <h1 className={styles.titulo}>Rodízio HCM</h1>
+        <div className={styles.marca}>
+          <Marca tamanho={44} />
+        </div>
+        <h1 className={styles.titulo}>Painel Administrativo</h1>
+        <p className={styles.sigla}>HCM</p>
         <p className={styles.subtitulo}>Digite a senha do painel</p>
         <input
           type="password"

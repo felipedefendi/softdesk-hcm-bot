@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { PanelLeftClose, PanelLeft, X } from "lucide-react";
 import { PAGINAS } from "../../nav/paginas";
+import { Marca } from "../Marca";
 import styles from "./Sidebar.module.css";
 
 interface Props {
@@ -21,7 +22,13 @@ export function Sidebar({ colapsada, aoAlternarColapso, drawerAberta, aoFecharDr
         aria-label="Navegação principal"
       >
         <div className={styles.cabecalho}>
-          <span className={styles.marca}>Rodízio HCM</span>
+          <div className={styles.marca}>
+            <Marca tamanho={20} />
+            <span className={styles.marcaTexto}>
+              Painel Administrativo
+              <small>HCM</small>
+            </span>
+          </div>
           <button className={styles.fecharDrawer} onClick={aoFecharDrawer} aria-label="Fechar menu" type="button">
             <X size={20} strokeWidth={1.5} />
           </button>

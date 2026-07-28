@@ -98,7 +98,7 @@
 }
 
 .botaoSecundario:hover {
-  background: rgba(41, 151, 255, 0.1);
+  background: var(--acento-fraco);
 }
 
 @media (max-width: 900px) {

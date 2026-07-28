@@ -41,6 +41,10 @@
 
 .toggle input:checked + .trilho::before {
   transform: translateX(18px);
+  /* Mesmo motivo do --acento-texto nos botoes: no tema escuro o acento e claro
+     demais pra segurar a bolinha branca (2,6:1, abaixo dos 3:1 que componente
+     de interface precisa). */
+  background: var(--acento-texto);
 }
 
 .toggle input:disabled + .trilho {

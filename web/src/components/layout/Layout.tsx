@@ -10,7 +10,7 @@ export function Layout() {
   const [drawerAberta, setDrawerAberta] = useState(false);
   const location = useLocation();
 
-  const paginaAtual = PAGINAS.find((p) => p.path === location.pathname)?.rotulo ?? "Rodízio HCM";
+  const paginaAtual = PAGINAS.find((p) => p.path === location.pathname)?.rotulo ?? "Painel Administrativo - HCM";
 
   return (
     <div className={styles.shell}>
