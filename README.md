@@ -1,5 +1,7 @@
 # SoftDesk HCM Bot
 
+[![Deploy](https://github.com/felipedefendi/softdesk-hcm-bot/actions/workflows/deploy.yml/badge.svg)](https://github.com/felipedefendi/softdesk-hcm-bot/actions/workflows/deploy.yml)
+
 Automação de rodízio de chamados para o **SoftDesk** (sistema de chamados/suporte da **Senior**), construída para resolver um problema real do time de suporte HCM onde trabalho: chamados sem atendente ficavam parados na fila até alguém perceber manualmente e distribuir.
 
 O bot monitora a fila **"Sem atendente"**, e quando um chamado passa de 15 minutos sem ser encaminhado, atribui automaticamente ao próximo atendente disponível de uma lista em rodízio — notificando o time no Microsoft Teams. Inclui um dashboard web para gerenciar quem está ativo no rodízio (férias, faltas, ajustes de configuração) e um relatório diário automático com o panorama dos chamados do dia.

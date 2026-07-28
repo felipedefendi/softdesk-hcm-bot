@@ -1,0 +1,110 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Dois pushes seguidos disparariam dois deploys mexendo na mesma VM ao mesmo
+# tempo - e com git reset --hard e rm -rf public no meio, isso e receita de
+# estado quebrado. A fila garante um de cada vez, sem cancelar o que ja comecou:
+# abortar um deploy pela metade e pior do que esperar o anterior terminar.
+concurrency:
+  group: deploy-producao
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            web/package-lock.json
+
+      # web/ e um pacote separado, nao um workspace do raiz - por isso dois npm ci.
+      - name: Instalar dependencias
+        run: |
+          npm ci
+          npm ci --prefix web
+
+      - name: Testes do backend
+        run: npm test
+
+      - name: Testes do frontend
+        run: npm run test:web
+
+      # O Vite roda aqui e nao na VM: 1GB de RAM nao da conta do build.
+      - name: Compilar o frontend
+        run: npm run build:web
+
+      - name: Preparar a chave SSH
+        env:
+          CHAVE: ${{ secrets.VM_SSH_KEY }}
+          HOST: ${{ secrets.VM_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$CHAVE" > ~/.ssh/deploy.key
+          chmod 600 ~/.ssh/deploy.key
+          # ssh-keyscan aceita a chave que o host apresentar agora, em vez de
+          # comparar com uma conhecida. Para um alvo unico e fixo como este vale
+          # a troca, mas nao protege de man-in-the-middle na primeira conexao -
+          # se algum dia isso incomodar, guardar a chave publica do host num
+          # secret e usa-la aqui resolve.
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Enviar o build para a area de staging
+        env:
+          VM: ubuntu@${{ secrets.VM_HOST }}
+        run: |
+          ssh -i ~/.ssh/deploy.key "$VM" "rm -rf /home/ubuntu/deploy-staging"
+          scp -r -i ~/.ssh/deploy.key public "$VM:/home/ubuntu/deploy-staging"
+
+      # Mesmo script que o deploy.ps1 chama - a metade que roda na VM nao sabe
+      # se quem pediu foi o runner ou o PowerShell do PC.
+      - name: Atualizar codigo e publicar na VM
+        id: publicar
+        env:
+          VM: ubuntu@${{ secrets.VM_HOST }}
+        run: |
+          scp -i ~/.ssh/deploy.key scripts/deploy-remoto.sh "$VM:/tmp/deploy-remoto.sh"
+          ssh -i ~/.ssh/deploy.key "$VM" "bash /tmp/deploy-remoto.sh ${{ github.sha }}"
+
+      # Conferir pelo nginx e nao pelo disco da VM: e ele que diz a verdade sobre
+      # o que foi publicado. Com espera, porque o dashboard sobe via ts-node e
+      # leva alguns segundos numa VM de 1GB - conferir na hora pega 502.
+      - name: Conferir pelo HTTPS publico
+        env:
+          URL: ${{ secrets.APP_URL }}
+        run: |
+          bundle=$(grep -oE 'assets/[A-Za-z0-9_.-]+\.js' public/index.html | head -1)
+          echo "esperando $URL servir $bundle"
+          for _ in $(seq 1 18); do
+            if curl -sf "$URL/" | grep -q "$bundle"; then
+              echo "ok - $bundle no ar"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "o site nao serviu $bundle em 90s"
+          exit 1
+
+      # A condicao precisa ser exatamente esta. Um "if: failure()" sozinho
+      # reverteria producao quando o que falhou foi um teste, la no inicio, sem
+      # a VM ter sido tocada - e a guarda por arquivo nao salvaria, porque o
+      # commit-anterior.txt fica la de deploys passados. O outcome do passo de
+      # publicacao e o unico sinal confiavel de que houve o que reverter:
+      # 'skipped' quando o job morreu antes dele.
+      - name: Rollback se a publicacao falhou
+        if: failure() && steps.publicar.outcome != 'skipped'
+        env:
+          VM: ubuntu@${{ secrets.VM_HOST }}
+        run: |
+          echo "revertendo para o estado anterior"
+          ssh -i ~/.ssh/deploy.key "$VM" 'cd /home/ubuntu/softdesk-hcm-bot && git reset --hard "$(cat /home/ubuntu/commit-anterior.txt)" && npm run build && rm -rf public && tar xzf /home/ubuntu/public-anterior.tar.gz && sudo systemctl restart softdesk-dashboard.service'
