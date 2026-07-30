@@ -1,0 +1,6 @@
+# O repositorio e editado no Windows (core.autocrlf=true) e roda numa VM Linux.
+# Sem isto, arquivo que so o Linux le sai do checkout com CRLF: shell script vira
+# "bad interpreter" e unit do systemd fica com o \r grudado no fim do ExecStart.
+*.sh            text eol=lf
+*.service       text eol=lf
+*.timer         text eol=lf
