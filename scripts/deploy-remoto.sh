@@ -56,6 +56,34 @@ sudo systemctl restart softdesk-dashboard.service
 sleep 2
 
 echo ""
+echo "--- conferindo as units do systemd ---"
+# So compara, nao instala: reescrever /etc/systemd/system a cada publicacao seria
+# poder demais pra um deploy de aplicacao. A conferencia existe porque a migracao
+# de VM em 27/07/2026 deixou softdesk-relatorio.{service,timer} pra tras e ninguem
+# percebeu por tres dias - relatorio que nao chega parece dia sem movimento.
+units_fora=""
+for versionada in "$APP"/deploy/systemd/*.service "$APP"/deploy/systemd/*.timer; do
+  nome=$(basename "$versionada")
+  instalada="/etc/systemd/system/$nome"
+  if [ ! -f "$instalada" ]; then
+    units_fora="$units_fora $nome(faltando)"
+  elif ! diff -q "$versionada" "$instalada" > /dev/null 2>&1; then
+    units_fora="$units_fora $nome(divergente)"
+  fi
+done
+if [ -z "$units_fora" ]; then
+  echo "todas conferem com deploy/systemd/"
+else
+  echo "ATENCAO - fora de sincronia:$units_fora"
+fi
+
+echo ""
 echo "--- estado final na VM ---"
-systemctl is-active softdesk-dashboard.service softdesk-bot.timer nginx
+systemctl is-active softdesk-dashboard.service softdesk-bot.timer softdesk-relatorio.timer nginx
 echo "commit publicado: $(git rev-parse --short HEAD)"
+if [ -n "$units_fora" ]; then
+  echo ""
+  echo "ATENCAO - units do systemd fora de sincronia:$units_fora"
+  echo "  sincronize com: sudo cp $APP/deploy/systemd/<nome> /etc/systemd/system/"
+  echo "  e depois: sudo systemctl daemon-reload"
+fi

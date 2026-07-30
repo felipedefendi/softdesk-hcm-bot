@@ -1,0 +1,9 @@
+[Unit]
+Description=SoftDesk HCM - uma passada do rodizio
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/softdesk-hcm-bot
+ExecStart=/usr/bin/node dist/rodar-uma-vez.js

@@ -1,0 +1,9 @@
+[Unit]
+Description=Dispara o relatorio Seg-Sex as 17:45
+
+[Timer]
+OnCalendar=Mon..Fri *-*-* 17:45:00
+Unit=softdesk-relatorio.service
+
+[Install]
+WantedBy=timers.target

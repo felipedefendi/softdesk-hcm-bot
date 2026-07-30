@@ -1,0 +1,10 @@
+[Unit]
+Description=SoftDesk HCM - relatorio diario/semanal/mensal
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/softdesk-hcm-bot
+Environment=TZ=America/Sao_Paulo
+ExecStart=/usr/bin/node dist/rodar-relatorio.js

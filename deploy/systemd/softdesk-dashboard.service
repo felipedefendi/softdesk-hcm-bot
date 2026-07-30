@@ -1,0 +1,14 @@
+[Unit]
+Description=SoftDesk HCM - dashboard
+After=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/softdesk-hcm-bot
+ExecStart=/usr/bin/node dist/dashboard/server.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

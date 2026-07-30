@@ -1,0 +1,9 @@
+[Unit]
+Description=Dispara o bot a cada 5 min, Seg-Sex, 07:00-18:00
+
+[Timer]
+OnCalendar=Mon..Fri *-*-* 07..18:00/5:00
+Unit=softdesk-bot.service
+
+[Install]
+WantedBy=timers.target
