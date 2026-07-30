@@ -6,6 +6,7 @@ import {
   diaEmSaoPaulo,
   diasUteisAnteriores,
   ehDiaUtil,
+  ehPrimeiroDiaUtilDoMes,
   formatarBR,
   formatarISO,
   horaEmSaoPaulo,
@@ -74,6 +75,45 @@ test("mesAnteriorFechado acerta o ultimo dia de fevereiro", () => {
     inicio: { ano: 2026, mes: 2, dia: 1 },
     fim: { ano: 2026, mes: 2, dia: 28 },
   });
+});
+
+test("ehPrimeiroDiaUtilDoMes quando o dia 1 e dia util", () => {
+  // 01/09/2026 e terca: o proprio dia 1 vale, e o dia 2 nao.
+  assert.equal(ehPrimeiroDiaUtilDoMes({ ano: 2026, mes: 9, dia: 1 }), true);
+  assert.equal(ehPrimeiroDiaUtilDoMes({ ano: 2026, mes: 9, dia: 2 }), false);
+});
+
+test("ehPrimeiroDiaUtilDoMes adia quando o dia 1 cai no fim de semana", () => {
+  // 01/08/2026 e sabado - o caso que fazia o mensal se perder. O primeiro dia
+  // util e segunda 03/08.
+  assert.equal(ehPrimeiroDiaUtilDoMes({ ano: 2026, mes: 8, dia: 1 }), false);
+  assert.equal(ehPrimeiroDiaUtilDoMes({ ano: 2026, mes: 8, dia: 2 }), false); // domingo
+  assert.equal(ehPrimeiroDiaUtilDoMes({ ano: 2026, mes: 8, dia: 3 }), true);
+  assert.equal(ehPrimeiroDiaUtilDoMes({ ano: 2026, mes: 8, dia: 4 }), false);
+
+  // 01/11/2026 e domingo: o primeiro dia util e segunda 02/11.
+  assert.equal(ehPrimeiroDiaUtilDoMes({ ano: 2026, mes: 11, dia: 1 }), false);
+  assert.equal(ehPrimeiroDiaUtilDoMes({ ano: 2026, mes: 11, dia: 2 }), true);
+});
+
+test("ehPrimeiroDiaUtilDoMes marca exatamente um dia em cada mes", () => {
+  // A garantia que importa: o mensal nunca se perde nem sai duas vezes.
+  for (let mes = 1; mes <= 12; mes++) {
+    const marcados = [];
+    for (let dia = 1; dia <= 28; dia++) {
+      if (ehPrimeiroDiaUtilDoMes({ ano: 2027, mes, dia })) marcados.push(dia);
+    }
+    assert.equal(marcados.length, 1, `2027-${mes} marcou ${marcados.length} dias: ${marcados}`);
+    assert.ok(marcados[0] <= 3, `2027-${mes} marcou o dia ${marcados[0]}, tarde demais`);
+  }
+});
+
+test("o mes reportado nao muda quando o mensal e adiado", () => {
+  // Adiar de sabado 01/08 pra segunda 03/08 tem que reportar julho igual.
+  assert.deepEqual(
+    mesAnteriorFechado({ ano: 2026, mes: 8, dia: 3 }),
+    mesAnteriorFechado({ ano: 2026, mes: 8, dia: 1 })
+  );
 });
 
 test("formatacao das datas", () => {

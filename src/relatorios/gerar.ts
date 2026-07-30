@@ -12,6 +12,7 @@ import {
   diaDaSemana,
   diaEmSaoPaulo,
   diasUteisAnteriores,
+  ehPrimeiroDiaUtilDoMes,
   horaEmSaoPaulo,
   mesAnteriorFechado,
   semanaSegASexta,
@@ -39,7 +40,6 @@ const CLIENTES_NO_TOPO = 3;
 /** No mensal a amostra e bem maior, entao cabe um top mais largo. */
 const CLIENTES_NO_TOPO_MENSAL = 5;
 const SEXTA = 5;
-const PRIMEIRO_DIA_DO_MES = 1;
 
 const TENTATIVAS = 3;
 const ESPERA_ENTRE_TENTATIVAS_MS = 30_000;
@@ -83,7 +83,7 @@ export interface Relatorios {
   diario: RelatorioDiario;
   /** Null nos dias que nao sao sexta. */
   semanal: RelatorioSemanal | null;
-  /** Null nos dias que nao sao o primeiro do mes. */
+  /** Null fora do primeiro dia util do mes. */
   mensal: RelatorioMensal | null;
 }
 
@@ -165,8 +165,8 @@ async function coletarSemanal(sessao: Sessao, dia: DiaCivil): Promise<RelatorioS
 }
 
 /**
- * Mes anterior fechado, comparado com o mes antes dele. Roda no dia 1, quando o
- * mes reportado ja terminou - nunca compara mes parcial com mes inteiro.
+ * Mes anterior fechado, comparado com o mes antes dele. Roda na virada do mes,
+ * quando o mes reportado ja terminou - nunca compara mes parcial com mes inteiro.
  */
 async function coletarMensal(sessao: Sessao, dia: DiaCivil): Promise<RelatorioMensal> {
   const mes = mesAnteriorFechado(dia);
@@ -192,8 +192,8 @@ export interface ForcarCadencias {
 
 /**
  * Coleta o que a data pede: diario todo dia util, semanal tambem na sexta e
- * mensal tambem no dia 1. Os `forcar` existem pra conferir os cards fora da
- * data certa, sem esperar a semana ou o mes virar.
+ * mensal tambem no primeiro dia util do mes. Os `forcar` existem pra conferir
+ * os cards fora da data certa, sem esperar a semana ou o mes virar.
  */
 export async function gerarRelatorios(
   agora: Date = new Date(),
@@ -205,12 +205,12 @@ export async function gerarRelatorios(
     const diario = await coletarDiario(sessao, agora);
     const dia = diaEmSaoPaulo(agora);
     const ehSexta = diaDaSemana(dia) === SEXTA;
-    const ehDiaUm = dia.dia === PRIMEIRO_DIA_DO_MES;
 
     return {
       diario,
       semanal: ehSexta || forcar.semanal ? await coletarSemanal(sessao, dia) : null,
-      mensal: ehDiaUm || forcar.mensal ? await coletarMensal(sessao, dia) : null,
+      mensal:
+        ehPrimeiroDiaUtilDoMes(dia) || forcar.mensal ? await coletarMensal(sessao, dia) : null,
     };
   } finally {
     await encerrarSessao(sessao);

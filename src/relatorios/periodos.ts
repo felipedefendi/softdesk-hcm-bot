@@ -136,6 +136,27 @@ export function semanaSegASexta(d: DiaCivil): Intervalo {
   return { inicio, fim: somarDias(inicio, 4) };
 }
 
+/**
+ * `d` e o primeiro dia util do seu mes?
+ *
+ * O relatorio mensal disparava no dia 1 exato, mas o timer so roda de segunda a
+ * sexta: quando o dia 1 caia em fim de semana o mensal nao era adiado, era
+ * perdido - acontece 2 a 4 vezes por ano, e 01/08/2026 (sabado) seria a
+ * primeira vez desde que os relatorios entraram no ar. Como `mesAnteriorFechado`
+ * trabalha a partir de qualquer dia do mes, adiar pro primeiro dia util nao
+ * muda o periodo reportado.
+ */
+export function ehPrimeiroDiaUtilDoMes(d: DiaCivil): boolean {
+  if (!ehDiaUtil(d)) return false;
+
+  // Basta nao existir dia util antes dele no mes. Como so sabado e domingo
+  // ficam de fora, o primeiro dia util nunca passa do dia 3.
+  for (let anterior = 1; anterior < d.dia; anterior++) {
+    if (ehDiaUtil({ ano: d.ano, mes: d.mes, dia: anterior })) return false;
+  }
+  return true;
+}
+
 /** O mes anterior fechado (primeiro e ultimo dia), a partir de qualquer dia de `d`. */
 export function mesAnteriorFechado(d: DiaCivil): Intervalo {
   const fim = somarDias({ ano: d.ano, mes: d.mes, dia: 1 }, -1);

@@ -2,14 +2,14 @@
  * Entry point dos relatorios, chamado pelo systemd timer na VM
  * (`dist/rodar-relatorio.js`). Uma execucao, sem loop - o agendamento e do timer.
  *
- * O diario sai todo dia util; na sexta o semanal vai junto e no dia 1 o mensal,
- * sempre na mesma mensagem.
+ * O diario sai todo dia util; na sexta o semanal vai junto e no primeiro dia util
+ * do mes o mensal, sempre na mesma mensagem.
  *
  * Opcoes:
  *   --teste    posta no TEAMS_WEBHOOK_TESTE_URL em vez do canal real
  *   --json     imprime o payload do card e NAO envia nada
  *   --semanal  inclui o bloco semanal mesmo fora de sexta (pra conferir o card)
- *   --mensal   inclui o bloco mensal mesmo fora do dia 1 (idem)
+ *   --mensal   inclui o bloco mensal mesmo fora da virada do mes (idem)
  */
 import { config } from "./config";
 import { postarNoTeams } from "./teams";
