@@ -74,16 +74,16 @@ done
 if [ -z "$units_fora" ]; then
   echo "todas conferem com deploy/systemd/"
 else
-  echo "ATENCAO - fora de sincronia:$units_fora"
-fi
-
-echo ""
-echo "--- estado final na VM ---"
-systemctl is-active softdesk-dashboard.service softdesk-bot.timer softdesk-relatorio.timer nginx
-echo "commit publicado: $(git rev-parse --short HEAD)"
-if [ -n "$units_fora" ]; then
-  echo ""
+  # O aviso vem antes do estado final de proposito: `systemctl is-active` sai
+  # diferente de zero se qualquer unit estiver parada e, com set -e, isso aborta
+  # o script. Depois dele, este aviso nao apareceria justamente no caso em que
+  # ele importa - uma unit faltando e uma unit inativa costumam andar juntas.
   echo "ATENCAO - units do systemd fora de sincronia:$units_fora"
   echo "  sincronize com: sudo cp $APP/deploy/systemd/<nome> /etc/systemd/system/"
   echo "  e depois: sudo systemctl daemon-reload"
 fi
+
+echo ""
+echo "--- estado final na VM ---"
+echo "commit publicado: $(git rev-parse --short HEAD)"
+systemctl is-active softdesk-dashboard.service softdesk-bot.timer softdesk-relatorio.timer nginx
