@@ -75,8 +75,13 @@ export function explicarDia(especial: DiaEspecial): string {
   if (especial.tipo === "bloqueado") {
     return `${especial.motivo} — ninguém trabalha. O revezamento fica desligado o dia inteiro e nenhum chamado é encaminhado.`;
   }
+
+  const temEscala = especial.escalados && especial.escalados.length > 0;
+  const quem = temEscala ? ` Só participam: ${especial.escalados!.join(", ")}.` : "";
+  const efeitoNoResto = temEscala ? " Quem não está na lista fica fora do revezamento o dia inteiro." : "";
+
   return (
-    `${especial.motivo} — expediente das ${especial.inicio} às ${especial.fim}. ` +
-    `O revezamento só encaminha dentro dessa janela e é desligado a partir das ${especial.fim}.`
+    `${especial.motivo} — expediente das ${especial.inicio} às ${especial.fim}.${quem} ` +
+    `O revezamento só encaminha dentro dessa janela e é desligado a partir das ${especial.fim}.${efeitoNoResto}`
   );
 }

@@ -2,8 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { config } from "./config";
 import { listarAtendentes, reativarAutomaticamente, type Atendente } from "./atendentes";
-import { lerFerias } from "./agenda/armazenamento";
-import { estaDeFerias } from "./agenda/regras";
+import { lerDiasEspeciais, lerFerias } from "./agenda/armazenamento";
+import { estaDeFerias, estaEscaladoHoje } from "./agenda/regras";
 import { diaEmSaoPaulo } from "./relatorios/periodos";
 
 interface RotationState {
@@ -26,16 +26,19 @@ function salvarEstado(estado: RotationState): void {
 
 /**
  * Quem pode receber chamado hoje: precisa estar ativo (nao teve falta nem
- * afastamento marcado na mao) e nao estar de ferias.
+ * afastamento marcado na mao), nao estar de ferias, e - num dia de escala
+ * reduzida (ver Agenda) - estar na lista de quem participa.
  *
- * Sao duas coisas separadas de proposito. O `ativo` e o imprevisto de hoje;
- * ferias e intervalo agendado com antecedencia, avaliado na hora - ninguem
- * precisa lembrar de desativar a pessoa na vespera nem de reativar na volta.
+ * Sao coisas separadas de proposito. O `ativo` e o imprevisto de hoje; ferias
+ * e intervalo agendado com antecedencia; escala e um plantao definido pra um
+ * dia especifico. Nenhuma exige lembrar de desfazer depois - todas avaliam o
+ * dia de hoje na hora, sem estado pra dessincronizar.
  */
 function disponiveisHoje(todos: Atendente[]): (a: Atendente) => boolean {
   const hoje = diaEmSaoPaulo();
   const ferias = lerFerias();
-  return (a) => a.ativo && !estaDeFerias(a.nome, hoje, ferias);
+  const especiais = lerDiasEspeciais();
+  return (a) => a.ativo && !estaDeFerias(a.nome, hoje, ferias) && estaEscaladoHoje(a.nome, hoje, especiais);
 }
 
 /**
@@ -51,7 +54,7 @@ export function atendenteAtual(): string {
   const disponivel = disponiveisHoje(todos);
   const ativos = todos.filter(disponivel);
   if (ativos.length === 0) {
-    throw new Error("Nenhum atendente disponivel no rodizio (todos afastados ou de ferias).");
+    throw new Error("Nenhum atendente disponivel no rodizio (todos afastados, de ferias ou fora da escala de hoje).");
   }
 
   const estado = lerEstado();
@@ -87,13 +90,18 @@ export function definirProximoManualmente(nome: string): void {
   if (indiceAlvo === -1) {
     throw new Error(`Atendente "${nome}" nao encontrado.`);
   }
-  // Duas mensagens em vez de uma "indisponivel": o conserto e diferente em cada
-  // caso - reativar na tela de equipe, ou apagar as ferias na Agenda.
+  // Tres mensagens em vez de uma "indisponivel": o conserto e diferente em
+  // cada caso - reativar na tela de equipe, apagar as ferias na Agenda, ou
+  // ajustar a escala do dia.
   if (!todos[indiceAlvo].ativo) {
     throw new Error(`Atendente "${nome}" esta inativo e nao pode ser o proximo do rodizio.`);
   }
-  if (estaDeFerias(nome, diaEmSaoPaulo(), lerFerias())) {
+  const hoje = diaEmSaoPaulo();
+  if (estaDeFerias(nome, hoje, lerFerias())) {
     throw new Error(`Atendente "${nome}" esta de ferias e nao pode ser o proximo do rodizio.`);
+  }
+  if (!estaEscaladoHoje(nome, hoje, lerDiasEspeciais())) {
+    throw new Error(`Atendente "${nome}" nao esta na escala de hoje e nao pode ser o proximo do rodizio.`);
   }
 
   const indicePredecessor = (indiceAlvo - 1 + todos.length) % todos.length;

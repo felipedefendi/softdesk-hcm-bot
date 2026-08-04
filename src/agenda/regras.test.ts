@@ -4,6 +4,7 @@ import {
   diasSemAtendenteDisponivel,
   estadoDoDia,
   estaDeFerias,
+  estaEscaladoHoje,
   motivoDoBloqueio,
   validarDiaEspecial,
   validarFerias,
@@ -66,6 +67,34 @@ test("motivoDoBloqueio so acusa dia inteiro, nunca janela reduzida", () => {
   assert.equal(motivoDoBloqueio({ ano: 2026, mes: 12, dia: 25 }, [NATAL, VESPERA]), "Natal");
   assert.equal(motivoDoBloqueio({ ano: 2026, mes: 12, dia: 24 }, [NATAL, VESPERA]), null);
   assert.equal(motivoDoBloqueio({ ano: 2026, mes: 12, dia: 23 }, [NATAL, VESPERA]), null);
+});
+
+test("estaEscaladoHoje: sem escala definida, todo mundo participa", () => {
+  const dia = { ano: 2026, mes: 12, dia: 24 };
+  assert.equal(estaEscaladoHoje("Ana", dia, [VESPERA]), true);
+  assert.equal(estaEscaladoHoje("Bruno", dia, [VESPERA]), true);
+});
+
+test("estaEscaladoHoje: com escala, so quem esta na lista participa", () => {
+  const comEscala: DiaEspecial = { ...VESPERA, escalados: ["Ana"] };
+  const dia = { ano: 2026, mes: 12, dia: 24 };
+
+  assert.equal(estaEscaladoHoje("Ana", dia, [comEscala]), true);
+  assert.equal(estaEscaladoHoje("Bruno", dia, [comEscala]), false);
+});
+
+test("estaEscaladoHoje: escala so vale no proprio dia e so pra janela, nunca pra bloqueio", () => {
+  const comEscala: DiaEspecial = { ...VESPERA, escalados: ["Ana"] };
+
+  // Fora do dia da vespera, ninguem e restringido por ela.
+  assert.equal(estaEscaladoHoje("Bruno", { ano: 2026, mes: 12, dia: 23 }, [comEscala]), true);
+  // Dia bloqueado nao tem conceito de escala - ninguem "participa" mesmo.
+  assert.equal(estaEscaladoHoje("Bruno", { ano: 2026, mes: 12, dia: 25 }, [NATAL]), true);
+});
+
+test("estaEscaladoHoje: lista vazia equivale a ausente (time inteiro)", () => {
+  const listaVazia: DiaEspecial = { ...VESPERA, escalados: [] };
+  assert.equal(estaEscaladoHoje("Bruno", { ano: 2026, mes: 12, dia: 24 }, [listaVazia]), true);
 });
 
 test("estaDeFerias inclui o primeiro e o ultimo dia", () => {
@@ -149,4 +178,20 @@ test("validarDiaEspecial cobre horario e motivo", () => {
   assert.match(validarDiaEspecial({ ...base, tipo: "janela", inicio: "8:00", fim: "12:00" }) ?? "", /HH:MM/);
   assert.match(validarDiaEspecial({ ...base, tipo: "janela", inicio: "08:00", fim: "25:00" }) ?? "", /HH:MM/);
   assert.match(validarDiaEspecial({ data: "2026-12-25", tipo: "bloqueado", motivo: "  " }) ?? "", /motivo/);
+});
+
+test("validarDiaEspecial: escalados vazio e recusado, mas o campo ausente passa", () => {
+  const base = { data: "2026-12-24", motivo: "Véspera de Natal", tipo: "janela", inicio: "08:00", fim: "12:00" } as const;
+
+  assert.equal(validarDiaEspecial({ ...base }), null);
+  assert.equal(validarDiaEspecial({ ...base, escalados: ["Ana"] }, ["Ana", "Bruno"]), null);
+  assert.match(validarDiaEspecial({ ...base, escalados: [] }) ?? "", /Selecione ao menos um atendente/);
+});
+
+test("validarDiaEspecial: escalados so aceita quem esta cadastrado", () => {
+  const base = { data: "2026-12-24", motivo: "Véspera de Natal", tipo: "janela", inicio: "08:00", fim: "12:00" } as const;
+
+  assert.match(validarDiaEspecial({ ...base, escalados: ["Carla"] }, ["Ana", "Bruno"]) ?? "", /"Carla" nao esta cadastrado/);
+  // Sem a lista de nomes cadastrados, nao ha como checar - passa por omissao.
+  assert.equal(validarDiaEspecial({ ...base, escalados: ["Carla"] }), null);
 });

@@ -35,13 +35,30 @@ function nomesCadastrados(): string[] {
   return listarAtendentes().map((a) => a.nome);
 }
 
+function listaDeTextos(valor: unknown): string[] {
+  return Array.isArray(valor) ? valor.filter((v): v is string => typeof v === "string") : [];
+}
+
 function diaEspecialDoBody(body: unknown): DiaEspecial | null {
   const b = (body ?? {}) as Record<string, unknown>;
   const data = texto(b.data);
   const motivo = texto(b.motivo);
 
   if (b.tipo === "bloqueado") return { data, tipo: "bloqueado", motivo };
-  if (b.tipo === "janela") return { data, tipo: "janela", inicio: texto(b.inicio), fim: texto(b.fim), motivo };
+  if (b.tipo === "janela") {
+    // Distingue "campo ausente" (dado antigo, ou tela sem restringir a escala -
+    // time inteiro participa) de "mandou lista vazia" (usuario ligou a
+    // restricao mas nao marcou ninguem - validarDiaEspecial recusa isso).
+    // Achatar os dois casos aqui faria a validacao nunca acusar o segundo.
+    return {
+      data,
+      tipo: "janela",
+      inicio: texto(b.inicio),
+      fim: texto(b.fim),
+      motivo,
+      ...(Array.isArray(b.escalados) ? { escalados: listaDeTextos(b.escalados) } : {}),
+    };
+  }
   return null;
 }
 
@@ -83,7 +100,7 @@ agendaRouter.post("/dias-especiais", exigirPermissao("agenda:dia-especial"), (re
       return;
     }
 
-    const erro = validarDiaEspecial(dia);
+    const erro = validarDiaEspecial(dia, nomesCadastrados());
     if (erro) {
       res.status(400).json({ erro });
       return;

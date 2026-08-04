@@ -14,7 +14,20 @@
  */
 export type DiaEspecial =
   | { data: string; tipo: "bloqueado"; motivo: string }
-  | { data: string; tipo: "janela"; inicio: string; fim: string; motivo: string };
+  | {
+      data: string;
+      tipo: "janela";
+      inicio: string;
+      fim: string;
+      motivo: string;
+      /**
+       * Nomes de quem participa desta escala - o resto do time fica fora do
+       * revezamento o dia inteiro, nao so fora da janela. Ausente (ou lista
+       * vazia) significa "todo o time participa", o comportamento de antes
+       * desta opcao existir - cadastros antigos nao tem este campo.
+       */
+      escalados?: string[];
+    };
 
 /**
  * Ferias de um atendente, com `fim` inclusivo - o retorno e no dia seguinte.

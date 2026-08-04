@@ -56,6 +56,21 @@ export function estaDeFerias(atendente: string, dia: DiaCivil, ferias: Ferias[])
 }
 
 /**
+ * O atendente participa do revezamento neste dia?
+ *
+ * So um dia de janela com `escalados` definido restringe alguem - nos demais
+ * casos (dia normal, dia bloqueado, janela sem escala) todo mundo participa,
+ * o bloqueado global ja e tratado em outro lugar (estadoDoDia). Quem nao esta
+ * escalado fica fora o dia inteiro, nao so fora da janela: e um plantao
+ * reduzido, nao uma equipe inteira trabalhando menos horas.
+ */
+export function estaEscaladoHoje(atendente: string, dia: DiaCivil, especiais: DiaEspecial[]): boolean {
+  const especial = especiais.find((e) => e.data === formatarISO(dia));
+  if (especial?.tipo !== "janela" || !especial.escalados || especial.escalados.length === 0) return true;
+  return especial.escalados.includes(atendente);
+}
+
+/**
  * Os dias do intervalo em que nenhum atendente sobraria no rodizio.
  *
  * Serve de aviso na hora de cadastrar ferias, nao de trava: deixar a equipe
@@ -117,8 +132,12 @@ export function validarFerias(nova: Ferias, existentes: Ferias[], nomesCadastrad
   return null;
 }
 
-/** Erro de cadastro em texto, ou null se estiver tudo certo. */
-export function validarDiaEspecial(dia: DiaEspecial): string | null {
+/**
+ * Erro de cadastro em texto, ou null se estiver tudo certo. `nomesCadastrados`
+ * so importa quando ha `escalados` - opcional pra nao quebrar quem chama sem
+ * essa lista em mao (ex.: o botao de feriados nunca manda escalados).
+ */
+export function validarDiaEspecial(dia: DiaEspecial, nomesCadastrados?: string[]): string | null {
   if (!dataValida(dia.data)) {
     return "Data precisa estar no formato AAAA-MM-DD e existir no calendario.";
   }
@@ -131,6 +150,15 @@ export function validarDiaEspecial(dia: DiaEspecial): string | null {
     }
     if (dia.inicio >= dia.fim) {
       return "O horario de inicio precisa ser antes do de fim.";
+    }
+    if (dia.escalados) {
+      if (dia.escalados.length === 0) {
+        return "Selecione ao menos um atendente para a escala, ou desmarque a opcao pra deixar o time inteiro.";
+      }
+      const desconhecido = nomesCadastrados && dia.escalados.find((nome) => !nomesCadastrados.includes(nome));
+      if (desconhecido) {
+        return `Atendente "${desconhecido}" nao esta cadastrado.`;
+      }
     }
   }
   return null;

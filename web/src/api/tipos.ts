@@ -162,7 +162,15 @@ export interface Fila {
 /** Espelha src/agenda/tipos.ts. */
 export type DiaEspecial =
   | { data: string; tipo: "bloqueado"; motivo: string }
-  | { data: string; tipo: "janela"; inicio: string; fim: string; motivo: string };
+  | {
+      data: string;
+      tipo: "janela";
+      inicio: string;
+      fim: string;
+      motivo: string;
+      /** Ausente ou vazio = todo o time participa desta escala. */
+      escalados?: string[];
+    };
 
 export interface Ferias {
   id: string;

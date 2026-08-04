@@ -112,4 +112,17 @@ describe("explicarDia", () => {
     expect(texto).toContain("08:00");
     expect(texto).toContain("a partir das 12:00");
   });
+
+  it("com escala, nomeia quem participa e avisa que o resto fica fora o dia todo", () => {
+    // O pedido: selecionar quem entra na escala, e deixar claro que quem nao
+    // esta na lista nao trabalha nada naquele dia - nao e so fora da janela.
+    const texto = explicarDia({ ...VESPERA, escalados: ["Felipe Prado", "Mateus Ricardo"] });
+    expect(texto).toContain("Felipe Prado, Mateus Ricardo");
+    expect(texto).toContain("fica fora do revezamento o dia inteiro");
+  });
+
+  it("sem escala definida, nao menciona nada sobre quem participa", () => {
+    const texto = explicarDia(VESPERA);
+    expect(texto).not.toContain("Só participam");
+  });
 });

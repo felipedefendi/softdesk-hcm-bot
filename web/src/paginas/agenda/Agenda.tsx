@@ -235,6 +235,7 @@ export function Agenda() {
               <FormularioDiaEspecial
                 data={drawer.data}
                 existente={especialDoDia}
+                atendentes={atendentes ?? []}
                 onSalvar={aoSalvarDia}
                 onRemover={aoRemoverDia}
                 onCancelar={() => setDrawer({ tipo: "fechado" })}
