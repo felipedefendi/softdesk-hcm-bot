@@ -93,10 +93,22 @@ export function contaBloqueada(usuario: Usuario, agora: Date): boolean {
 /**
  * Ao chegar no limite de tentativas, bloqueia por DURACAO_BLOQUEIO_MS a
  * partir de agora - o bloqueio destrava sozinho, sem acao de admin.
+ *
+ * Se ja existia um bloqueio e ele ja passou, a tentativa atual comeca uma
+ * janela nova do zero. Sem isso "destrava sozinho" seria mentira: bastaria
+ * errar mais uma vez depois da janela pra travar de novo na hora, pra sempre
+ * - quem for tentando de tempos em tempos nunca teria as 5 chances de volta.
  */
 export function aplicarTentativaFalha(usuario: Usuario, agora: Date): Usuario {
-  const tentativas = usuario.tentativasFalhas + 1;
-  const bloqueadoAte = tentativas >= LIMITE_TENTATIVAS ? new Date(agora.getTime() + DURACAO_BLOQUEIO_MS).toISOString() : usuario.bloqueadoAte;
+  const comecandoJanelaNova = usuario.bloqueadoAte !== null && !contaBloqueada(usuario, agora);
+  const tentativas = (comecandoJanelaNova ? 0 : usuario.tentativasFalhas) + 1;
+  const bloqueadoAte =
+    tentativas >= LIMITE_TENTATIVAS
+      ? new Date(agora.getTime() + DURACAO_BLOQUEIO_MS).toISOString()
+      : comecandoJanelaNova
+        ? null
+        : usuario.bloqueadoAte;
+
   return { ...usuario, tentativasFalhas: tentativas, bloqueadoAte };
 }
 

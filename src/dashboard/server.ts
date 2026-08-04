@@ -35,12 +35,14 @@ const limitadorLogin = rateLimit({
 
 app.post("/api/login", limitadorLogin, (req, res) => {
   const senha = typeof req.body?.senha === "string" ? req.body.senha : "";
-  const token = autenticar(senha);
-  if (!token) {
-    res.status(401).json({ erro: "Senha incorreta" });
+  const email = typeof req.body?.email === "string" ? req.body.email : undefined;
+
+  const resultado = autenticar({ email, senha });
+  if ("erro" in resultado) {
+    res.status(401).json({ erro: resultado.erro });
     return;
   }
-  res.cookie(NOME_COOKIE, token, { httpOnly: true, sameSite: "lax", secure: true });
+  res.cookie(NOME_COOKIE, resultado.token, { httpOnly: true, sameSite: "lax", secure: true });
   res.json({ ok: true });
 });
 

@@ -84,6 +84,34 @@ test("aplicarTentativaFalha bloqueia por 15 minutos exatos na quinta tentativa",
   assert.equal(usuario.bloqueadoAte, new Date(agora.getTime() + 15 * 60 * 1000).toISOString());
 });
 
+test("depois que o bloqueio anterior expira, a contagem recomeca do zero", () => {
+  // Sem isso "destrava sozinho" seria mentira: uma falha isolada horas depois
+  // do bloqueio anterior travaria a conta de novo na hora, pra sempre.
+  const bloqueioJaPassou = new Date("2026-08-04T12:00:00Z");
+  const agora = new Date("2026-08-04T15:00:00Z"); // 3h depois, bem fora da janela de 15min
+
+  const usuario = usuarioBase({ tentativasFalhas: 5, bloqueadoAte: bloqueioJaPassou.toISOString() });
+  const depois = aplicarTentativaFalha(usuario, agora);
+
+  assert.equal(depois.tentativasFalhas, 1);
+  assert.equal(depois.bloqueadoAte, null);
+});
+
+test("uma segunda janela expirada tambem bloqueia de novo ao chegar no limite", () => {
+  const agora = new Date("2026-08-04T15:00:00Z");
+  let usuario = usuarioBase({ tentativasFalhas: 5, bloqueadoAte: "2026-08-04T12:00:00Z" });
+
+  for (let i = 1; i < 5; i++) {
+    usuario = aplicarTentativaFalha(usuario, agora);
+    assert.equal(usuario.tentativasFalhas, i);
+    assert.equal(usuario.bloqueadoAte, null);
+  }
+
+  usuario = aplicarTentativaFalha(usuario, agora);
+  assert.equal(usuario.tentativasFalhas, 5);
+  assert.equal(usuario.bloqueadoAte, new Date(agora.getTime() + 15 * 60 * 1000).toISOString());
+});
+
 test("aplicarSucesso zera tentativas e bloqueio", () => {
   const usuario = usuarioBase({ tentativasFalhas: 5, bloqueadoAte: "2026-08-04T12:30:00Z" });
   const depois = aplicarSucesso(usuario);
