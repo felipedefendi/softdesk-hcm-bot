@@ -65,3 +65,18 @@ export function resumoDoDia(celula: CelulaDia): string | null {
   if (celula.especial?.tipo === "janela") return `${celula.especial.inicio}–${celula.especial.fim}`;
   return null;
 }
+
+/**
+ * O que acontece no dia, em portugues corrido - pro drawer do dia e pra faixa
+ * da Visao geral. Diz o efeito no revezamento, nao so o rotulo: quem abre a
+ * data quer saber se o bot vai encaminhar chamado ou nao.
+ */
+export function explicarDia(especial: DiaEspecial): string {
+  if (especial.tipo === "bloqueado") {
+    return `${especial.motivo} — ninguém trabalha. O revezamento fica desligado o dia inteiro e nenhum chamado é encaminhado.`;
+  }
+  return (
+    `${especial.motivo} — expediente das ${especial.inicio} às ${especial.fim}. ` +
+    `O revezamento só encaminha dentro dessa janela e é desligado a partir das ${especial.fim}.`
+  );
+}

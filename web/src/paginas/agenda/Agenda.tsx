@@ -8,7 +8,8 @@ import { useAgenda } from "../../hooks/useAgenda";
 import { useAtendentes } from "../../hooks/useAtendentes";
 import { useAuth } from "../../auth/AuthContext";
 import { ehMeuAtendente, souAdmin } from "../../lib/permissoes";
-import { gradeDoMes } from "../../lib/gradeDoMes";
+import { explicarDia, gradeDoMes } from "../../lib/gradeDoMes";
+import { andarMes } from "../../lib/navegarMes";
 import type { DiaEspecial } from "../../api/tipos";
 import { GradeDoMes } from "./GradeDoMes";
 import { FormularioDiaEspecial } from "./FormularioDiaEspecial";
@@ -78,15 +79,15 @@ export function Agenda() {
     [agenda, hoje]
   );
 
-  function andarMes(passo: number) {
-    setCursor(({ ano, mes }) => {
-      const total = (ano * 12 + (mes - 1) + passo + 12000) % 12000;
-      return { ano: Math.floor(total / 12), mes: (total % 12) + 1 };
-    });
+  function irParaMes(passo: number) {
+    setCursor((atual) => andarMes(atual, passo));
   }
 
   const diaAberto = drawer.tipo === "dia" ? drawer.data : null;
   const especialDoDia = diaAberto ? agenda?.diasEspeciais.find((d) => d.data === diaAberto) ?? null : null;
+  const feriasDoDiaAberto = diaAberto
+    ? (agenda?.ferias ?? []).filter((f) => f.inicio <= diaAberto && diaAberto <= f.fim)
+    : [];
 
   async function aoSalvarDia(dia: DiaEspecial) {
     await salvarDias(dia);
@@ -107,7 +108,7 @@ export function Agenda() {
             <button
               type="button"
               className={styles.botaoMes}
-              onClick={() => andarMes(-1)}
+              onClick={() => irParaMes(-1)}
               aria-label="Mês anterior"
             >
               <ChevronLeft size={18} strokeWidth={1.5} />
@@ -115,7 +116,7 @@ export function Agenda() {
             <h2 className={styles.titulo}>
               {MESES[cursor.mes - 1]} de {cursor.ano}
             </h2>
-            <button type="button" className={styles.botaoMes} onClick={() => andarMes(1)} aria-label="Próximo mês">
+            <button type="button" className={styles.botaoMes} onClick={() => irParaMes(1)} aria-label="Próximo mês">
               <ChevronRight size={18} strokeWidth={1.5} />
             </button>
           </div>
@@ -136,16 +137,14 @@ export function Agenda() {
         {agenda === null && !erro && <Esqueleto linhas={5} />}
         {agenda !== null && (
           <>
-            {/* Bloquear dia ou definir janela e acao de admin - clicar so abre o
-                cadastro pra quem pode editar, o resto ja ve tudo direto na celula. */}
-            <GradeDoMes
-              semanas={semanas}
-              hoje={hoje}
-              onAbrirDia={(data) => {
-                if (admin) setDrawer({ tipo: "dia", data });
-              }}
-            />
-            {admin && <p className={styles.dica}>Clique num dia para bloqueá-lo ou definir um horário diferente.</p>}
+            {/* Qualquer pessoa abre o dia pra entender o que acontece nele; so
+                admin ve o formulario de edicao dentro do drawer. */}
+            <GradeDoMes semanas={semanas} hoje={hoje} onAbrirDia={(data) => setDrawer({ tipo: "dia", data })} />
+            <p className={styles.dica}>
+              {admin
+                ? "Clique num dia para ver o que acontece nele, bloqueá-lo ou definir um horário diferente."
+                : "Clique num dia para ver o que acontece nele."}
+            </p>
           </>
         )}
       </Cartao>
@@ -213,13 +212,39 @@ export function Agenda() {
         onFechar={() => setDrawer({ tipo: "fechado" })}
       >
         {drawer.tipo === "dia" && (
-          <FormularioDiaEspecial
-            data={drawer.data}
-            existente={especialDoDia}
-            onSalvar={aoSalvarDia}
-            onRemover={aoRemoverDia}
-            onCancelar={() => setDrawer({ tipo: "fechado" })}
-          />
+          <>
+            <div className={styles.resumoDoDia}>
+              {especialDoDia ? (
+                <p className={especialDoDia.tipo === "bloqueado" ? styles.explicacaoBloqueio : styles.explicacaoJanela}>
+                  {explicarDia(especialDoDia)}
+                </p>
+              ) : (
+                <p className={styles.explicacaoNormal}>
+                  Dia normal — o revezamento funciona no horário de sempre.
+                </p>
+              )}
+
+              {feriasDoDiaAberto.length > 0 && (
+                <p className={styles.explicacaoFerias}>
+                  De férias: {feriasDoDiaAberto.map((f) => f.atendente).join(", ")}.
+                </p>
+              )}
+            </div>
+
+            {admin ? (
+              <FormularioDiaEspecial
+                data={drawer.data}
+                existente={especialDoDia}
+                onSalvar={aoSalvarDia}
+                onRemover={aoRemoverDia}
+                onCancelar={() => setDrawer({ tipo: "fechado" })}
+              />
+            ) : (
+              <button type="button" className="botao-secundario" onClick={() => setDrawer({ tipo: "fechado" })}>
+                Fechar
+              </button>
+            )}
+          </>
         )}
 
         {drawer.tipo === "ferias" && (

@@ -64,6 +64,42 @@
   margin: var(--space-3) 0 0;
 }
 
+/* Explicacao do dia no topo do drawer: o que a pessoa veio saber ao clicar na
+   celula, antes de qualquer campo de formulario. */
+.resumoDoDia {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+.resumoDoDia p {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--hairline);
+  font-size: var(--fs-sm);
+  line-height: 1.45;
+}
+
+.explicacaoBloqueio {
+  background: var(--erro-fraco);
+  border-color: var(--erro) !important;
+  color: var(--texto);
+}
+
+.explicacaoJanela {
+  background: var(--acento-fraco);
+  border-color: var(--acento) !important;
+  color: var(--texto);
+}
+
+.explicacaoNormal,
+.explicacaoFerias {
+  background: var(--surface-2);
+  color: var(--texto-fraco);
+}
+
 .badgeAgora {
   margin-left: var(--space-2);
   padding: 0.05rem 0.5rem;

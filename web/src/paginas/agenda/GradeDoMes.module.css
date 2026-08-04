@@ -86,6 +86,14 @@
   color: var(--acento);
 }
 
+.motivo {
+  max-width: 100%;
+  font-size: var(--fs-2xs);
+  line-height: 1.15;
+  color: var(--texto-fraco);
+  overflow-wrap: anywhere;
+}
+
 .chipFerias {
   max-width: 100%;
   overflow: hidden;
@@ -106,6 +114,12 @@
     min-height: 3.2rem;
     padding: 0.25rem;
     align-items: center;
+  }
+
+  /* O motivo nao cabe numa celula de 3.2rem - vira ponto junto com o resto,
+     e o texto completo fica no drawer do dia. */
+  .motivo {
+    display: none;
   }
 
   .marcaEspecial,

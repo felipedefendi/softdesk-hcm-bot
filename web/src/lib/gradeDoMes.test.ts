@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { gradeDoMes, resumoDoDia } from "./gradeDoMes";
+import { explicarDia, gradeDoMes, resumoDoDia } from "./gradeDoMes";
 import type { DiaEspecial, Ferias } from "../api/tipos";
 
 // Agosto/2026 comeca num sabado, entao a primeira semana leva 6 dias de julho -
@@ -94,5 +94,22 @@ describe("resumoDoDia", () => {
     expect(resumoDoDia({ ...base, especial: NATAL })).toBe("Sem expediente");
     expect(resumoDoDia({ ...base, especial: VESPERA })).toBe("08:00–12:00");
     expect(resumoDoDia({ ...base, especial: null })).toBeNull();
+  });
+});
+
+describe("explicarDia", () => {
+  it("no bloqueio, diz o motivo e que ninguem trabalha", () => {
+    const texto = explicarDia(NATAL);
+    expect(texto).toContain("Natal");
+    expect(texto).toContain("ninguém trabalha");
+  });
+
+  it("na janela, diz o motivo, o horario e a partir de quando desliga", () => {
+    // O que o Felipe pediu: abrir o dia 24 e entender que e meio periodo e que
+    // o revezamento para as 12:00.
+    const texto = explicarDia(VESPERA);
+    expect(texto).toContain("Véspera");
+    expect(texto).toContain("08:00");
+    expect(texto).toContain("a partir das 12:00");
   });
 });

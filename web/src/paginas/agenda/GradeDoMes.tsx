@@ -59,7 +59,15 @@ export function GradeDoMes({ semanas, hoje, onAbrirDia }: Props) {
           >
             <span className={styles.numero}>{celula.dia}</span>
 
-            {resumo && <span className={styles.marcaEspecial}>{resumo}</span>}
+            {resumo && (
+              <>
+                <span className={styles.marcaEspecial}>{resumo}</span>
+                {/* O motivo e o que responde "por que este dia esta marcado?" -
+                    sem ele a celula so diz "Sem expediente" e a pessoa precisa
+                    abrir o dia pra descobrir que e Natal. */}
+                <span className={styles.motivo}>{celula.especial?.motivo}</span>
+              </>
+            )}
 
             {celula.ferias.map((f) => (
               <span key={f.id} className={styles.chipFerias} title={`${f.atendente} — férias`}>
