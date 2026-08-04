@@ -9,7 +9,24 @@ import { lerConfiguracoes } from "./configuracoes";
 import { salvarStatus } from "./status";
 import { registrarExecucao } from "./execucoes";
 import { resumirErro } from "./relatorios/erros";
+import { diaEmSaoPaulo, horaEmSaoPaulo } from "./relatorios/periodos";
+import { lerDiasEspeciais } from "./agenda/armazenamento";
+import { estadoDoDia } from "./agenda/regras";
 import { config } from "./config";
+
+/**
+ * Fecha a passada sem ter aberto sessao no SoftDesk. Registrar mesmo assim
+ * mantem a Saude do bot honesta: sem isso, um feriado pareceria bot morto.
+ */
+function passadaVazia(inicio: Date): { processados: number } {
+  salvarStatus({
+    ultimaExecucao: new Date().toISOString(),
+    ultimoErro: null,
+    chamadosProcessadosUltimaExecucao: 0,
+  });
+  registrarExecucao({ inicio: inicio.toISOString(), duracaoMs: Date.now() - inicio.getTime(), processados: 0, erro: null });
+  return { processados: 0 };
+}
 
 /**
  * Uma passada completa: lista chamados "Sem atendente", checa o SLA de
@@ -25,13 +42,19 @@ export async function verificarChamados(): Promise<{ processados: number }> {
 
   if (!cfg.automacaoAtiva) {
     // Revezamento pausado pelo dashboard - nem abre sessao no SoftDesk.
-    salvarStatus({
-      ultimaExecucao: new Date().toISOString(),
-      ultimoErro: null,
-      chamadosProcessadosUltimaExecucao: 0,
-    });
-    registrarExecucao({ inicio: inicio.toISOString(), duracaoMs: Date.now() - inicio.getTime(), processados: 0, erro: null });
-    return { processados: 0 };
+    return passadaVazia(inicio);
+  }
+
+  // Feriado, ponto facultativo ou expediente reduzido cadastrado na Agenda.
+  // Os chamados nao se perdem: listarChamadosSemAtendente relista tudo a cada
+  // passada, entao o que chegar durante a pausa e encaminhado de uma vez na
+  // primeira passada valida.
+  const agenda = estadoDoDia(diaEmSaoPaulo(), horaEmSaoPaulo(), lerDiasEspeciais());
+  if (agenda.rodizio !== "liberado") {
+    const detalhe =
+      agenda.rodizio === "bloqueado" ? "dia bloqueado" : `fora do expediente de hoje (${agenda.inicio} as ${agenda.fim})`;
+    console.log(`[${new Date().toLocaleString("pt-BR")}] Revezamento parado: ${detalhe} - ${agenda.motivo}.`);
+    return passadaVazia(inicio);
   }
 
   const sessao = await abrirSessao();

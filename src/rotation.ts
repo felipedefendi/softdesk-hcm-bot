@@ -1,7 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import { config } from "./config";
-import { listarAtendentes, reativarAutomaticamente } from "./atendentes";
+import { listarAtendentes, reativarAutomaticamente, type Atendente } from "./atendentes";
+import { lerFerias } from "./agenda/armazenamento";
+import { estaDeFerias } from "./agenda/regras";
+import { diaEmSaoPaulo } from "./relatorios/periodos";
 
 interface RotationState {
   ultimoAtendente: string | null;
@@ -22,17 +25,33 @@ function salvarEstado(estado: RotationState): void {
 }
 
 /**
- * Espia quem e o proximo atendente ativo da fila, sem avancar o rodizio.
- * A ordem fixa e a ordem de cadastro em state/atendentes.json; atendentes
- * inativos (falta/ferias) sao pulados, mas mantem seu lugar na ordem.
+ * Quem pode receber chamado hoje: precisa estar ativo (nao teve falta nem
+ * afastamento marcado na mao) e nao estar de ferias.
+ *
+ * Sao duas coisas separadas de proposito. O `ativo` e o imprevisto de hoje;
+ * ferias e intervalo agendado com antecedencia, avaliado na hora - ninguem
+ * precisa lembrar de desativar a pessoa na vespera nem de reativar na volta.
+ */
+function disponiveisHoje(todos: Atendente[]): (a: Atendente) => boolean {
+  const hoje = diaEmSaoPaulo();
+  const ferias = lerFerias();
+  return (a) => a.ativo && !estaDeFerias(a.nome, hoje, ferias);
+}
+
+/**
+ * Espia quem e o proximo atendente disponivel da fila, sem avancar o rodizio.
+ * A ordem fixa e a ordem de cadastro em state/atendentes.json; quem esta
+ * indisponivel e pulado, mas mantem seu lugar na ordem - assim ninguem volta
+ * de ferias tendo perdido a vez.
  */
 export function atendenteAtual(): string {
   reativarAutomaticamente();
 
   const todos = listarAtendentes();
-  const ativos = todos.filter((a) => a.ativo);
+  const disponivel = disponiveisHoje(todos);
+  const ativos = todos.filter(disponivel);
   if (ativos.length === 0) {
-    throw new Error("Nenhum atendente ativo no rodizio (todos afastados).");
+    throw new Error("Nenhum atendente disponivel no rodizio (todos afastados ou de ferias).");
   }
 
   const estado = lerEstado();
@@ -40,7 +59,7 @@ export function atendenteAtual(): string {
 
   for (let passo = 1; passo <= todos.length; passo++) {
     const candidato = todos[(indiceUltimo + passo) % todos.length];
-    if (candidato.ativo) return candidato.nome;
+    if (disponivel(candidato)) return candidato.nome;
   }
 
   return ativos[0].nome;
@@ -68,8 +87,13 @@ export function definirProximoManualmente(nome: string): void {
   if (indiceAlvo === -1) {
     throw new Error(`Atendente "${nome}" nao encontrado.`);
   }
+  // Duas mensagens em vez de uma "indisponivel": o conserto e diferente em cada
+  // caso - reativar na tela de equipe, ou apagar as ferias na Agenda.
   if (!todos[indiceAlvo].ativo) {
     throw new Error(`Atendente "${nome}" esta inativo e nao pode ser o proximo do rodizio.`);
+  }
+  if (estaDeFerias(nome, diaEmSaoPaulo(), lerFerias())) {
+    throw new Error(`Atendente "${nome}" esta de ferias e nao pode ser o proximo do rodizio.`);
   }
 
   const indicePredecessor = (indiceAlvo - 1 + todos.length) % todos.length;

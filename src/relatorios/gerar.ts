@@ -32,6 +32,8 @@ import {
   type ContagemComPercentual,
 } from "./metricas";
 import { resumirErro } from "./erros";
+import { lerDiasEspeciais } from "../agenda/armazenamento";
+import { motivoDoBloqueio } from "../agenda/regras";
 
 /** Quantos dias uteis anteriores entram na media de comparacao do diario. */
 const DIAS_DE_COMPARACAO = 5;
@@ -80,11 +82,15 @@ export interface RelatorioMensal {
 }
 
 export interface Relatorios {
-  diario: RelatorioDiario;
+  dia: DiaCivil;
+  /** Null quando o dia inteiro esta bloqueado na Agenda. */
+  diario: RelatorioDiario | null;
   /** Null nos dias que nao sao sexta. */
   semanal: RelatorioSemanal | null;
   /** Null fora do primeiro dia util do mes. */
   mensal: RelatorioMensal | null;
+  /** Motivo do bloqueio de dia inteiro, quando houver. */
+  bloqueio: string | null;
 }
 
 const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -194,23 +200,37 @@ export interface ForcarCadencias {
  * Coleta o que a data pede: diario todo dia util, semanal tambem na sexta e
  * mensal tambem no primeiro dia util do mes. Os `forcar` existem pra conferir
  * os cards fora da data certa, sem esperar a semana ou o mes virar.
+ *
+ * Dia bloqueado na Agenda derruba **so o diario**. Semanal e mensal continuam
+ * saindo: silenciar o card inteiro num feriado que caisse numa sexta nao
+ * adiaria o semanal, perderia - foi assim que o mensal se perdia antes de
+ * `ehPrimeiroDiaUtilDoMes`, e o remedio la nao vale a pena repetir o erro aqui.
  */
 export async function gerarRelatorios(
   agora: Date = new Date(),
   forcar: ForcarCadencias = {}
 ): Promise<Relatorios> {
+  const dia = diaEmSaoPaulo(agora);
+  const bloqueio = motivoDoBloqueio(dia, lerDiasEspeciais());
+
+  const querDiario = !bloqueio;
+  const querSemanal = diaDaSemana(dia) === SEXTA || !!forcar.semanal;
+  const querMensal = ehPrimeiroDiaUtilDoMes(dia) || !!forcar.mensal;
+
+  // Feriado no meio da semana: nada a coletar, entao nem loga no SoftDesk.
+  if (!querDiario && !querSemanal && !querMensal) {
+    return { dia, diario: null, semanal: null, mensal: null, bloqueio };
+  }
+
   const sessao = await abrirSessao();
 
   try {
-    const diario = await coletarDiario(sessao, agora);
-    const dia = diaEmSaoPaulo(agora);
-    const ehSexta = diaDaSemana(dia) === SEXTA;
-
     return {
-      diario,
-      semanal: ehSexta || forcar.semanal ? await coletarSemanal(sessao, dia) : null,
-      mensal:
-        ehPrimeiroDiaUtilDoMes(dia) || forcar.mensal ? await coletarMensal(sessao, dia) : null,
+      dia,
+      diario: querDiario ? await coletarDiario(sessao, agora) : null,
+      semanal: querSemanal ? await coletarSemanal(sessao, dia) : null,
+      mensal: querMensal ? await coletarMensal(sessao, dia) : null,
+      bloqueio,
     };
   } finally {
     await encerrarSessao(sessao);

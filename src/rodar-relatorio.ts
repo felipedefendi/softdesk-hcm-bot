@@ -46,6 +46,14 @@ async function main(): Promise<void> {
 
   try {
     const relatorios = await comRetentativa(() => gerarRelatorios(momento, forcar));
+
+    // Dia bloqueado no meio da semana: nao ha diario, semanal nem mensal. Postar
+    // um card so pra dizer "hoje foi feriado" seria ruido no canal.
+    if (!relatorios.diario && !relatorios.semanal && !relatorios.mensal) {
+      console.log(`[${agora()}] Dia bloqueado na Agenda (${relatorios.bloqueio}) - nada a enviar.`);
+      return;
+    }
+
     const card = montarCardRelatorios(relatorios);
 
     if (soImprimir) {
@@ -53,13 +61,18 @@ async function main(): Promise<void> {
       return;
     }
 
-    const cadencia = ["diario", relatorios.semanal && "semanal", relatorios.mensal && "mensal"]
+    const cadencia = [
+      relatorios.diario && "diario",
+      relatorios.semanal && "semanal",
+      relatorios.mensal && "mensal",
+    ]
       .filter(Boolean)
       .join(" + ");
 
     await postarNoTeams(card, `o relatorio ${cadencia}`, webhook);
     console.log(
-      `[${agora()}] Relatorio ${cadencia} enviado: ${relatorios.diario.total} chamado(s) no dia` +
+      `[${agora()}] Relatorio ${cadencia} enviado:` +
+        (relatorios.diario ? ` ${relatorios.diario.total} chamado(s) no dia` : ` sem diario (${relatorios.bloqueio})`) +
         (relatorios.semanal ? `, ${relatorios.semanal.total} na semana` : "") +
         (relatorios.mensal ? `, ${relatorios.mensal.total} no mes` : "") +
         "."

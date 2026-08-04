@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { config } from "./config";
+import { diaEmSaoPaulo, formatarISO } from "./relatorios/periodos";
 
 export interface Atendente {
   nome: string;
@@ -40,7 +41,11 @@ export function atendentesAtivos(): Atendente[] {
  */
 export function reativarAutomaticamente(): boolean {
   const atendentes = listarAtendentes();
-  const hoje = new Date().toISOString().slice(0, 10);
+  // Dia civil de Sao Paulo, nao UTC: a VM roda em UTC e o softdesk-bot.service
+  // nao fixa TZ, entao `toISOString()` ja marcava amanha a partir das 18:00
+  // locais - quem tinha retorno pra amanha voltava pro rodizio hoje a tarde,
+  // bem dentro das ultimas passadas do dia (o timer vai ate 18:55).
+  const hoje = formatarISO(diaEmSaoPaulo());
   let mudou = false;
 
   for (const a of atendentes) {

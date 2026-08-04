@@ -13,7 +13,7 @@
     "build:web": "npm run build --prefix web",
     "test:web": "npm run test --prefix web",
     "build": "tsc",
-    "test": "tsc && node --test dist/relatorios/periodos.test.js dist/relatorios/metricas.test.js dist/relatorios/erros.test.js dist/alertaRodizio.test.js dist/cofre/cripto.test.js",
+    "test": "tsc && node --test dist/relatorios/periodos.test.js dist/relatorios/metricas.test.js dist/relatorios/erros.test.js dist/alertaRodizio.test.js dist/cofre/cripto.test.js dist/agenda/feriados.test.js dist/agenda/regras.test.js dist/relatorios/cardTeams.test.js",
     "start": "node dist/index.js"
   },
   "dependencies": {

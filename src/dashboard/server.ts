@@ -15,6 +15,7 @@ import { obterFila } from "../fila";
 import { listarExecucoes } from "../execucoes";
 import { autenticar, exigirLogin, invalidarToken, NOME_COOKIE } from "./auth";
 import { cofreRouter } from "./cofreRotas";
+import { agendaRouter } from "./agendaRotas";
 
 const app = express();
 // Necessario atras do nginx: sem isso o Express nao confia no X-Forwarded-For
@@ -52,6 +53,7 @@ app.post("/api/logout", (req, res) => {
 
 app.use("/api", exigirLogin);
 app.use("/api/cofre", cofreRouter);
+app.use("/api/agenda", agendaRouter);
 
 app.get("/api/atendentes", (req, res) => {
   res.json(listarAtendentes());

@@ -251,10 +251,36 @@ function secaoMensal(r: RelatorioMensal, separador: boolean): Record<string, unk
   return itens;
 }
 
+/**
+ * Aviso que entra no lugar da secao diaria quando o dia esta bloqueado na
+ * Agenda. Existe porque o semanal e o mensal continuam saindo nesses dias: sem
+ * esta linha, um card de sexta-feira sem numeros do dia pareceria defeito.
+ */
+function secaoDiaBloqueado(dia: DiaCivil, motivo: string): Record<string, unknown>[] {
+  return [
+    cabecalho("🚫", "SEM EXPEDIENTE", rotuloDoDia(dia), false),
+    {
+      type: "TextBlock",
+      text: `O revezamento ficou desligado o dia todo — ${motivo}. Sem relatório diário.`,
+      wrap: true,
+      spacing: "Medium",
+    },
+  ];
+}
+
 export function montarCardRelatorios(relatorios: Relatorios) {
-  const body = [...secaoDiaria(relatorios.diario, false)];
-  if (relatorios.semanal) body.push(...secaoSemanal(relatorios.semanal, true));
-  if (relatorios.mensal) body.push(...secaoMensal(relatorios.mensal, true));
+  const body: Record<string, unknown>[] = [];
+
+  if (relatorios.diario) {
+    body.push(...secaoDiaria(relatorios.diario, false));
+  } else if (relatorios.bloqueio) {
+    body.push(...secaoDiaBloqueado(relatorios.dia, relatorios.bloqueio));
+  }
+
+  // O separador so aparece quando ja ha secao acima - num dia bloqueado que
+  // caia numa sexta, o semanal vem depois do aviso, nao no topo.
+  if (relatorios.semanal) body.push(...secaoSemanal(relatorios.semanal, body.length > 0));
+  if (relatorios.mensal) body.push(...secaoMensal(relatorios.mensal, body.length > 0));
   return envelope(body);
 }
 
