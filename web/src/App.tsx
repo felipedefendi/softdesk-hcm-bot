@@ -12,6 +12,7 @@ import { Historico } from "./paginas/historico/Historico";
 import { SaudeDoBot } from "./paginas/saudeDoBot/SaudeDoBot";
 import { Cofre } from "./paginas/cofre/Cofre";
 import { Usuarios } from "./paginas/usuarios/Usuarios";
+import { Auditoria } from "./paginas/auditoria/Auditoria";
 import { Perfil } from "./paginas/perfil/Perfil";
 import { Configuracoes } from "./paginas/configuracoes/Configuracoes";
 
@@ -38,6 +39,7 @@ function ConteudoAutenticado() {
         <Route path="/saude" element={<SaudeDoBot />} />
         <Route path="/cofre" element={<Cofre />} />
         <Route path="/usuarios" element={<Usuarios />} />
+        <Route path="/auditoria" element={<Auditoria />} />
         <Route path="/perfil" element={<Perfil />} />
         <Route path="/configuracoes" element={<Configuracoes />} />
         <Route path="*" element={<Navigate to="/" replace />} />

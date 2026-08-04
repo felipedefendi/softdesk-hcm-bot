@@ -10,6 +10,7 @@ import {
 } from "../usuarios/usuarios";
 import { gerarConvitePara } from "../usuarios/convites";
 import { exigirPermissao } from "./exigirPermissao";
+import { quemEstaAgindo, registrarAcao } from "../auditoria";
 import { listarAtendentes } from "../atendentes";
 import type { Usuario, Papel } from "../usuarios/tipos";
 
@@ -70,6 +71,7 @@ usuariosRouter.post("/", (req, res) => {
   try {
     const usuario = criarUsuario({ nome, email, papel, codigoAtendente });
     const { token } = gerarConvitePara(usuario.id);
+    registrarAcao(quemEstaAgindo(req), "usuario:criar", `${nome} <${email}> - ${papel}`);
     res.json({ usuario: paraPublico(usuario), tokenConvite: token });
   } catch (err) {
     res.status(400).json({ erro: err instanceof Error ? err.message : String(err) });
@@ -90,6 +92,7 @@ usuariosRouter.post("/:id/convite", (req, res) => {
   }
 
   const { token } = gerarConvitePara(usuario.id);
+  registrarAcao(quemEstaAgindo(req), "usuario:gerar-convite", usuario.email);
   res.json({ tokenConvite: token });
 });
 
@@ -122,9 +125,17 @@ usuariosRouter.patch("/:id", (req, res) => {
   }
 
   try {
-    if (b.papel === "admin" || b.papel === "comum") mudarPapel(id, b.papel);
-    if (b.ativo === false) desativarUsuario(id);
-    else if (b.ativo === true) reativarUsuario(id);
+    if (b.papel === "admin" || b.papel === "comum") {
+      mudarPapel(id, b.papel);
+      registrarAcao(quemEstaAgindo(req), "usuario:mudar-papel", `${alvo.email} -> ${b.papel}`);
+    }
+    if (b.ativo === false) {
+      desativarUsuario(id);
+      registrarAcao(quemEstaAgindo(req), "usuario:desativar", alvo.email);
+    } else if (b.ativo === true) {
+      reativarUsuario(id);
+      registrarAcao(quemEstaAgindo(req), "usuario:reativar", alvo.email);
+    }
     res.json(listarUsuarios().map(paraPublico));
   } catch (err) {
     res.status(400).json({ erro: err instanceof Error ? err.message : String(err) });

@@ -14,6 +14,7 @@ import type { DiaEspecial, Ferias } from "../agenda/tipos";
 import { codigoDoAtendenteOuNull, listarAtendentes } from "../atendentes";
 import { diaEmSaoPaulo, horaEmSaoPaulo } from "../relatorios/periodos";
 import { exigirPermissao } from "./exigirPermissao";
+import { quemEstaAgindo, registrarAcao } from "../auditoria";
 
 /**
  * Rotas da Agenda (ferias e dias especiais). Montadas em /api/agenda no
@@ -108,11 +109,16 @@ agendaRouter.post("/dias-especiais", exigirPermissao("agenda:dia-especial"), (re
     dias.push(dia);
   }
 
-  res.json(salvarDiasEspeciais(dias));
+  const salvos = salvarDiasEspeciais(dias);
+  registrarAcao(quemEstaAgindo(req), "agenda:dia-especial:criar", dias.map((d) => `${d.data} (${d.motivo})`).join(", "));
+  res.json(salvos);
 });
 
 agendaRouter.delete("/dias-especiais/:data", exigirPermissao("agenda:dia-especial"), (req, res) => {
-  res.json(removerDiaEspecial(decodeURIComponent(req.params.data as string)));
+  const data = decodeURIComponent(req.params.data as string);
+  const lista = removerDiaEspecial(data);
+  registrarAcao(quemEstaAgindo(req), "agenda:dia-especial:remover", data);
+  res.json(lista);
 });
 
 /**
@@ -144,6 +150,7 @@ agendaRouter.post(
     }
 
     const ferias = salvarFerias(nova);
+    registrarAcao(quemEstaAgindo(req), "agenda:ferias:criar", `${nova.atendente} de ${nova.inicio} a ${nova.fim}`);
     const ativos = listarAtendentes()
       .filter((a) => a.ativo)
       .map((a) => a.nome);
@@ -166,6 +173,10 @@ agendaRouter.delete(
     return { codigoAtendente: alvo ? codigoDoAtendenteOuNull(alvo.atendente) : null };
   }),
   (req, res) => {
-    res.json(removerFerias(req.params.id as string));
+    const id = req.params.id as string;
+    const alvo = lerFerias().find((f) => f.id === id);
+    const lista = removerFerias(id);
+    registrarAcao(quemEstaAgindo(req), "agenda:ferias:remover", alvo ? `${alvo.atendente} de ${alvo.inicio} a ${alvo.fim}` : id);
+    res.json(lista);
   }
 );

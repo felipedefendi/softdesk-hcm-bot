@@ -65,6 +65,15 @@ export interface ConviteInfo {
   email: string;
 }
 
+/** Espelha LinhaAuditoria de src/auditoria.ts. */
+export interface LinhaAuditoria {
+  /** ISO. */
+  quando: string;
+  quem: string;
+  acao: string;
+  detalhe: string;
+}
+
 export interface Atendente {
   nome: string;
   codigoAtendente: number;

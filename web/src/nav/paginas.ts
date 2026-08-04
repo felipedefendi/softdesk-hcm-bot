@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { LayoutDashboard, ListChecks, Users, CalendarDays, History, HeartPulse, Lock, Settings, UserCog } from "lucide-react";
+import { LayoutDashboard, ListChecks, Users, CalendarDays, History, HeartPulse, Lock, Settings, UserCog, ShieldCheck } from "lucide-react";
 
 export interface PaginaNav {
   path: string;
@@ -18,5 +18,6 @@ export const PAGINAS: PaginaNav[] = [
   { path: "/saude", rotulo: "Saúde do bot", Icone: HeartPulse },
   { path: "/cofre", rotulo: "Cofre", Icone: Lock },
   { path: "/usuarios", rotulo: "Usuários", Icone: UserCog, soAdmin: true },
+  { path: "/auditoria", rotulo: "Auditoria", Icone: ShieldCheck, soAdmin: true },
   { path: "/configuracoes", rotulo: "Configurações", Icone: Settings },
 ];

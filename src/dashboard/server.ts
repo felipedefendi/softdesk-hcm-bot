@@ -22,6 +22,7 @@ import { obterFila } from "../fila";
 import { listarExecucoes } from "../execucoes";
 import { autenticar, exigirLogin, invalidarToken, NOME_COOKIE } from "./auth";
 import { exigirPermissao } from "./exigirPermissao";
+import { lerAuditoria, quemEstaAgindo, registrarAcao } from "../auditoria";
 import { cofreRouter } from "./cofreRotas";
 import { agendaRouter } from "./agendaRotas";
 import { conviteRouter } from "./conviteRotas";
@@ -90,8 +91,10 @@ app.patch(
     try {
       if (ativo === false) {
         marcarInativo(nome, motivo || "Nao informado", retornaEm ?? null);
+        registrarAcao(quemEstaAgindo(req), "atendente:desativar", `${nome} - ${motivo || "Nao informado"}`);
       } else if (ativo === true) {
         reativarManualmente(nome);
+        registrarAcao(quemEstaAgindo(req), "atendente:reativar", nome);
       }
       res.json(listarAtendentes());
     } catch (err) {
@@ -105,6 +108,7 @@ app.put("/api/atendentes/ordem", exigirPermissao("rodizio:reordenar"), (req, res
 
   try {
     reordenarAtendentes(ordem);
+    registrarAcao(quemEstaAgindo(req), "rodizio:reordenar", ordem.join(", "));
     res.json(listarAtendentes());
   } catch (err) {
     res.status(400).json({ erro: err instanceof Error ? err.message : String(err) });
@@ -124,6 +128,7 @@ app.post("/api/rotation/proximo", (req, res) => {
 
   try {
     definirProximoManualmente(nome);
+    registrarAcao(quemEstaAgindo(req), "rodizio:definir-proximo", nome);
     res.json({ proximo: atendenteAtual() });
   } catch (err) {
     res.status(400).json({ erro: err instanceof Error ? err.message : String(err) });
@@ -166,6 +171,11 @@ app.get("/api/execucoes", (req, res) => {
   res.json(listarExecucoes());
 });
 
+/** Quem fez o que no painel - restrita a admin (ver PLANO-USUARIOS.md). */
+app.get("/api/auditoria", exigirPermissao("auditoria:ver"), (req, res) => {
+  res.json(lerAuditoria());
+});
+
 /**
  * Atendentes ativos que ha muito tempo nao recebem chamado - sinal de rodizio
  * travado. Fica so aqui, nunca vai pro Teams: e diagnostico de defeito, nao
@@ -189,12 +199,18 @@ app.patch("/api/configuracoes", exigirPermissao("configuracoes:alterar"), (req, 
   const { pollIntervalMinutes, encaminhamentoLimiteMinutos, diasSemReceberParaAlerta } = req.body ?? {};
   const atual = lerConfiguracoes();
 
-  salvarConfiguracoes({
+  const nova = {
     ...atual,
     pollIntervalMinutes: Number(pollIntervalMinutes) || atual.pollIntervalMinutes,
     encaminhamentoLimiteMinutos: Number(encaminhamentoLimiteMinutos) || atual.encaminhamentoLimiteMinutos,
     diasSemReceberParaAlerta: Number(diasSemReceberParaAlerta) || atual.diasSemReceberParaAlerta,
-  });
+  };
+  salvarConfiguracoes(nova);
+  registrarAcao(
+    quemEstaAgindo(req),
+    "configuracoes:alterar",
+    `intervalo=${nova.pollIntervalMinutes}min limite=${nova.encaminhamentoLimiteMinutos}min alerta=${nova.diasSemReceberParaAlerta}dias`
+  );
   res.json(lerConfiguracoes());
 });
 
@@ -204,11 +220,13 @@ app.get("/api/automacao", (req, res) => {
 
 app.post("/api/automacao/pausar", exigirPermissao("automacao:pausar-retomar"), (req, res) => {
   salvarConfiguracoes({ ...lerConfiguracoes(), automacaoAtiva: false });
+  registrarAcao(quemEstaAgindo(req), "automacao:pausar", "");
   res.json({ ativa: false });
 });
 
 app.post("/api/automacao/retomar", exigirPermissao("automacao:pausar-retomar"), (req, res) => {
   salvarConfiguracoes({ ...lerConfiguracoes(), automacaoAtiva: true });
+  registrarAcao(quemEstaAgindo(req), "automacao:retomar", "");
   res.json({ ativa: true });
 });
 
