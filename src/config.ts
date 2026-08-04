@@ -5,8 +5,28 @@ import path from "node:path";
 // assim o bot e o dashboard funcionam mesmo invocados de fora da pasta do projeto.
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 
+const softdeskUrl = process.env.SOFTDESK_URL ?? "https://js.soft4.com.br/chamado";
+
+/**
+ * Esquema + host da `softdeskUrl`, que aponta pro modulo de chamados
+ * (".../chamado"). O cliente HTTP e os headers de referer precisam so do host.
+ *
+ * Derivar daqui e o que faz SOFTDESK_URL valer pro bot inteiro: antes, o
+ * sessao.ts tinha o host cravado e o assign.ts repetia a URL absoluta em tres
+ * headers, entao trocar a variavel mudava so os links do card do Teams - a
+ * automacao continuava batendo no ambiente de producao de qualquer jeito.
+ */
+function origemDe(url: string): string {
+  try {
+    return new URL(url).origin;
+  } catch {
+    throw new Error(`SOFTDESK_URL invalida: "${url}". Use a URL completa, ex.: https://js.soft4.com.br/chamado`);
+  }
+}
+
 export const config = {
-  softdeskUrl: process.env.SOFTDESK_URL ?? "https://js.soft4.com.br/chamado",
+  softdeskUrl,
+  softdeskOrigem: origemDe(softdeskUrl),
   email: process.env.SOFTDESK_EMAIL ?? "",
   password: process.env.SOFTDESK_PASSWORD ?? "",
   pollIntervalMinutes: Number(process.env.POLL_INTERVAL_MINUTES ?? 5),

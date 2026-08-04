@@ -1,8 +1,6 @@
 import { request, type APIRequestContext } from "playwright";
 import { config } from "./config";
 
-const BASE_URL = "https://js.soft4.com.br";
-
 export interface Sessao {
   context: APIRequestContext;
   csrfToken: string;
@@ -38,7 +36,7 @@ async function obterXsrfTokenDoCookie(context: APIRequestContext): Promise<strin
  * mesmo APIRequestContext, igual um navegador faria.
  */
 export async function abrirSessao(): Promise<Sessao> {
-  const context = await request.newContext({ baseURL: BASE_URL });
+  const context = await request.newContext({ baseURL: config.softdeskOrigem });
 
   const csrfToken = await obterCsrfTokenDaPagina(context, "/login");
   const xsrfToken = await obterXsrfTokenDoCookie(context);

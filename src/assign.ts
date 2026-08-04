@@ -1,5 +1,6 @@
 import { codigoDoAtendente } from "./atendentes";
 import { headersAutenticados, type Sessao } from "./sessao";
+import { config } from "./config";
 
 /** cd_tipo_atividade = 11 -> "ENC - Encaminhamento de Chamado" (confirmado no dropdown do painel). */
 const CODIGO_TIPO_ATIVIDADE_ENCAMINHAMENTO = 11;
@@ -26,7 +27,7 @@ async function buscarConfiguracaoAtual(sessao: Sessao, numeroChamado: number): P
   const res = await sessao.context.post("/chamado/json-formulario", {
     headers: {
       ...headersAutenticados(sessao),
-      referer: `https://js.soft4.com.br/chamado/encaminhar/${numeroChamado}`,
+      referer: `${config.softdeskUrl}/encaminhar/${numeroChamado}`,
     },
     data: {
       acao: "encaminhar",
@@ -141,7 +142,7 @@ function camposFixos(): Record<string, unknown> {
     data_ics_emprestados: [],
     is_excluir_emprestimo_ic: false,
     carregou_emprestimo: false,
-    previous_route: "https://js.soft4.com.br/chamado",
+    previous_route: config.softdeskUrl,
     cd_atendente_abertura: 0,
     flag_bloquear_cliente: false,
     flag_bloquear_area: false,
@@ -168,7 +169,7 @@ export async function atribuirChamado(sessao: Sessao, numeroChamado: number, ate
   const horaInicio = horaAgora(inicio);
   const horaFim = horaAgora(fim);
   const dataAtividade = dataAgoraBr(inicio);
-  const referer = `https://js.soft4.com.br/chamado/encaminhar/${numeroChamado}`;
+  const referer = `${config.softdeskUrl}/encaminhar/${numeroChamado}`;
 
   const dadosChamado = {
     area: configuracaoAtual.cd_area,
