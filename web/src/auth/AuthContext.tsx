@@ -8,7 +8,7 @@ interface AuthContextValor {
   /** Quem esta logado - null antes da checagem inicial ou apos logout. */
   eu: Eu | null;
   erroLogin: string | null;
-  entrar: (senha: string) => Promise<void>;
+  entrar: (credenciais: { email?: string; senha: string }) => Promise<void>;
   sair: () => Promise<void>;
   marcarDeslogado: () => void;
 }
@@ -37,12 +37,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setEu(null);
   }, []);
 
-  const entrar = useCallback(async (senha: string) => {
+  const entrar = useCallback(async (credenciais: { email?: string; senha: string }) => {
     setErroLogin(null);
     const res = await fetch("/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ senha }),
+      body: JSON.stringify(credenciais),
     });
     if (!res.ok) {
       const corpo = (await res.json().catch(() => ({}))) as { erro?: string };

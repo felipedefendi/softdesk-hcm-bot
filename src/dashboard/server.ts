@@ -24,6 +24,9 @@ import { autenticar, exigirLogin, invalidarToken, NOME_COOKIE } from "./auth";
 import { exigirPermissao } from "./exigirPermissao";
 import { cofreRouter } from "./cofreRotas";
 import { agendaRouter } from "./agendaRotas";
+import { conviteRouter } from "./conviteRotas";
+import { usuariosRouter } from "./usuariosRotas";
+import { perfilRouter } from "./perfilRotas";
 
 const app = express();
 // Necessario atras do nginx: sem isso o Express nao confia no X-Forwarded-For
@@ -61,9 +64,15 @@ app.post("/api/logout", (req, res) => {
   res.json({ ok: true });
 });
 
+// Publica de proposito, antes do exigirLogin: quem chega por um link de
+// convite ainda nao tem sessao nenhuma.
+app.use("/api/convite", conviteRouter);
+
 app.use("/api", exigirLogin);
 app.use("/api/cofre", cofreRouter);
 app.use("/api/agenda", agendaRouter);
+app.use("/api/usuarios", usuariosRouter);
+app.use("/api/perfil", perfilRouter);
 
 app.get("/api/atendentes", (req, res) => {
   res.json(listarAtendentes());

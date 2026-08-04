@@ -5,6 +5,7 @@ import styles from "./Login.module.css";
 
 export function Login() {
   const { entrar, erroLogin } = useAuth();
+  const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [enviando, setEnviando] = useState(false);
 
@@ -12,7 +13,7 @@ export function Login() {
     ev.preventDefault();
     setEnviando(true);
     try {
-      await entrar(senha);
+      await entrar(email ? { email, senha } : { senha });
     } catch {
       // erroLogin ja reflete a mensagem, nao precisa fazer nada aqui
     } finally {
@@ -28,7 +29,15 @@ export function Login() {
         </div>
         <h1 className={styles.titulo}>Painel Administrativo</h1>
         <p className={styles.sigla}>HCM</p>
-        <p className={styles.subtitulo}>Digite a senha do painel</p>
+        <p className={styles.subtitulo}>Entre com sua conta, ou só a senha do painel</p>
+        <input
+          type="email"
+          value={email}
+          onChange={(ev) => setEmail(ev.target.value)}
+          placeholder="E-mail (opcional)"
+          autoComplete="email"
+          className={styles.campo}
+        />
         <input
           type="password"
           value={senha}

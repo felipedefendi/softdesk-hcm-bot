@@ -1,6 +1,8 @@
 import { NavLink } from "react-router-dom";
 import { PanelLeftClose, PanelLeft, X } from "lucide-react";
 import { PAGINAS } from "../../nav/paginas";
+import { useAuth } from "../../auth/AuthContext";
+import { souAdmin } from "../../lib/permissoes";
 import { Marca } from "../Marca";
 import styles from "./Sidebar.module.css";
 
@@ -12,6 +14,9 @@ interface Props {
 }
 
 export function Sidebar({ colapsada, aoAlternarColapso, drawerAberta, aoFecharDrawer }: Props) {
+  const { eu } = useAuth();
+  const paginas = PAGINAS.filter((p) => !p.soAdmin || souAdmin(eu));
+
   return (
     <>
       {drawerAberta && <div className={styles.fundo} onClick={aoFecharDrawer} aria-hidden="true" />}
@@ -35,7 +40,7 @@ export function Sidebar({ colapsada, aoAlternarColapso, drawerAberta, aoFecharDr
         </div>
 
         <ul className={styles.lista}>
-          {PAGINAS.map(({ path, rotulo, Icone }) => (
+          {paginas.map(({ path, rotulo, Icone }) => (
             <li key={path}>
               <NavLink
                 to={path}

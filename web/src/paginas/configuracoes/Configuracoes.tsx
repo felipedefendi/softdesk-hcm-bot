@@ -77,14 +77,6 @@ export function Configuracoes() {
           </>
         )}
       </Cartao>
-
-      <Cartao className={styles.placeholder}>
-        <h2 className={styles.titulo}>Usuários</h2>
-        <p className={styles.textoPlaceholder}>
-          Em breve: uma conta por pessoa do time, com permissões próprias. Por enquanto, o acesso ao painel continua
-          por senha única.
-        </p>
-      </Cartao>
     </div>
   );
 }

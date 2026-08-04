@@ -1,0 +1,73 @@
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.titulo {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  margin: 0;
+}
+
+.cabecalho button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.acoesCelula {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.botaoIcone {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.5rem;
+  background: transparent;
+  color: var(--texto-fraco);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-xs);
+}
+
+.botaoIcone:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--texto);
+}
+
+.badgeAtivo,
+.badgeInativo,
+.badgePendente {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  white-space: nowrap;
+  margin-right: 0.3rem;
+}
+
+.badgeAtivo {
+  color: var(--ok);
+  background: var(--ok-fraco);
+}
+
+.badgeInativo {
+  color: var(--texto-tenue);
+}
+
+.badgePendente {
+  color: #ff9f0a;
+  background: rgba(255, 159, 10, 0.15);
+}

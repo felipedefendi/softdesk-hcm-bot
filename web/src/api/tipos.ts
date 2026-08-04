@@ -32,6 +32,39 @@ export interface Eu {
   codigoAtendente: number | null;
 }
 
+/** Espelha o paraPublico() de src/dashboard/usuariosRotas.ts - nunca inclui hash/salt. */
+export interface UsuarioAdmin {
+  id: string;
+  nome: string;
+  email: string;
+  papel: "admin" | "comum";
+  codigoAtendente: number | null;
+  ativo: boolean;
+  /** false = convite ainda pendente, a pessoa nunca definiu senha. */
+  temSenha: boolean;
+  bloqueadoAte: string | null;
+  criadoEm: string;
+}
+
+export interface NovoUsuarioEntrada {
+  nome: string;
+  email: string;
+  papel: "admin" | "comum";
+  codigoAtendente: number | null;
+}
+
+export interface UsuarioCriado {
+  usuario: UsuarioAdmin;
+  /** O token cru, uma unica vez - depois disso so o hash fica em disco. */
+  tokenConvite: string;
+}
+
+/** GET /api/convite/:token - so o que a pagina publica precisa pra saudar a pessoa certa. */
+export interface ConviteInfo {
+  nome: string;
+  email: string;
+}
+
 export interface Atendente {
   nome: string;
   codigoAtendente: number;

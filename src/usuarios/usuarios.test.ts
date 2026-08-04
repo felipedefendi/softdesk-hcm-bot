@@ -1,7 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
-import { aplicarSucesso, aplicarTentativaFalha, contaBloqueada, emailValido, normalizarEmail, verificarSenha } from "./usuarios";
+import {
+  aplicarSucesso,
+  aplicarTentativaFalha,
+  contaBloqueada,
+  contarAdminsAtivos,
+  emailValido,
+  normalizarEmail,
+  verificarSenha,
+} from "./usuarios";
 import type { Usuario } from "./tipos";
 
 function usuarioBase(parcial: Partial<Usuario> = {}): Usuario {
@@ -110,6 +118,19 @@ test("uma segunda janela expirada tambem bloqueia de novo ao chegar no limite", 
   usuario = aplicarTentativaFalha(usuario, agora);
   assert.equal(usuario.tentativasFalhas, 5);
   assert.equal(usuario.bloqueadoAte, new Date(agora.getTime() + 15 * 60 * 1000).toISOString());
+});
+
+test("contarAdminsAtivos ignora comum e admin inativo", () => {
+  const lista = [
+    usuarioBase({ id: "a", papel: "admin", ativo: true }),
+    usuarioBase({ id: "b", papel: "admin", ativo: false }),
+    usuarioBase({ id: "c", papel: "comum", ativo: true }),
+  ];
+  assert.equal(contarAdminsAtivos(lista), 1);
+});
+
+test("contarAdminsAtivos com lista vazia da zero", () => {
+  assert.equal(contarAdminsAtivos([]), 0);
 });
 
 test("aplicarSucesso zera tentativas e bloqueio", () => {

@@ -1,0 +1,106 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  color: var(--texto-fraco);
+  font-size: var(--fs-sm);
+}
+
+.campo input,
+.campo select {
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--hairline);
+  background: var(--surface-2);
+  color: var(--texto);
+  font-size: var(--fs-base);
+}
+
+.opcional {
+  color: var(--texto-tenue);
+}
+
+.opcoes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+.legenda {
+  color: var(--texto-fraco);
+  font-size: var(--fs-sm);
+  padding: 0;
+  margin-bottom: var(--space-1);
+}
+
+.opcao {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  cursor: pointer;
+}
+
+.opcao input {
+  margin-top: 0.25rem;
+  accent-color: var(--acento);
+}
+
+.opcao span {
+  display: flex;
+  flex-direction: column;
+}
+
+.opcao small {
+  color: var(--texto-fraco);
+  font-size: var(--fs-xs);
+}
+
+.erro {
+  color: var(--erro);
+  font-size: var(--fs-sm);
+  margin: 0;
+}
+
+.acoes {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+/* Tela do link de convite dentro do drawer. */
+.linkBloco {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.linkAviso {
+  color: var(--texto-fraco);
+  font-size: var(--fs-sm);
+  margin: 0;
+}
+
+.linkCampo {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.linkCampo input {
+  flex: 1;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--hairline);
+  background: var(--surface-2);
+  color: var(--texto);
+  font-size: var(--fs-sm);
+  font-family: monospace;
+}

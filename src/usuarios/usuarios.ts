@@ -182,3 +182,13 @@ export function desativarUsuario(usuarioId: string): Usuario {
 export function reativarUsuario(usuarioId: string): Usuario {
   return atualizar(usuarioId, (u) => ({ ...u, ativo: true }));
 }
+
+/**
+ * Quantos admins ativos existem. Pura - usada pra impedir que a ultima conta
+ * capaz de gerenciar usuarios seja desativada ou rebaixada por engano, o que
+ * trancaria a gestao de usuarios sem ninguem pra destrancar (o maior risco
+ * listado no PLANO-USUARIOS.md).
+ */
+export function contarAdminsAtivos(usuarios: Usuario[]): number {
+  return usuarios.filter((u) => u.papel === "admin" && u.ativo).length;
+}

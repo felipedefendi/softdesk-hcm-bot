@@ -1,4 +1,5 @@
-import { Menu, Sun, Moon, LogOut } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Menu, Sun, Moon, LogOut, User } from "lucide-react";
 import { useTema } from "../../hooks/useTema";
 import { useAuth } from "../../auth/AuthContext";
 import { useAutomacao } from "../../hooks/useAutomacao";
@@ -11,7 +12,7 @@ interface Props {
 
 export function Header({ titulo, onAbrirDrawer }: Props) {
   const [tema, alternarTema] = useTema();
-  const { sair } = useAuth();
+  const { sair, eu } = useAuth();
   const { ativa } = useAutomacao();
 
   return (
@@ -28,6 +29,12 @@ export function Header({ titulo, onAbrirDrawer }: Props) {
           <span className={[styles.chip, ativa ? styles.chipAtivo : styles.chipInativo].join(" ")}>
             {ativa ? "Automação ativa" : "Automação pausada"}
           </span>
+        )}
+        {/* Sessao legada (senha compartilhada) nao tem conta propria - sem perfil pra editar. */}
+        {eu?.tipo === "pessoa" && (
+          <Link to="/perfil" className={styles.botaoIcone} aria-label="Meu perfil">
+            <User size={19} strokeWidth={1.5} />
+          </Link>
         )}
         <button
           className={styles.botaoIcone}
