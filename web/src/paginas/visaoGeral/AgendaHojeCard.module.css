@@ -1,0 +1,36 @@
+.bloqueado {
+  border-color: var(--erro);
+  background: var(--erro-fraco);
+}
+
+.janela {
+  border-color: var(--acento);
+  background: var(--acento-fraco);
+}
+
+.conteudo {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.bloqueado .conteudo > svg {
+  color: var(--erro);
+  flex-shrink: 0;
+}
+
+.janela .conteudo > svg {
+  color: var(--acento);
+  flex-shrink: 0;
+}
+
+.titulo {
+  display: block;
+  font-size: var(--fs-md);
+}
+
+.detalhe {
+  margin: var(--space-1) 0 0;
+  color: var(--texto-fraco);
+  font-size: var(--fs-sm);
+}

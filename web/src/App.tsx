@@ -6,6 +6,7 @@ import { CarregandoSessao } from "./paginas/CarregandoSessao";
 import { VisaoGeral } from "./paginas/visaoGeral/VisaoGeral";
 import { FilaAoVivo } from "./paginas/filaAoVivo/FilaAoVivo";
 import { RodizioEquipe } from "./paginas/rodizioEquipe/RodizioEquipe";
+import { Agenda } from "./paginas/agenda/Agenda";
 import { Historico } from "./paginas/historico/Historico";
 import { SaudeDoBot } from "./paginas/saudeDoBot/SaudeDoBot";
 import { Cofre } from "./paginas/cofre/Cofre";
@@ -24,6 +25,7 @@ function Conteudo() {
           <Route path="/" element={<VisaoGeral />} />
           <Route path="/fila" element={<FilaAoVivo />} />
           <Route path="/equipe" element={<RodizioEquipe />} />
+          <Route path="/agenda" element={<Agenda />} />
           <Route path="/historico" element={<Historico />} />
           <Route path="/saude" element={<SaudeDoBot />} />
           <Route path="/cofre" element={<Cofre />} />

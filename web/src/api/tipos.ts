@@ -113,6 +113,42 @@ export interface Fila {
   chamados: ItemFila[];
 }
 
+/** Espelha src/agenda/tipos.ts. */
+export type DiaEspecial =
+  | { data: string; tipo: "bloqueado"; motivo: string }
+  | { data: string; tipo: "janela"; inicio: string; fim: string; motivo: string };
+
+export interface Ferias {
+  id: string;
+  atendente: string;
+  /** YYYY-MM-DD, inclusivo nas duas pontas. */
+  inicio: string;
+  fim: string;
+  observacao?: string;
+}
+
+export interface Agenda {
+  diasEspeciais: DiaEspecial[];
+  ferias: Ferias[];
+}
+
+/** Espelha o EstadoDoDia de src/agenda/regras.ts. */
+export type EstadoDoDia =
+  | { rodizio: "liberado" }
+  | { rodizio: "bloqueado"; motivo: string }
+  | { rodizio: "fora-da-janela"; inicio: string; fim: string; motivo: string };
+
+export interface FeriadoSugerido {
+  dia: DiaEspecial;
+  marcadoPorPadrao: boolean;
+}
+
+/** O POST de ferias devolve os dias em que o rodizio ficaria sem ninguem. */
+export interface FeriasSalvas {
+  ferias: Ferias[];
+  avisoSemNinguem: string[];
+}
+
 export interface CredencialEntrada {
   cliente: string;
   sistemaId: string;

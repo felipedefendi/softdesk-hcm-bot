@@ -1,0 +1,133 @@
+.grade {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.cabecalho {
+  text-align: center;
+  color: var(--texto-fraco);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding-bottom: var(--space-1);
+}
+
+/* A celula e um <button> pra ser clicavel e focavel por teclado, entao a base
+   global de botao (pill verde) precisa ser desfeita aqui. */
+.celula {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-height: 4.6rem;
+  padding: 0.35rem 0.4rem;
+  background: var(--surface-2);
+  color: var(--texto);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.celula:hover:not(:disabled) {
+  background: var(--surface-3);
+}
+
+.foraDoMes {
+  opacity: 0.38;
+}
+
+.fimDeSemana {
+  background: var(--bg);
+}
+
+.numero {
+  font-size: var(--fs-xs);
+  color: var(--texto-fraco);
+  font-variant-numeric: tabular-nums;
+}
+
+.hoje .numero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--radius-pill);
+  background: var(--acento);
+  color: var(--acento-texto);
+  font-weight: 600;
+}
+
+.bloqueado {
+  background: var(--erro-fraco);
+  border-color: var(--erro);
+}
+
+.janela {
+  background: var(--acento-fraco);
+  border-color: var(--acento);
+}
+
+.marcaEspecial {
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.bloqueado .marcaEspecial {
+  color: var(--erro);
+}
+
+.janela .marcaEspecial {
+  color: var(--acento);
+}
+
+.chipFerias {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-2xs);
+  padding: 0.05rem 0.45rem;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  color: var(--texto-fraco);
+  border: 1px solid var(--hairline);
+}
+
+/* No celular a grade de 7 colunas com chips nao cabe: encolhe pro essencial -
+   numero + pontinhos de marcacao - e o detalhe fica no drawer do dia. */
+@media (max-width: 900px) {
+  .celula {
+    min-height: 3.2rem;
+    padding: 0.25rem;
+    align-items: center;
+  }
+
+  .marcaEspecial,
+  .chipFerias {
+    width: 0.55rem;
+    height: 0.55rem;
+    padding: 0;
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+    color: transparent;
+    border: none;
+  }
+
+  .bloqueado .marcaEspecial {
+    background: var(--erro);
+  }
+
+  .janela .marcaEspecial {
+    background: var(--acento);
+  }
+
+  .chipFerias {
+    background: var(--texto-tenue);
+  }
+}
