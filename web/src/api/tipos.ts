@@ -19,6 +19,19 @@ export interface ErroApi {
   erro: string;
 }
 
+/**
+ * Quem esta logado, devolvido por GET /api/eu. So o que a UI precisa pra
+ * decidir o que mostrar - a autorizacao de verdade e sempre no servidor, isto
+ * e so pra esconder botao que a pessoa nao pode usar (UX, nao seguranca).
+ */
+export interface Eu {
+  tipo: "legado" | "pessoa";
+  /** Ausente na sessao legada (senha compartilhada). */
+  nome?: string;
+  papel: "admin" | "comum";
+  codigoAtendente: number | null;
+}
+
 export interface Atendente {
   nome: string;
   codigoAtendente: number;

@@ -6,6 +6,8 @@ import { ErroCarregamento } from "../../components/ErroCarregamento";
 import { useStatus } from "../../hooks/useStatus";
 import { useAutomacao } from "../../hooks/useAutomacao";
 import { useApi } from "../../api/useApi";
+import { useAuth } from "../../auth/AuthContext";
+import { souAdmin } from "../../lib/permissoes";
 import { formatarData } from "../../lib/formatarData";
 import type { VerificarAgoraResultado } from "../../api/tipos";
 import styles from "./StatusCard.module.css";
@@ -13,6 +15,8 @@ import styles from "./StatusCard.module.css";
 export function StatusCard() {
   const { status, erro: erroStatus, recarregar } = useStatus();
   const { ativa, pausar, retomar } = useAutomacao();
+  const { eu } = useAuth();
+  const admin = souAdmin(eu);
   const api = useApi();
   const [verificando, setVerificando] = useState(false);
   const [resultado, setResultado] = useState<string | null>(null);
@@ -69,10 +73,14 @@ export function StatusCard() {
 
       <div className={styles.divisor} />
 
-      <div className={styles.controle}>
-        <Toggle ligado={ativa ?? false} onAlternar={alternarAutomacao} ariaLabel="Ativar ou pausar a automação" />
-        <span>{ativa ? "Automação ativa" : "Automação pausada"}</span>
-      </div>
+      {admin ? (
+        <div className={styles.controle}>
+          <Toggle ligado={ativa ?? false} onAlternar={alternarAutomacao} ariaLabel="Ativar ou pausar a automação" />
+          <span>{ativa ? "Automação ativa" : "Automação pausada"}</span>
+        </div>
+      ) : (
+        <p className={styles.somenteLeituraAutomacao}>{ativa ? "Automação ativa" : "Automação pausada"}</p>
+      )}
 
       <div className={styles.acao}>
         <button type="button" className="botao-secundario" onClick={forcarVerificacao} disabled={verificando}>

@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
 import { config } from "../config";
 import { buscarPorEmail, buscarPorId, contaBloqueada, registrarTentativa, verificarSenha } from "../usuarios/usuarios";
+import type { Principal } from "../usuarios/permissoes";
 
 const NOME_COOKIE = "dash_token";
 const TTL_SESSAO_MS = 12 * 60 * 60 * 1000; // 12h
@@ -9,8 +10,9 @@ const TTL_SESSAO_MS = 12 * 60 * 60 * 1000; // 12h
 /**
  * `usuarioId: null` marca uma sessao da senha compartilhada (legado) - o
  * caminho por pessoa preenche o id de verdade. So o id fica na sessao, nao o
- * papel: assim um admin desativando alguem, ou mudando o papel dela, vale a
- * partir da proxima requisicao, sem esperar a sessao de 12h expirar.
+ * papel nem o resto do cadastro: exigirLogin confere o usuario de novo a cada
+ * requisicao (ver abaixo), entao um admin desativando alguem ou mudando o
+ * papel dela vale na hora, sem esperar a sessao de 12h expirar.
  */
 interface SessaoInfo {
   usuarioId: string | null;
@@ -22,8 +24,8 @@ const sessoesValidas = new Map<string, SessaoInfo>();
 declare global {
   namespace Express {
     interface Request {
-      /** Preenchido por exigirLogin quando a sessao e valida. */
-      sessao?: { usuarioId: string | null };
+      /** Preenchido por exigirLogin quando a sessao e valida - quem esta pedindo, pronto pra podeFazer(). */
+      sessao?: Principal;
     }
   }
 }
@@ -97,16 +99,22 @@ export function exigirLogin(req: Request, res: Response, next: NextFunction): vo
 
   // Sessao de pessoa: confere que a conta continua ativa a cada requisicao,
   // nao so no momento do login - desativar alguem tem efeito imediato, em vez
-  // de so parar de valer quando a sessao de 12h dela expirar sozinha.
-  if (sessao.usuarioId !== null) {
-    const usuario = buscarPorId(sessao.usuarioId);
-    if (!usuario || !usuario.ativo) {
-      sessoesValidas.delete(token);
-      res.status(401).json({ erro: "Nao autenticado" });
-      return;
-    }
+  // de so parar de valer quando a sessao de 12h dela expirar sozinha. O
+  // usuario buscado aqui vira o Principal direto, sem precisar de uma
+  // segunda leitura de usuarios.json em quem for checar permissao depois.
+  if (sessao.usuarioId === null) {
+    req.sessao = { tipo: "legado" };
+    next();
+    return;
   }
 
-  req.sessao = { usuarioId: sessao.usuarioId };
+  const usuario = buscarPorId(sessao.usuarioId);
+  if (!usuario || !usuario.ativo) {
+    sessoesValidas.delete(token);
+    res.status(401).json({ erro: "Nao autenticado" });
+    return;
+  }
+
+  req.sessao = { tipo: "pessoa", usuario };
   next();
 }

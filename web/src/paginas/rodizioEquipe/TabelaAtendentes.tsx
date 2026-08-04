@@ -3,6 +3,8 @@ import { GripVertical } from "lucide-react";
 import type { Atendente } from "../../api/tipos";
 import { Esqueleto } from "../../components/Esqueleto";
 import { ErroCarregamento } from "../../components/ErroCarregamento";
+import { useAuth } from "../../auth/AuthContext";
+import { ehMeuAtendente, souAdmin } from "../../lib/permissoes";
 import { AcaoAtendente } from "./AcaoAtendente";
 import styles from "./TabelaAtendentes.module.css";
 
@@ -22,6 +24,8 @@ interface Props {
  * antigo, os dois caminhos chamam a mesma mutacao.
  */
 export function TabelaAtendentes({ atendentes, erro, onTentarNovamente, onReordenar, onDesativar, onReativar, onMudou }: Props) {
+  const { eu } = useAuth();
+  const admin = souAdmin(eu);
   const [lista, setLista] = useState<Atendente[]>([]);
   const [arrastandoIndice, setArrastandoIndice] = useState<number | null>(null);
   const [sobreIndice, setSobreIndice] = useState<number | null>(null);
@@ -111,7 +115,7 @@ export function TabelaAtendentes({ atendentes, erro, onTentarNovamente, onReorde
         <table>
           <thead>
             <tr>
-              <th className={styles.colArrastar}></th>
+              {admin && <th className={styles.colArrastar}></th>}
               <th>Nome</th>
               <th>Status</th>
               <th>Motivo</th>
@@ -130,35 +134,37 @@ export function TabelaAtendentes({ atendentes, erro, onTentarNovamente, onReorde
                 }}
                 onDrop={() => aoSoltar(i)}
               >
-                <td className={styles.handleArrastar}>
-                  <span
-                    className={styles.alca}
-                    draggable
-                    onDragStart={(ev) => aoIniciarArraste(ev, i)}
-                    onDragEnd={encerrarArraste}
-                    title="Arraste para reordenar o rodízio"
-                  >
-                    <GripVertical size={16} strokeWidth={1.5} />
-                  </span>
-                  <button
-                    type="button"
-                    className={styles.botaoMover}
-                    onClick={() => mover(i, -1)}
-                    disabled={i === 0}
-                    aria-label="Subir no rodízio"
-                  >
-                    ▲
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.botaoMover}
-                    onClick={() => mover(i, 1)}
-                    disabled={i === lista.length - 1}
-                    aria-label="Descer no rodízio"
-                  >
-                    ▼
-                  </button>
-                </td>
+                {admin && (
+                  <td className={styles.handleArrastar}>
+                    <span
+                      className={styles.alca}
+                      draggable
+                      onDragStart={(ev) => aoIniciarArraste(ev, i)}
+                      onDragEnd={encerrarArraste}
+                      title="Arraste para reordenar o rodízio"
+                    >
+                      <GripVertical size={16} strokeWidth={1.5} />
+                    </span>
+                    <button
+                      type="button"
+                      className={styles.botaoMover}
+                      onClick={() => mover(i, -1)}
+                      disabled={i === 0}
+                      aria-label="Subir no rodízio"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.botaoMover}
+                      onClick={() => mover(i, 1)}
+                      disabled={i === lista.length - 1}
+                      aria-label="Descer no rodízio"
+                    >
+                      ▼
+                    </button>
+                  </td>
+                )}
                 <td data-rotulo="Nome" className={styles.celulaNome}>
                   {a.nome}
                 </td>
@@ -170,6 +176,7 @@ export function TabelaAtendentes({ atendentes, erro, onTentarNovamente, onReorde
                 <td data-rotulo="Ação">
                   <AcaoAtendente
                     atendente={a}
+                    podeAgir={admin || ehMeuAtendente(eu, a.codigoAtendente)}
                     onDesativar={(motivo, retornaEm) => desativar(a.nome, motivo, retornaEm)}
                     onReativar={() => reativar(a.nome)}
                   />

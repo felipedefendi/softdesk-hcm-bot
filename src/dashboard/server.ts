@@ -4,7 +4,14 @@ import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import { config } from "../config";
 import { atendenteAtual, definirProximoManualmente } from "../rotation";
-import { atendentesAtivos, listarAtendentes, marcarInativo, reativarManualmente, reordenarAtendentes } from "../atendentes";
+import {
+  atendentesAtivos,
+  codigoDoAtendenteOuNull,
+  listarAtendentes,
+  marcarInativo,
+  reativarManualmente,
+  reordenarAtendentes,
+} from "../atendentes";
 import { detectarRodizioTravado } from "../alertaRodizio";
 import { diaEmSaoPaulo } from "../relatorios/periodos";
 import { lerConfiguracoes, salvarConfiguracoes } from "../configuracoes";
@@ -14,6 +21,7 @@ import { verificarChamados } from "../fluxo";
 import { obterFila } from "../fila";
 import { listarExecucoes } from "../execucoes";
 import { autenticar, exigirLogin, invalidarToken, NOME_COOKIE } from "./auth";
+import { exigirPermissao } from "./exigirPermissao";
 import { cofreRouter } from "./cofreRotas";
 import { agendaRouter } from "./agendaRotas";
 
@@ -61,23 +69,29 @@ app.get("/api/atendentes", (req, res) => {
   res.json(listarAtendentes());
 });
 
-app.patch("/api/atendentes/:nome", (req, res) => {
-  const nome = decodeURIComponent(req.params.nome);
-  const { ativo, motivo, retornaEm } = req.body ?? {};
+app.patch(
+  "/api/atendentes/:nome",
+  exigirPermissao("atendente:desativar", (req) => ({
+    codigoAtendente: codigoDoAtendenteOuNull(decodeURIComponent(req.params.nome as string)),
+  })),
+  (req, res) => {
+    const nome = decodeURIComponent(req.params.nome as string);
+    const { ativo, motivo, retornaEm } = req.body ?? {};
 
-  try {
-    if (ativo === false) {
-      marcarInativo(nome, motivo || "Nao informado", retornaEm ?? null);
-    } else if (ativo === true) {
-      reativarManualmente(nome);
+    try {
+      if (ativo === false) {
+        marcarInativo(nome, motivo || "Nao informado", retornaEm ?? null);
+      } else if (ativo === true) {
+        reativarManualmente(nome);
+      }
+      res.json(listarAtendentes());
+    } catch (err) {
+      res.status(400).json({ erro: err instanceof Error ? err.message : String(err) });
     }
-    res.json(listarAtendentes());
-  } catch (err) {
-    res.status(400).json({ erro: err instanceof Error ? err.message : String(err) });
   }
-});
+);
 
-app.put("/api/atendentes/ordem", (req, res) => {
+app.put("/api/atendentes/ordem", exigirPermissao("rodizio:reordenar"), (req, res) => {
   const ordem = Array.isArray(req.body?.ordem) ? req.body.ordem : [];
 
   try {
@@ -115,6 +129,22 @@ app.get("/api/status", (req, res) => {
   res.json(lerStatus());
 });
 
+/**
+ * Quem esta logado, pro frontend decidir o que mostrar - so o que a UI
+ * precisa pra isso, nunca hash/salt. A autorizacao de verdade continua
+ * sendo feita no servidor em cada rota (exigirPermissao); isto e so pra
+ * esconder botao que a pessoa nao pode usar, o que e UX, nao seguranca.
+ */
+app.get("/api/eu", (req, res) => {
+  const sessao = req.sessao!;
+  if (sessao.tipo === "legado") {
+    res.json({ tipo: "legado", papel: "admin", codigoAtendente: null });
+    return;
+  }
+  const { nome, papel, codigoAtendente } = sessao.usuario;
+  res.json({ tipo: "pessoa", nome, papel, codigoAtendente });
+});
+
 app.get("/api/fila", async (req, res) => {
   try {
     res.json(await obterFila());
@@ -146,7 +176,7 @@ app.get("/api/configuracoes", (req, res) => {
   res.json(lerConfiguracoes());
 });
 
-app.patch("/api/configuracoes", (req, res) => {
+app.patch("/api/configuracoes", exigirPermissao("configuracoes:alterar"), (req, res) => {
   const { pollIntervalMinutes, encaminhamentoLimiteMinutos, diasSemReceberParaAlerta } = req.body ?? {};
   const atual = lerConfiguracoes();
 
@@ -163,12 +193,12 @@ app.get("/api/automacao", (req, res) => {
   res.json({ ativa: lerConfiguracoes().automacaoAtiva });
 });
 
-app.post("/api/automacao/pausar", (req, res) => {
+app.post("/api/automacao/pausar", exigirPermissao("automacao:pausar-retomar"), (req, res) => {
   salvarConfiguracoes({ ...lerConfiguracoes(), automacaoAtiva: false });
   res.json({ ativa: false });
 });
 
-app.post("/api/automacao/retomar", (req, res) => {
+app.post("/api/automacao/retomar", exigirPermissao("automacao:pausar-retomar"), (req, res) => {
   salvarConfiguracoes({ ...lerConfiguracoes(), automacaoAtiva: true });
   res.json({ ativa: true });
 });

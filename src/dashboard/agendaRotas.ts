@@ -11,8 +11,9 @@ import {
 import { diasSemAtendenteDisponivel, estadoDoDia, validarDiaEspecial, validarFerias } from "../agenda/regras";
 import { feriadosDoAno } from "../agenda/feriados";
 import type { DiaEspecial, Ferias } from "../agenda/tipos";
-import { listarAtendentes } from "../atendentes";
+import { codigoDoAtendenteOuNull, listarAtendentes } from "../atendentes";
 import { diaEmSaoPaulo, horaEmSaoPaulo } from "../relatorios/periodos";
+import { exigirPermissao } from "./exigirPermissao";
 
 /**
  * Rotas da Agenda (ferias e dias especiais). Montadas em /api/agenda no
@@ -53,7 +54,7 @@ agendaRouter.get("/hoje", (req, res) => {
   res.json(estadoDoDia(diaEmSaoPaulo(), horaEmSaoPaulo(), lerDiasEspeciais()));
 });
 
-agendaRouter.get("/feriados-sugeridos", (req, res) => {
+agendaRouter.get("/feriados-sugeridos", exigirPermissao("agenda:dia-especial"), (req, res) => {
   const ano = Number(req.query.ano);
   if (!Number.isInteger(ano) || ano < 2000 || ano > 2100) {
     res.status(400).json({ erro: "Informe um ano entre 2000 e 2100." });
@@ -71,7 +72,7 @@ agendaRouter.get("/feriados-sugeridos", (req, res) => {
  * Grava tudo ou nada: meia lista aplicada seria pior de entender do que a
  * mensagem de erro.
  */
-agendaRouter.post("/dias-especiais", (req, res) => {
+agendaRouter.post("/dias-especiais", exigirPermissao("agenda:dia-especial"), (req, res) => {
   const bruto = Array.isArray(req.body) ? req.body : [req.body];
   const dias: DiaEspecial[] = [];
 
@@ -93,7 +94,7 @@ agendaRouter.post("/dias-especiais", (req, res) => {
   res.json(salvarDiasEspeciais(dias));
 });
 
-agendaRouter.delete("/dias-especiais/:data", (req, res) => {
+agendaRouter.delete("/dias-especiais/:data", exigirPermissao("agenda:dia-especial"), (req, res) => {
   res.json(removerDiaEspecial(decodeURIComponent(req.params.data as string)));
 });
 
@@ -102,40 +103,52 @@ agendaRouter.delete("/dias-especiais/:data", (req, res) => {
  * ficaria sem ninguem - aviso, nao trava: deixar a equipe inteira fora pode ser
  * proposital, e barrar o cadastro seria o sistema achando que sabe mais.
  */
-agendaRouter.post("/ferias", (req, res) => {
-  const b = (req.body ?? {}) as Record<string, unknown>;
-  const observacao = texto(b.observacao);
-  const nova: Ferias = {
-    id: texto(b.id) || crypto.randomUUID(),
-    atendente: texto(b.atendente),
-    inicio: texto(b.inicio),
-    fim: texto(b.fim),
-    ...(observacao ? { observacao } : {}),
-  };
+agendaRouter.post(
+  "/ferias",
+  exigirPermissao("agenda:ferias", (req) => ({
+    codigoAtendente: codigoDoAtendenteOuNull(texto((req.body as Record<string, unknown> | undefined)?.atendente)),
+  })),
+  (req, res) => {
+    const b = (req.body ?? {}) as Record<string, unknown>;
+    const observacao = texto(b.observacao);
+    const nova: Ferias = {
+      id: texto(b.id) || crypto.randomUUID(),
+      atendente: texto(b.atendente),
+      inicio: texto(b.inicio),
+      fim: texto(b.fim),
+      ...(observacao ? { observacao } : {}),
+    };
 
-  const existentes = lerFerias();
-  const erro = validarFerias(nova, existentes, nomesCadastrados());
-  if (erro) {
-    res.status(400).json({ erro });
-    return;
-  }
+    const existentes = lerFerias();
+    const erro = validarFerias(nova, existentes, nomesCadastrados());
+    if (erro) {
+      res.status(400).json({ erro });
+      return;
+    }
 
-  const ferias = salvarFerias(nova);
-  const ativos = listarAtendentes()
-    .filter((a) => a.ativo)
-    .map((a) => a.nome);
+    const ferias = salvarFerias(nova);
+    const ativos = listarAtendentes()
+      .filter((a) => a.ativo)
+      .map((a) => a.nome);
 
-  res.json({
-    ferias,
-    avisoSemNinguem: diasSemAtendenteDisponivel(
-      { inicio: nova.inicio, fim: nova.fim },
-      ativos,
+    res.json({
       ferias,
-      lerDiasEspeciais()
-    ),
-  });
-});
+      avisoSemNinguem: diasSemAtendenteDisponivel({ inicio: nova.inicio, fim: nova.fim }, ativos, ferias, lerDiasEspeciais()),
+    });
+  }
+);
 
-agendaRouter.delete("/ferias/:id", (req, res) => {
-  res.json(removerFerias(req.params.id as string));
-});
+agendaRouter.delete(
+  "/ferias/:id",
+  exigirPermissao("agenda:ferias", (req) => {
+    // O alvo e de quem sao as ferias que estao sendo apagadas, nao quem esta
+    // apagando - um id que nao existe mais vira null e nega pra quem nao e
+    // admin (remover() ja e idempotente, entao isso nao muda o resultado
+    // final quando quem chama tem permissao).
+    const alvo = lerFerias().find((f) => f.id === req.params.id);
+    return { codigoAtendente: alvo ? codigoDoAtendenteOuNull(alvo.atendente) : null };
+  }),
+  (req, res) => {
+    res.json(removerFerias(req.params.id as string));
+  }
+);

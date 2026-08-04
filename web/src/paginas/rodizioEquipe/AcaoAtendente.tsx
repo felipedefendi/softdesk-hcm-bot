@@ -4,15 +4,22 @@ import styles from "./AcaoAtendente.module.css";
 
 interface Props {
   atendente: Atendente;
+  /** Falso quando quem esta vendo nao pode mexer nesta linha - nem admin, nem o proprio atendente. */
+  podeAgir: boolean;
   onDesativar: (motivo: string, retornaEm: string | null) => Promise<void>;
   onReativar: () => Promise<void>;
 }
 
-export function AcaoAtendente({ atendente, onDesativar, onReativar }: Props) {
+export function AcaoAtendente({ atendente, podeAgir, onDesativar, onReativar }: Props) {
   const [aberto, setAberto] = useState(false);
   const [motivo, setMotivo] = useState("");
   const [retornaEm, setRetornaEm] = useState("");
   const [enviando, setEnviando] = useState(false);
+
+  // Esconder aqui e so conveniencia - o servidor recusa a mesma acao de
+  // qualquer forma (ver src/usuarios/permissoes.ts). Sem isso, cada linha
+  // mostraria um botao que so falharia ao ser clicado.
+  if (!podeAgir) return null;
 
   if (!atendente.ativo) {
     return (

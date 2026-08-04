@@ -108,6 +108,16 @@ export function codigoDoAtendente(nome: string): number {
 }
 
 /**
+ * Igual a codigoDoAtendente, mas devolve null em vez de lancar. Usado pra
+ * resolver o alvo de uma checagem de permissao (ver exigirPermissao.ts): um
+ * nome que nao existe deve negar pra quem nao e admin, nao derrubar a
+ * requisicao antes da rota poder dar o proprio erro de "nao encontrado".
+ */
+export function codigoDoAtendenteOuNull(nome: string): number | null {
+  return listarAtendentes().find((a) => a.nome === nome)?.codigoAtendente ?? null;
+}
+
+/**
  * UPN completo do atendente no Teams (para @mention no card), ou null se nao
  * cadastrado. O cadastro guarda so o usuario (ex.: "felipe.prado") e o dominio
  * (TEAMS_EMAIL_DOMAIN) e anexado aqui. Se o valor ja tiver "@", usa como esta;

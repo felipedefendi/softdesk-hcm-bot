@@ -6,6 +6,8 @@ import { Esqueleto } from "../../components/Esqueleto";
 import { ErroCarregamento } from "../../components/ErroCarregamento";
 import { useAgenda } from "../../hooks/useAgenda";
 import { useAtendentes } from "../../hooks/useAtendentes";
+import { useAuth } from "../../auth/AuthContext";
+import { ehMeuAtendente, souAdmin } from "../../lib/permissoes";
 import { gradeDoMes } from "../../lib/gradeDoMes";
 import type { DiaEspecial } from "../../api/tipos";
 import { GradeDoMes } from "./GradeDoMes";
@@ -49,6 +51,13 @@ type Drawer =
 export function Agenda() {
   const { agenda, erro, recarregar, salvarDias, removerDia, salvarFerias, removerFerias, sugerirFeriados } = useAgenda();
   const { atendentes } = useAtendentes();
+  const { eu } = useAuth();
+  const admin = souAdmin(eu);
+
+  // Pro select de ferias e pra saber de quem e cada linha da tabela abaixo -
+  // o cadastro de ferias so guarda o nome, nao o codigo.
+  const meuAtendente = atendentes?.find((a) => ehMeuAtendente(eu, a.codigoAtendente)) ?? null;
+  const codigoPorNome = new Map((atendentes ?? []).map((a) => [a.nome, a.codigoAtendente]));
 
   const hoje = hojeLocal();
   const [cursor, setCursor] = useState(() => {
@@ -115,9 +124,11 @@ export function Agenda() {
             <button type="button" onClick={() => setDrawer({ tipo: "ferias", data: hoje })}>
               <Plus size={16} strokeWidth={2} /> Férias
             </button>
-            <button type="button" className="botao-secundario" onClick={() => setDrawer({ tipo: "feriados" })}>
-              <CalendarPlus size={16} strokeWidth={1.5} /> Feriados de {cursor.ano}
-            </button>
+            {admin && (
+              <button type="button" className="botao-secundario" onClick={() => setDrawer({ tipo: "feriados" })}>
+                <CalendarPlus size={16} strokeWidth={1.5} /> Feriados de {cursor.ano}
+              </button>
+            )}
           </div>
         </div>
 
@@ -125,8 +136,16 @@ export function Agenda() {
         {agenda === null && !erro && <Esqueleto linhas={5} />}
         {agenda !== null && (
           <>
-            <GradeDoMes semanas={semanas} hoje={hoje} onAbrirDia={(data) => setDrawer({ tipo: "dia", data })} />
-            <p className={styles.dica}>Clique num dia para bloqueá-lo ou definir um horário diferente.</p>
+            {/* Bloquear dia ou definir janela e acao de admin - clicar so abre o
+                cadastro pra quem pode editar, o resto ja ve tudo direto na celula. */}
+            <GradeDoMes
+              semanas={semanas}
+              hoje={hoje}
+              onAbrirDia={(data) => {
+                if (admin) setDrawer({ tipo: "dia", data });
+              }}
+            />
+            {admin && <p className={styles.dica}>Clique num dia para bloqueá-lo ou definir um horário diferente.</p>}
           </>
         )}
       </Cartao>
@@ -149,29 +168,34 @@ export function Agenda() {
               </tr>
             </thead>
             <tbody>
-              {proximasFerias.map((f) => (
-                <tr key={f.id}>
-                  <td data-rotulo="Atendente">{f.atendente}</td>
-                  <td data-rotulo="Período" className="tabular">
-                    {formatarDataCurta(f.inicio)} a {formatarDataCurta(f.fim)}
-                    {f.inicio <= hoje && <span className={styles.badgeAgora}>em férias</span>}
-                  </td>
-                  <td data-rotulo="Observação">{f.observacao || "—"}</td>
-                  <td data-rotulo="Ações">
-                    <button
-                      type="button"
-                      className={styles.botaoIcone}
-                      aria-label={`Remover férias de ${f.atendente}`}
-                      title="Remover"
-                      onClick={() => {
-                        if (window.confirm(`Remover as férias de ${f.atendente}?`)) removerFerias(f.id);
-                      }}
-                    >
-                      <Trash2 size={14} strokeWidth={1.5} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {proximasFerias.map((f) => {
+                const podeRemover = admin || ehMeuAtendente(eu, codigoPorNome.get(f.atendente) ?? null);
+                return (
+                  <tr key={f.id}>
+                    <td data-rotulo="Atendente">{f.atendente}</td>
+                    <td data-rotulo="Período" className="tabular">
+                      {formatarDataCurta(f.inicio)} a {formatarDataCurta(f.fim)}
+                      {f.inicio <= hoje && <span className={styles.badgeAgora}>em férias</span>}
+                    </td>
+                    <td data-rotulo="Observação">{f.observacao || "—"}</td>
+                    <td data-rotulo="Ações">
+                      {podeRemover && (
+                        <button
+                          type="button"
+                          className={styles.botaoIcone}
+                          aria-label={`Remover férias de ${f.atendente}`}
+                          title="Remover"
+                          onClick={() => {
+                            if (window.confirm(`Remover as férias de ${f.atendente}?`)) removerFerias(f.id);
+                          }}
+                        >
+                          <Trash2 size={14} strokeWidth={1.5} />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
@@ -200,7 +224,9 @@ export function Agenda() {
 
         {drawer.tipo === "ferias" && (
           <FormularioFerias
-            atendentes={atendentes ?? []}
+            // Quem nao e admin so agenda a propria ferias (ver PLANO-USUARIOS.md) -
+            // restringir a lista aqui trava o select nisso, sem duplicar a regra.
+            atendentes={admin ? atendentes ?? [] : meuAtendente ? [meuAtendente] : []}
             dataInicial={drawer.data}
             onSalvar={async (nova) => {
               const aviso = await salvarFerias(nova);

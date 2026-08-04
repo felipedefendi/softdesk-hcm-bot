@@ -6,15 +6,21 @@ import type { Usuario } from "./tipos";
  * agir, nunca confia em nada que veio do cliente alem do usuario autenticado.
  */
 
+/**
+ * Quem esta pedindo. "legado" e a sessao da senha compartilhada (ver
+ * PLANO-USUARIOS.md): acesso total, igual ao comportamento de hoje - ninguem
+ * perde capacidade so porque as contas por pessoa ainda nao existem pra todo
+ * mundo. Some quando o corte (Fase 6) desligar a senha compartilhada.
+ */
+export type Principal = { tipo: "legado" } | { tipo: "pessoa"; usuario: Usuario };
+
 export type Acao =
   | "ver-paineis" // Visao geral, Fila ao vivo, Historico, Saude do bot
   | "rodizio:definir-proximo"
   | "rodizio:forcar-verificacao"
   | "rodizio:reordenar"
-  | "atendente:desativar-proprio"
-  | "atendente:desativar-outros"
-  | "agenda:ferias-propria"
-  | "agenda:ferias-outros"
+  | "atendente:desativar" // proprio (alvo = eu) ou de outro (so admin) - decidido pelo alvo
+  | "agenda:ferias" // idem
   | "agenda:dia-especial"
   | "cofre:usar" // ver, destravar, revelar, criar, editar, arquivar - um bloco so
   | "senha:trocar-propria"
@@ -23,7 +29,7 @@ export type Acao =
   | "usuarios:gerenciar"
   | "auditoria:ver";
 
-/** Acoes que qualquer conta ativa pode fazer, sem checagem de "proprio". */
+/** Acoes que qualquer conta ativa pode fazer, sem checagem de alvo. */
 const LIBERADO_A_TODOS = new Set<Acao>([
   "ver-paineis",
   "rodizio:definir-proximo",
@@ -32,49 +38,32 @@ const LIBERADO_A_TODOS = new Set<Acao>([
   "senha:trocar-propria",
 ]);
 
-/** Acoes restritas a admin, sem excecao. */
-const SO_ADMIN = new Set<Acao>([
-  "atendente:desativar-outros",
-  "agenda:ferias-outros",
-  "agenda:dia-especial",
-  "rodizio:reordenar",
-  "automacao:pausar-retomar",
-  "configuracoes:alterar",
-  "usuarios:gerenciar",
-  "auditoria:ver",
-]);
-
 /**
- * Acoes "proprio X" - liberadas quando o alvo e o proprio atendente vinculado
- * ao usuario. Sem vinculo (codigoAtendente null), a acao nao tem "proprio"
- * pra fazer e cai fora, mesmo se o usuario for comum.
+ * Acoes onde "posso ou nao" depende de quem e o alvo: o proprio atendente
+ * vinculado ao usuario libera, qualquer outro exige admin. Tudo que nao esta
+ * nem aqui nem em LIBERADO_A_TODOS e admin-only por omissao - uma acao nova
+ * so vale pra alguem comum depois de entrar explicitamente numa das duas
+ * listas.
  */
-const PROPRIO: Partial<Record<Acao, true>> = {
-  "atendente:desativar-proprio": true,
-  "agenda:ferias-propria": true,
-};
+const DEPENDE_DO_ALVO = new Set<Acao>(["atendente:desativar", "agenda:ferias"]);
 
 export interface Alvo {
   codigoAtendente: number | null;
 }
 
-/**
- * `alvo` so importa para as acoes "proprio X" - nas demais e ignorado. Conta
- * inativa nunca pode nada, admin ou nao: desativar e a forma de tirar acesso.
- */
-export function podeFazer(usuario: Usuario, acao: Acao, alvo?: Alvo): boolean {
+export function podeFazer(principal: Principal, acao: Acao, alvo?: Alvo): boolean {
+  if (principal.tipo === "legado") return true;
+
+  const usuario = principal.usuario;
   if (!usuario.ativo) return false;
   if (usuario.papel === "admin") return true;
 
   if (LIBERADO_A_TODOS.has(acao)) return true;
-  if (SO_ADMIN.has(acao)) return false;
 
-  if (PROPRIO[acao]) {
+  if (DEPENDE_DO_ALVO.has(acao)) {
     if (usuario.codigoAtendente === null || !alvo) return false;
     return alvo.codigoAtendente === usuario.codigoAtendente;
   }
 
-  // Acao nao mapeada: nega por padrao, nao libera. Uma acao nova precisa
-  // entrar explicitamente numa das listas acima antes de valer para alguem.
   return false;
 }
