@@ -12,7 +12,7 @@ Rodando em produção 24/7 numa VM na nuvem, agindo em tempo real sobre o sistem
 
 - Monitora a fila sem atendente, verifica o SLA e atribui ao próximo do rodízio, pulando quem está ausente — com reativação automática na data de retorno
 - Notifica no Teams a cada atribuição, com menção real (@) ao atendente, link do chamado e dados do solicitante. Encaminhamentos da mesma execução vão numa mensagem só, na ordem certa
-- Dashboard web protegido por senha, com sete telas: fila ao vivo com SLA regressivo, saúde do bot, histórico, gestão da equipe com rodízio reordenável, cofre e configurações
+- Dashboard web com login por conta individual, oito telas: fila ao vivo com SLA regressivo, saúde do bot, histórico, gestão da equipe com rodízio reordenável, cofre, configurações, gestão de usuários e auditoria de ações — os dois últimos restritos a admins
 - Cofre de credenciais de clientes cifradas (AES-256-GCM), com destrave temporário separado da sessão do painel
 - Relatórios automáticos no Teams — diário, semanal e mensal: volume, tendência, clientes que mais abriram chamado, curva ABC e prioridade. Sempre sobre a fila, nunca por atendente
 - Alerta de rodízio travado quando um atendente ativo passa dias sem receber, sem virar comparação de produtividade
@@ -76,7 +76,7 @@ Alguns problemas que valeram mais do que o código que os resolveu:
 
 - Segredos nunca versionados, carregados por variáveis de ambiente, com permissão de arquivo restrita ao dono na VM
 - Acesso SSH só por chave, com bloqueio automático de IPs insistindo em login (SSH e dashboard)
-- Dashboard com senha, HTTPS, limite de tentativas por IP e cookies `httpOnly`/`secure` com expiração
+- Login por conta individual (e-mail + senha com hash scrypt), papéis admin/comum, bloqueio temporário por tentativas e auditoria de ações por pessoa
 - Credenciais de clientes cifradas em repouso (AES-256-GCM), com destrave de 5 minutos separado da sessão do painel
 - Cabeçalhos HTTP de segurança, atualizações do sistema aplicadas automaticamente, backup diário do estado e rotação de logs
 
@@ -107,7 +107,10 @@ src/
 ├── fluxo.ts                             # orquestracao de uma passada
 ├── cofre/                                # cifragem e credenciais
 ├── relatorios/                            # metricas e datas (funcoes puras + testes)
-└── dashboard/                              # API do painel
+├── agenda/                                # ferias, dias especiais e escala reduzida
+├── usuarios/                              # contas, permissoes e convites (funcoes puras + testes)
+├── auditoria.ts                           # log de acoes do painel (append-only)
+└── dashboard/                              # API do painel (Express)
 web/                                        # frontend (React + Vite + TypeScript)
 ├── src/paginas/                            # uma pasta por tela
 ├── src/hooks/                              # acesso a dados, sem estado global

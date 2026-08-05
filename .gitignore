@@ -10,19 +10,14 @@ debug/
 *.log
 *.tsbuildinfo
 
-# planos e anotacoes internas (achados de seguranca, infra real com IP/dominio,
-# planejamento de features) - so uso local
-PLANO-*.md
-PROMPT-*.md
-
-# guia de estudo detalhado - so uso local, o README publico e outro
-ESTUDO.md
+# documentacao interna (planos, contexto de sessao, guia de estudo) - so uso local
+# toda a pasta docs/ e ignorada; README.md publico fica na raiz
+docs/
 
 # ferramentas de IA (uso local, nao versionar)
 CLAUDE.md
 AGENTS.md
 .claude/
-hcmbotcontext.md
 
 # scripts descartaveis de teste/inspecao criados na raiz durante o desenvolvimento
 teste-*.ts
