@@ -19,7 +19,7 @@ const escaladosDoExistente = (existente: DiaEspecial | null): string[] =>
   existente?.tipo === "janela" ? existente.escalados ?? [] : [];
 
 export function FormularioDiaEspecial({ data, existente, atendentes, onSalvar, onRemover, onCancelar }: Props) {
-  const [tipo, setTipo] = useState<DiaEspecial["tipo"]>(existente?.tipo ?? "bloqueado");
+  const [tipo, setTipo] = useState<DiaEspecial["tipo"] | null>(existente?.tipo ?? null);
   const [inicio, setInicio] = useState(existente?.tipo === "janela" ? existente.inicio : JANELA_PADRAO.inicio);
   const [fim, setFim] = useState(existente?.tipo === "janela" ? existente.fim : JANELA_PADRAO.fim);
   const [motivo, setMotivo] = useState(existente?.motivo ?? "");
@@ -42,6 +42,7 @@ export function FormularioDiaEspecial({ data, existente, atendentes, onSalvar, o
 
   async function enviar(ev: FormEvent) {
     ev.preventDefault();
+    if (!tipo) return;
     setErro(null);
     setEnviando(true);
     try {
@@ -157,7 +158,7 @@ export function FormularioDiaEspecial({ data, existente, atendentes, onSalvar, o
       {erro && <p className={styles.erro}>{erro}</p>}
 
       <div className={styles.acoes}>
-        <button type="submit" disabled={enviando || (restringirEscala && escalados.size === 0)}>
+        <button type="submit" disabled={enviando || !tipo || (restringirEscala && escalados.size === 0)}>
           {enviando ? "Salvando..." : "Salvar"}
         </button>
         <button type="button" className="botao-secundario" onClick={onCancelar} disabled={enviando}>
