@@ -158,6 +158,8 @@ export interface ItemFila {
   /** ISO. */
   abertoEm: string;
   minutosDecorridosSla: number;
+  /** Quem receberia este chamado em ordem de rodizio. null = ninguem disponivel. */
+  atendentePrevisto: string | null;
 }
 
 export interface Fila {

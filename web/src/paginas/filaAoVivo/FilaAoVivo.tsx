@@ -53,6 +53,7 @@ export function FilaAoVivo() {
                 <th>Título</th>
                 <th>Aberto há</th>
                 <th>SLA</th>
+                <th>Atendente previsto</th>
               </tr>
             </thead>
             <tbody>
@@ -76,6 +77,11 @@ export function FilaAoVivo() {
                           ? `Estourado há ${formatarDuracaoMinutos(-sla.minutosRestantes)}`
                           : `${formatarDuracaoMinutos(sla.minutosRestantes)} restantes`}
                       </span>
+                    </td>
+                    <td data-rotulo="Atendente previsto">
+                      {item.atendentePrevisto
+                        ? <span className={styles.badgeAtendente}>{item.atendentePrevisto}</span>
+                        : <span className={styles.semAtendente}>—</span>}
                     </td>
                   </tr>
                 );

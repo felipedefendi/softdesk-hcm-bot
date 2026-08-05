@@ -1,6 +1,6 @@
 import { abrirSessao, encerrarSessao } from "./sessao";
 import { listarChamadosSemAtendente, buscarInfoEncaminhamento } from "./tickets";
-import { atendenteAtual } from "./rotation";
+import { proximosNAtendentes } from "./rotation";
 import { lerConfiguracoes } from "./configuracoes";
 import { config } from "./config";
 
@@ -18,6 +18,8 @@ export interface ItemFila {
   abertoEm: string;
   /** Minutos decorridos no SLA de "Encaminhamento" no momento da consulta ao SoftDesk. */
   minutosDecorridosSla: number;
+  /** Quem receberia este chamado se o bot rodasse agora, em ordem de rodizio. null = ninguem disponivel. */
+  atendentePrevisto: string | null;
 }
 
 export interface RespostaFila {
@@ -31,10 +33,19 @@ export interface RespostaFila {
 
 const TTL_MS = 60 * 1000;
 
+interface ItemFilaCachado {
+  numero: number;
+  titulo: string;
+  cliente: string;
+  link: string;
+  abertoEm: string;
+  minutosDecorridosSla: number;
+}
+
 interface FilaCache {
   consultadoEm: string;
   limiteMinutos: number;
-  chamados: ItemFila[];
+  chamados: ItemFilaCachado[];
 }
 
 let cache: { dados: FilaCache; expiraEm: number } | null = null;
@@ -44,12 +55,11 @@ function urlChamado(numero: number): string {
   return `${config.softdeskUrl}/encaminhar/${numero}`;
 }
 
-function proximoAtendenteOuNull(): string | null {
+function proximosOuVazio(n: number): string[] {
   try {
-    return atendenteAtual();
+    return proximosNAtendentes(n);
   } catch {
-    // Ninguem ativo no rodizio - a fila em si ainda vale a pena mostrar.
-    return null;
+    return [];
   }
 }
 
@@ -57,7 +67,7 @@ async function buscarFilaDoSoftDesk(limiteMinutos: number): Promise<FilaCache> {
   const sessao = await abrirSessao();
   try {
     const chamados = await listarChamadosSemAtendente(sessao);
-    const itens: ItemFila[] = [];
+    const itens: ItemFilaCachado[] = [];
 
     for (const chamado of chamados) {
       const info = await buscarInfoEncaminhamento(sessao, chamado.numero);
@@ -85,5 +95,20 @@ export async function obterFila(): Promise<RespostaFila> {
     const dados = await buscarFilaDoSoftDesk(cfg.encaminhamentoLimiteMinutos);
     cache = { dados, expiraEm: agora + TTL_MS };
   }
-  return { ...cache.dados, proximoAtendente: proximoAtendenteOuNull() };
+
+  // Calcula os proximos atendentes em ordem de rodizio (um por chamado).
+  // Sempre pede pelo menos 1 para o cabecalho, mesmo com fila vazia.
+  const n = Math.max(1, cache.dados.chamados.length);
+  const previstos = proximosOuVazio(n);
+
+  const chamados: ItemFila[] = cache.dados.chamados.map((c, i) => ({
+    ...c,
+    atendentePrevisto: previstos[i] ?? null,
+  }));
+
+  return {
+    ...cache.dados,
+    chamados,
+    proximoAtendente: previstos[0] ?? null,
+  };
 }

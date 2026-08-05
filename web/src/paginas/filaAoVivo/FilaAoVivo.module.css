@@ -80,6 +80,21 @@
   background: var(--erro-fraco);
 }
 
+.badgeAtendente {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--acento);
+  background: var(--acento-fraco);
+}
+
+.semAtendente {
+  color: var(--texto-fraco);
+}
+
 @media (max-width: 900px) {
   .cabecalho {
     flex-direction: column;

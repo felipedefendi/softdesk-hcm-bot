@@ -69,6 +69,39 @@ export function atendenteAtual(): string {
 }
 
 /**
+ * Simula os proximos n passos do rodizio sem avancar o ponteiro real.
+ * Usado pela tela "Fila ao vivo" para prever quem receberia cada chamado.
+ * Retorna lista vazia se ninguem estiver disponivel.
+ */
+export function proximosNAtendentes(n: number): string[] {
+  if (n <= 0) return [];
+  reativarAutomaticamente();
+
+  const todos = listarAtendentes();
+  const disponivel = disponiveisHoje(todos);
+  if (todos.filter(disponivel).length === 0) return [];
+
+  const estado = lerEstado();
+  let indiceUltimo = estado.ultimoAtendente ? todos.findIndex((a) => a.nome === estado.ultimoAtendente) : -1;
+
+  const resultado: string[] = [];
+  for (let i = 0; i < n; i++) {
+    let encontrado = false;
+    for (let passo = 1; passo <= todos.length; passo++) {
+      const candidato = todos[(indiceUltimo + passo) % todos.length];
+      if (disponivel(candidato)) {
+        resultado.push(candidato.nome);
+        indiceUltimo = (indiceUltimo + passo) % todos.length;
+        encontrado = true;
+        break;
+      }
+    }
+    if (!encontrado) break;
+  }
+  return resultado;
+}
+
+/**
  * Avanca o rodizio (persistido em disco). So deve ser chamado depois que a
  * atribuicao do chamado foi confirmada com sucesso - caso contrario o
  * ponteiro fica fora de sincronia com quem realmente recebeu o chamado.
