@@ -6,7 +6,11 @@
 
 import { criarUsuario, buscarPorEmail, definirSenha } from "../src/usuarios/usuarios";
 
-const SENHA = "@SuporteJs3441";
+const SENHA = process.argv[2];
+if (!SENHA) {
+  console.error("Uso: npx ts-node scripts/seed-usuarios.ts <senha>");
+  process.exit(1);
+}
 
 const EQUIPE = [
   { nome: "Mateus Ricardo", email: "mateus.ricardo@seniornortepr.com.br", papel: "admin" as const, codigoAtendente: 9 },
