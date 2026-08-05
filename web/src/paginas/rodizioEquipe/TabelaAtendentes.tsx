@@ -18,6 +18,13 @@ interface Props {
   onMudou?: () => void;
 }
 
+function formatarRetornaEm(retornaEm: string | null): string {
+  if (!retornaEm) return "-";
+  const [data, hora] = retornaEm.split("T");
+  const [ano, mes, dia] = data.split("-");
+  return hora ? `${dia}/${mes} às ${hora}` : `${dia}/${mes}/${ano}`;
+}
+
 /**
  * Reordenacao por drag-and-drop nativo HTML5 (handle-only) + setas para
  * touch (o DnD nativo nao responde a toque) - mesmo padrao do painel
@@ -172,7 +179,7 @@ export function TabelaAtendentes({ atendentes, erro, onTentarNovamente, onReorde
                   <span className={a.ativo ? styles.badgeAtivo : styles.badgeInativo}>{a.ativo ? "Ativo" : "Inativo"}</span>
                 </td>
                 <td data-rotulo="Motivo">{a.motivoInatividade || "-"}</td>
-                <td data-rotulo="Retorna em">{a.retornaEm || "-"}</td>
+                <td data-rotulo="Retorna em">{formatarRetornaEm(a.retornaEm)}</td>
                 <td data-rotulo="Ação">
                   <AcaoAtendente
                     atendente={a}

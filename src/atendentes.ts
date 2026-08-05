@@ -34,10 +34,19 @@ export function atendentesAtivos(): Atendente[] {
   return listarAtendentes().filter((a) => a.ativo);
 }
 
+/** Momento atual em SP como "YYYY-MM-DDTHH:MM" — mesmo formato do retornaEm com horario. */
+function agoraEmSaoPaulo(): string {
+  return new Date().toLocaleString("sv-SE", { timeZone: "America/Sao_Paulo" }).replace(" ", "T").substring(0, 16);
+}
+
 /**
  * Reativa automaticamente quem tem "retornaEm" na data atual ou anterior.
  * Deve ser chamado antes de calcular o proximo da fila. Retorna true se
  * algum atendente foi reativado.
+ *
+ * Aceita dois formatos:
+ *   YYYY-MM-DD        — reativa no inicio do dia indicado (comportamento original)
+ *   YYYY-MM-DDTHH:MM  — reativa quando o horario indicado (em SP) ja passou
  */
 export function reativarAutomaticamente(): boolean {
   const atendentes = listarAtendentes();
@@ -46,14 +55,18 @@ export function reativarAutomaticamente(): boolean {
   // locais - quem tinha retorno pra amanha voltava pro rodizio hoje a tarde,
   // bem dentro das ultimas passadas do dia (o timer vai ate 18:55).
   const hoje = formatarISO(diaEmSaoPaulo());
+  const agoraSP = agoraEmSaoPaulo();
   let mudou = false;
 
   for (const a of atendentes) {
-    if (!a.ativo && a.retornaEm && a.retornaEm <= hoje) {
-      a.ativo = true;
-      a.motivoInatividade = null;
-      a.retornaEm = null;
-      mudou = true;
+    if (!a.ativo && a.retornaEm) {
+      const passou = a.retornaEm.includes("T") ? a.retornaEm <= agoraSP : a.retornaEm <= hoje;
+      if (passou) {
+        a.ativo = true;
+        a.motivoInatividade = null;
+        a.retornaEm = null;
+        mudou = true;
+      }
     }
   }
 

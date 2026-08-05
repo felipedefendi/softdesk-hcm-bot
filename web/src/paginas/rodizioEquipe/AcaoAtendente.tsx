@@ -14,6 +14,7 @@ export function AcaoAtendente({ atendente, podeAgir, onDesativar, onReativar }: 
   const [aberto, setAberto] = useState(false);
   const [motivo, setMotivo] = useState("");
   const [retornaEm, setRetornaEm] = useState("");
+  const [retornaEmHora, setRetornaEmHora] = useState("");
   const [enviando, setEnviando] = useState(false);
 
   // Esconder aqui e so conveniencia - o servidor recusa a mesma acao de
@@ -53,10 +54,14 @@ export function AcaoAtendente({ atendente, podeAgir, onDesativar, onReativar }: 
   async function confirmar() {
     setEnviando(true);
     try {
-      await onDesativar(motivo || "Não informado", retornaEm || null);
+      const retorno = retornaEm
+        ? retornaEmHora ? `${retornaEm}T${retornaEmHora}` : retornaEm
+        : null;
+      await onDesativar(motivo || "Não informado", retorno);
       setAberto(false);
       setMotivo("");
       setRetornaEm("");
+      setRetornaEmHora("");
     } catch (err) {
       alert(err instanceof Error ? err.message : String(err));
     } finally {
@@ -73,6 +78,14 @@ export function AcaoAtendente({ atendente, podeAgir, onDesativar, onReativar }: 
         className={styles.inputMotivo}
       />
       <input type="date" value={retornaEm} onChange={(ev) => setRetornaEm(ev.target.value)} />
+      <input
+        type="time"
+        value={retornaEmHora}
+        onChange={(ev) => setRetornaEmHora(ev.target.value)}
+        disabled={!retornaEm}
+        title="Hora de retorno (opcional)"
+        className={styles.inputHora}
+      />
       <button type="button" onClick={confirmar} disabled={enviando}>
         Confirmar
       </button>

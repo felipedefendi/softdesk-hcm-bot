@@ -17,6 +17,15 @@
   width: 160px;
 }
 
+.inputHora {
+  width: 110px;
+}
+
+.inputHora:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 @media (max-width: 900px) {
   .painel {
     flex-direction: column;
