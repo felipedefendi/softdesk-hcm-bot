@@ -45,11 +45,11 @@ const limitadorLogin = rateLimit({
   message: { erro: "Muitas tentativas. Aguarde um minuto." },
 });
 
-app.post("/api/login", limitadorLogin, (req, res) => {
+app.post("/api/login", limitadorLogin, async (req, res) => {
   const senha = typeof req.body?.senha === "string" ? req.body.senha : "";
   const email = typeof req.body?.email === "string" ? req.body.email : undefined;
 
-  const resultado = autenticar({ email, senha });
+  const resultado = await autenticar({ email, senha });
   if ("erro" in resultado) {
     res.status(401).json({ erro: resultado.erro });
     return;

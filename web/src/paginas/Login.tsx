@@ -29,7 +29,7 @@ export function Login() {
         </div>
         <h1 className={styles.titulo}>Painel Administrativo</h1>
         <p className={styles.sigla}>HCM</p>
-        <p className={styles.subtitulo}>Entre com sua conta, ou só a senha do painel</p>
+        <p className={styles.subtitulo}>Entre com seu e-mail e a senha da Senior</p>
         <input
           type="email"
           value={email}

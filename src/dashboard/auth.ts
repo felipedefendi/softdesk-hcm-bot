@@ -1,7 +1,8 @@
 import crypto from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
 import { config } from "../config";
-import { buscarPorEmail, buscarPorId, contaBloqueada, registrarTentativa, verificarSenha } from "../usuarios/usuarios";
+import { buscarPorEmail, buscarPorId } from "../usuarios/usuarios";
+import { autenticarNaSenior } from "./senior";
 import type { Principal } from "../usuarios/permissoes";
 
 const NOME_COOKIE = "dash_token";
@@ -46,38 +47,31 @@ function autenticarComSenhaCompartilhada(senha: string): { token: string } | { e
 }
 
 /**
- * Login por pessoa (e-mail + senha). Mensagem generica pra e-mail
- * desconhecido e senha errada de proposito - a diferenca entre "esse e-mail
- * nao existe" e "a senha esta errada" e o que permite descobrir, por
- * tentativa, quem tem conta no sistema.
+ * Login por pessoa: a senha e validada no Senior X Platform (ver senior.ts),
+ * nao mais localmente. O usuarios.json vira so a allowlist + papel/atendente -
+ * quem nao esta cadastrado (ou esta inativo) nem chega a bater na Senior, e
+ * responde igual a senha errada pra nao revelar quem tem conta.
  *
- * Bloqueio ja em vigor sai ANTES de tocar em tentativasFalhas: se checasse a
- * senha mesmo assim, alguem batendo na conta travada ficaria empurrando o
- * proprio bloqueio pra 15 minutos a frente pra sempre, e o dono legitimo
- * nunca conseguiria entrar.
+ * Bloqueio por tentativas e forca-bruta agora sao responsabilidade da Senior
+ * (do lado dela) e do fail2ban no nginx; nao ha mais contador local neste
+ * caminho.
  */
-function autenticarPorEmail(email: string, senha: string, agora: Date): { token: string } | { erro: string } {
+async function autenticarPorEmail(email: string, senha: string): Promise<{ token: string } | { erro: string }> {
   const usuario = buscarPorEmail(email);
   const GENERICO = { erro: "E-mail ou senha incorretos" };
 
   if (!usuario) return GENERICO;
   if (!usuario.ativo) return { erro: "Conta desativada. Fale com o administrador." };
-  if (contaBloqueada(usuario, agora)) {
-    return { erro: "Conta bloqueada temporariamente por excesso de tentativas. Tente novamente em alguns minutos." };
-  }
 
-  if (!verificarSenha(usuario, senha)) {
-    registrarTentativa(usuario.id, false, agora);
-    return GENERICO;
-  }
+  const resultado = await autenticarNaSenior(email, senha);
+  if (!resultado.ok) return { erro: resultado.erro };
 
-  registrarTentativa(usuario.id, true, agora);
   return { token: criarSessao(usuario.id) };
 }
 
-/** `email` ausente/vazio cai no caminho da senha compartilhada (legado, em paralelo durante a migracao). */
-export function autenticar(credenciais: { email?: string; senha: string }, agora: Date = new Date()): { token: string } | { erro: string } {
-  if (credenciais.email) return autenticarPorEmail(credenciais.email, credenciais.senha, agora);
+/** `email` ausente/vazio cai no caminho da senha compartilhada (break-glass, mantido durante a migracao). */
+export async function autenticar(credenciais: { email?: string; senha: string }): Promise<{ token: string } | { erro: string }> {
+  if (credenciais.email) return autenticarPorEmail(credenciais.email, credenciais.senha);
   return autenticarComSenhaCompartilhada(credenciais.senha);
 }
 

@@ -42,6 +42,11 @@ export const config = {
   teamsEmailDomain: process.env.TEAMS_EMAIL_DOMAIN ?? "",
   dashboardPort: Number(process.env.DASHBOARD_PORT ?? 3001),
   dashboardPassword: process.env.DASHBOARD_PASSWORD ?? "",
+  // Login por pessoa autentica no Senior X Platform (usuario/senha). O endpoint
+  // nao exige client_id nem segredo - so o par usuario/senha - entao nao ha nada
+  // sensivel pra guardar aqui. Override so pra apontar pra outro ambiente/tenant.
+  seniorAuthUrl: process.env.SENIOR_AUTH_URL ?? "https://api.senior.com.br/platform/authentication/actions/login",
+  seniorScope: process.env.SENIOR_SCOPE ?? "desktop",
   // Chave do cofre de senhas de clientes (AES-256-GCM, 32 bytes em base64).
   // Opcional aqui de proposito: sem ela, so o cofre fica indisponivel - o
   // resto do bot continua funcionando. Gerar com `npm run cofre:gerar-chave`.
