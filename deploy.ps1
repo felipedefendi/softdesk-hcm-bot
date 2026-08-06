@@ -85,7 +85,10 @@ Etapa 4 "Enviando o build para a area de staging"
 $script:vmTocada = $true
 ssh -i $chave $vm "rm -rf /home/ubuntu/deploy-staging"
 if ($LASTEXITCODE -ne 0) { Abortar "nao consegui limpar a area de staging na VM" }
-scp -r -i $chave "public" "${vm}:/home/ubuntu/deploy-staging"
+# -O forca o protocolo SCP classico. Sem ele, o scp do OpenSSH 9+ usa SFTP e o
+# "scp -r pasta destino-inexistente" nao cria o destino, quebrando o mv la no
+# deploy-remoto.sh (mesma correcao aplicada no .github/workflows/deploy.yml).
+scp -O -r -i $chave "public" "${vm}:/home/ubuntu/deploy-staging"
 if ($LASTEXITCODE -ne 0) { Abortar "o envio do build falhou" }
 
 Etapa 5 "Atualizando codigo e publicando na VM"

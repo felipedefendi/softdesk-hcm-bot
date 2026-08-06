@@ -76,7 +76,11 @@ jobs:
           VM: ubuntu@${{ secrets.VM_HOST }}
         run: |
           ssh -i ~/.ssh/deploy.key "$VM" "rm -rf /home/ubuntu/deploy-staging"
-          scp -r -i ~/.ssh/deploy.key public "$VM:/home/ubuntu/deploy-staging"
+          # -O forca o protocolo SCP classico. Sem ele, o scp do OpenSSH 9+ usa
+          # SFTP por baixo e o "scp -r pasta destino-inexistente" nao cria o
+          # destino - a copia "funciona" com "remote setstat: No such file or
+          # directory" e o deploy-remoto.sh morre depois no mv do staging.
+          scp -O -r -i ~/.ssh/deploy.key public "$VM:/home/ubuntu/deploy-staging"
 
       # Mesmo script que o deploy.ps1 chama - a metade que roda na VM nao sabe
       # se quem pediu foi o runner ou o PowerShell do PC.
