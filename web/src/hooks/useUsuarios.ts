@@ -40,6 +40,13 @@ export function useUsuarios() {
     [api]
   );
 
+  const mudarEmail = useCallback(
+    async (id: string, email: string) => {
+      setUsuarios(await api<UsuarioAdmin[]>(`/usuarios/${id}`, { method: "PATCH", body: JSON.stringify({ email }) }));
+    },
+    [api]
+  );
+
   const desativar = useCallback(
     async (id: string) => {
       setUsuarios(await api<UsuarioAdmin[]>(`/usuarios/${id}`, { method: "PATCH", body: JSON.stringify({ ativo: false }) }));
@@ -54,5 +61,5 @@ export function useUsuarios() {
     [api]
   );
 
-  return { usuarios, erro, recarregar, criar, gerarNovoConvite, mudarPapel, desativar, reativar };
+  return { usuarios, erro, recarregar, criar, gerarNovoConvite, mudarPapel, mudarEmail, desativar, reativar };
 }

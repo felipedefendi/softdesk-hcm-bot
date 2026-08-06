@@ -5,6 +5,7 @@ import {
   criarUsuario,
   desativarUsuario,
   listarUsuarios,
+  mudarEmail,
   mudarPapel,
   reativarUsuario,
 } from "../usuarios/usuarios";
@@ -125,6 +126,11 @@ usuariosRouter.patch("/:id", (req, res) => {
   }
 
   try {
+    const emailNovo = texto(b.email);
+    if (emailNovo && emailNovo.toLowerCase() !== alvo.email) {
+      mudarEmail(id, emailNovo);
+      registrarAcao(quemEstaAgindo(req), "usuario:mudar-email", `${alvo.email} -> ${emailNovo.toLowerCase()}`);
+    }
     if (b.papel === "admin" || b.papel === "comum") {
       mudarPapel(id, b.papel);
       registrarAcao(quemEstaAgindo(req), "usuario:mudar-papel", `${alvo.email} -> ${b.papel}`);

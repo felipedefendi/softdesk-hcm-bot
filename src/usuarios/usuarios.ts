@@ -174,6 +174,19 @@ export function mudarPapel(usuarioId: string, papel: Papel): Usuario {
   return atualizar(usuarioId, (u) => ({ ...u, papel }));
 }
 
+/**
+ * Corrige o e-mail de login (que e tambem o username no Senior X Platform, ver
+ * dashboard/senior.ts). Normaliza e recusa colisao com outra conta - a mesma
+ * checagem de criarUsuario, so que ignorando a propria conta.
+ */
+export function mudarEmail(usuarioId: string, novoEmail: string): Usuario {
+  const email = normalizarEmail(novoEmail);
+  if (!emailValido(email)) throw new Error(`E-mail invalido: "${novoEmail}"`);
+  const existente = buscarPorEmail(email);
+  if (existente && existente.id !== usuarioId) throw new Error(`Ja existe uma conta com o e-mail "${email}".`);
+  return atualizar(usuarioId, (u) => ({ ...u, email }));
+}
+
 /** Bloqueia o login, preserva o historico, tira a conta de qualquer coisa que dependa de "ativo". */
 export function desativarUsuario(usuarioId: string): Usuario {
   return atualizar(usuarioId, (u) => ({ ...u, ativo: false }));

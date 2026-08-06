@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
-import { Plus, Copy, KeyRound, ShieldCheck, ShieldOff, UserX, UserCheck } from "lucide-react";
+import { Plus, Copy, KeyRound, ShieldCheck, ShieldOff, UserX, UserCheck, Pencil } from "lucide-react";
 import { Cartao } from "../../components/Cartao";
 import { DrawerLateral } from "../../components/DrawerLateral";
 import { Esqueleto } from "../../components/Esqueleto";
@@ -11,10 +11,15 @@ import { useAuth } from "../../auth/AuthContext";
 import { souAdmin } from "../../lib/permissoes";
 import type { NovoUsuarioEntrada } from "../../api/tipos";
 import { FormularioUsuario } from "./FormularioUsuario";
+import { FormularioEmail } from "./FormularioEmail";
 import styles from "./Formularios.module.css";
 import paginaStyles from "./Usuarios.module.css";
 
-type Drawer = { tipo: "fechado" } | { tipo: "novo" } | { tipo: "link"; nome: string; link: string };
+type Drawer =
+  | { tipo: "fechado" }
+  | { tipo: "novo" }
+  | { tipo: "link"; nome: string; link: string }
+  | { tipo: "editarEmail"; id: string; nome: string; email: string };
 
 function linkCompleto(token: string): string {
   return `${window.location.origin}/convite/${token}`;
@@ -22,7 +27,7 @@ function linkCompleto(token: string): string {
 
 export function Usuarios() {
   const { eu } = useAuth();
-  const { usuarios, erro, recarregar, criar, gerarNovoConvite, mudarPapel, desativar, reativar } = useUsuarios();
+  const { usuarios, erro, recarregar, criar, gerarNovoConvite, mudarPapel, mudarEmail, desativar, reativar } = useUsuarios();
   const { atendentes } = useAtendentes();
   const [drawer, setDrawer] = useState<Drawer>({ tipo: "fechado" });
   const [copiado, setCopiado] = useState(false);
@@ -57,6 +62,12 @@ export function Usuarios() {
       const { tokenConvite } = await gerarNovoConvite(id);
       setDrawer({ tipo: "link", nome, link: linkCompleto(tokenConvite) });
     });
+  }
+
+  async function aoEditarEmail(email: string) {
+    if (drawer.tipo !== "editarEmail") return;
+    await mudarEmail(drawer.id, email);
+    setDrawer({ tipo: "fechado" });
   }
 
   async function copiar(link: string) {
@@ -107,6 +118,15 @@ export function Usuarios() {
                     <button
                       type="button"
                       className={paginaStyles.botaoIcone}
+                      title="Editar e-mail"
+                      aria-label={`Editar e-mail: ${u.nome}`}
+                      onClick={() => setDrawer({ tipo: "editarEmail", id: u.id, nome: u.nome, email: u.email })}
+                    >
+                      <Pencil size={14} strokeWidth={1.5} />
+                    </button>
+                    <button
+                      type="button"
+                      className={paginaStyles.botaoIcone}
                       title={u.papel === "admin" ? "Tornar comum" : "Tornar admin"}
                       aria-label={`${u.papel === "admin" ? "Tornar comum" : "Tornar admin"}: ${u.nome}`}
                       onClick={() => comAlertaDeErro(() => mudarPapel(u.id, u.papel === "admin" ? "comum" : "admin"))}
@@ -141,11 +161,23 @@ export function Usuarios() {
 
       <DrawerLateral
         aberto={drawer.tipo !== "fechado"}
-        titulo={drawer.tipo === "novo" ? "Nova conta" : drawer.tipo === "link" ? "Link de acesso" : ""}
+        titulo={
+          drawer.tipo === "novo"
+            ? "Nova conta"
+            : drawer.tipo === "link"
+              ? "Link de acesso"
+              : drawer.tipo === "editarEmail"
+                ? "Editar e-mail"
+                : ""
+        }
         onFechar={() => setDrawer({ tipo: "fechado" })}
       >
         {drawer.tipo === "novo" && (
           <FormularioUsuario atendentes={atendentes ?? []} onSalvar={aoCriar} onCancelar={() => setDrawer({ tipo: "fechado" })} />
+        )}
+
+        {drawer.tipo === "editarEmail" && (
+          <FormularioEmail emailAtual={drawer.email} onSalvar={aoEditarEmail} onCancelar={() => setDrawer({ tipo: "fechado" })} />
         )}
 
         {drawer.tipo === "link" && (
