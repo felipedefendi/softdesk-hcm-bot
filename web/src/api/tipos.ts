@@ -51,12 +51,6 @@ export interface NovoUsuarioEntrada {
   codigoAtendente: number | null;
 }
 
-export interface UsuarioCriado {
-  usuario: UsuarioAdmin;
-  /** O token cru, uma unica vez - depois disso so o hash fica em disco. */
-  tokenConvite: string;
-}
-
 /** GET /api/convite/:token - so o que a pagina publica precisa pra saudar a pessoa certa. */
 export interface ConviteInfo {
   nome: string;

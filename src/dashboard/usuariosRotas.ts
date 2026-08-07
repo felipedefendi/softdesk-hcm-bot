@@ -9,7 +9,6 @@ import {
   mudarPapel,
   reativarUsuario,
 } from "../usuarios/usuarios";
-import { gerarConvitePara } from "../usuarios/convites";
 import { exigirPermissao } from "./exigirPermissao";
 import { quemEstaAgindo, registrarAcao } from "../auditoria";
 import { listarAtendentes } from "../atendentes";
@@ -70,31 +69,15 @@ usuariosRouter.post("/", (req, res) => {
   }
 
   try {
+    // Sem convite/senha: o login e pela Senior (ver dashboard/senior.ts). Criar
+    // a conta e so registra-la na allowlist com o usuario SeniorX certo; a
+    // pessoa ja entra com a senha da propria conta Senior.
     const usuario = criarUsuario({ nome, email, papel, codigoAtendente });
-    const { token } = gerarConvitePara(usuario.id);
     registrarAcao(quemEstaAgindo(req), "usuario:criar", `${nome} <${email}> - ${papel}`);
-    res.json({ usuario: paraPublico(usuario), tokenConvite: token });
+    res.json({ usuario: paraPublico(usuario) });
   } catch (err) {
     res.status(400).json({ erro: err instanceof Error ? err.message : String(err) });
   }
-});
-
-/**
- * Gera um novo link de convite pro usuario - reenvio de quem perdeu o
- * primeiro, ou reset de senha (o admin gera um link novo em vez de a pessoa
- * se autoatender, ver "fora de escopo" no PLANO-USUARIOS.md). O convite
- * anterior pendente e automaticamente invalidado (ver gerarConvitePara).
- */
-usuariosRouter.post("/:id/convite", (req, res) => {
-  const usuario = buscarPorId(req.params.id as string);
-  if (!usuario) {
-    res.status(404).json({ erro: "Usuário não encontrado." });
-    return;
-  }
-
-  const { token } = gerarConvitePara(usuario.id);
-  registrarAcao(quemEstaAgindo(req), "usuario:gerar-convite", usuario.email);
-  res.json({ tokenConvite: token });
 });
 
 usuariosRouter.patch("/:id", (req, res) => {

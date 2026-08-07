@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
-import { Plus, Copy, ShieldCheck, ShieldOff, UserX, UserCheck, Pencil } from "lucide-react";
+import { Plus, ShieldCheck, ShieldOff, UserX, UserCheck, Pencil } from "lucide-react";
 import { Cartao } from "../../components/Cartao";
 import { DrawerLateral } from "../../components/DrawerLateral";
 import { Esqueleto } from "../../components/Esqueleto";
@@ -12,25 +12,18 @@ import { souAdmin } from "../../lib/permissoes";
 import type { NovoUsuarioEntrada } from "../../api/tipos";
 import { FormularioUsuario } from "./FormularioUsuario";
 import { FormularioEmail } from "./FormularioEmail";
-import styles from "./Formularios.module.css";
 import paginaStyles from "./Usuarios.module.css";
 
 type Drawer =
   | { tipo: "fechado" }
   | { tipo: "novo" }
-  | { tipo: "link"; nome: string; link: string }
   | { tipo: "editarEmail"; id: string; nome: string; email: string };
-
-function linkCompleto(token: string): string {
-  return `${window.location.origin}/convite/${token}`;
-}
 
 export function Usuarios() {
   const { eu } = useAuth();
   const { usuarios, erro, recarregar, criar, mudarPapel, mudarEmail, desativar, reativar } = useUsuarios();
   const { atendentes } = useAtendentes();
   const [drawer, setDrawer] = useState<Drawer>({ tipo: "fechado" });
-  const [copiado, setCopiado] = useState(false);
 
   // Guarda de UI - o servidor ja recusa qualquer coisa aqui pra quem nao e
   // admin, isto so evita que a tela fique presa "carregando" pra sempre.
@@ -42,8 +35,8 @@ export function Usuarios() {
   }
 
   async function aoCriar(entrada: NovoUsuarioEntrada) {
-    const { usuario, tokenConvite } = await criar(entrada);
-    setDrawer({ tipo: "link", nome: usuario.nome, link: linkCompleto(tokenConvite) });
+    await criar(entrada);
+    setDrawer({ tipo: "fechado" });
   }
 
   // mudarPapel/desativar/reativar podem bater em erro do servidor (ultimo admin,
@@ -60,12 +53,6 @@ export function Usuarios() {
     if (drawer.tipo !== "editarEmail") return;
     await mudarEmail(drawer.id, email);
     setDrawer({ tipo: "fechado" });
-  }
-
-  async function copiar(link: string) {
-    await navigator.clipboard.writeText(link);
-    setCopiado(true);
-    setTimeout(() => setCopiado(false), 2000);
   }
 
   return (
@@ -147,11 +134,9 @@ export function Usuarios() {
         titulo={
           drawer.tipo === "novo"
             ? "Nova conta"
-            : drawer.tipo === "link"
-              ? "Link de acesso"
-              : drawer.tipo === "editarEmail"
-                ? "Editar nome de usuário"
-                : ""
+            : drawer.tipo === "editarEmail"
+              ? "Editar nome de usuário"
+              : ""
         }
         onFechar={() => setDrawer({ tipo: "fechado" })}
       >
@@ -161,24 +146,6 @@ export function Usuarios() {
 
         {drawer.tipo === "editarEmail" && (
           <FormularioEmail emailAtual={drawer.email} onSalvar={aoEditarEmail} onCancelar={() => setDrawer({ tipo: "fechado" })} />
-        )}
-
-        {drawer.tipo === "link" && (
-          <div className={styles.linkBloco}>
-            <p className={styles.linkAviso}>
-              Copie este link agora e envie para <strong>{drawer.nome}</strong> pelo Teams — ele não aparece de novo.
-              É de uso único e expira em 7 dias.
-            </p>
-            <div className={styles.linkCampo}>
-              <input value={drawer.link} readOnly onFocus={(ev) => ev.target.select()} />
-              <button type="button" className="botao-secundario" onClick={() => copiar(drawer.link)}>
-                <Copy size={14} strokeWidth={1.5} /> {copiado ? "Copiado" : "Copiar"}
-              </button>
-            </div>
-            <button type="button" onClick={() => setDrawer({ tipo: "fechado" })}>
-              Concluir
-            </button>
-          </div>
         )}
       </DrawerLateral>
     </div>

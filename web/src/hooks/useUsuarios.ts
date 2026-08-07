@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useApi } from "../api/useApi";
-import type { NovoUsuarioEntrada, UsuarioAdmin, UsuarioCriado } from "../api/tipos";
+import type { NovoUsuarioEntrada, UsuarioAdmin } from "../api/tipos";
 
 /** Gestao de usuarios (admin). Sem polling - cadastro muda por acao de quem esta na tela. */
 export function useUsuarios() {
@@ -21,12 +21,11 @@ export function useUsuarios() {
     recarregar();
   }, [recarregar]);
 
-  /** Devolve o token do convite - so aparece agora, o admin precisa copiar antes de fechar a tela. */
+  /** Cria a conta na allowlist; a pessoa entra pela Senior (sem convite/senha). */
   const criar = useCallback(
-    async (entrada: NovoUsuarioEntrada): Promise<UsuarioCriado> => {
-      const criado = await api<UsuarioCriado>("/usuarios", { method: "POST", body: JSON.stringify(entrada) });
+    async (entrada: NovoUsuarioEntrada): Promise<void> => {
+      await api("/usuarios", { method: "POST", body: JSON.stringify(entrada) });
       await recarregar();
-      return criado;
     },
     [api, recarregar]
   );
