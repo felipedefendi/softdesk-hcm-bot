@@ -1,6 +1,5 @@
 import crypto from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
-import { config } from "../config";
 import { buscarPorEmail, buscarPorId } from "../usuarios/usuarios";
 import { autenticarNaSenior } from "./senior";
 import type { Principal } from "../usuarios/permissoes";
@@ -9,14 +8,13 @@ const NOME_COOKIE = "dash_token";
 const TTL_SESSAO_MS = 12 * 60 * 60 * 1000; // 12h
 
 /**
- * `usuarioId: null` marca uma sessao da senha compartilhada (legado) - o
- * caminho por pessoa preenche o id de verdade. So o id fica na sessao, nao o
- * papel nem o resto do cadastro: exigirLogin confere o usuario de novo a cada
- * requisicao (ver abaixo), entao um admin desativando alguem ou mudando o
- * papel dela vale na hora, sem esperar a sessao de 12h expirar.
+ * So o id do usuario fica na sessao, nao o papel nem o resto do cadastro:
+ * exigirLogin confere o usuario de novo a cada requisicao (ver abaixo), entao
+ * um admin desativando alguem ou mudando o papel dela vale na hora, sem esperar
+ * a sessao de 12h expirar.
  */
 interface SessaoInfo {
-  usuarioId: string | null;
+  usuarioId: string;
   expiraEm: number;
 }
 
@@ -31,19 +29,10 @@ declare global {
   }
 }
 
-if (!config.dashboardPassword) {
-  throw new Error("Defina DASHBOARD_PASSWORD no arquivo .env");
-}
-
-function criarSessao(usuarioId: string | null): string {
+function criarSessao(usuarioId: string): string {
   const token = crypto.randomBytes(24).toString("hex");
   sessoesValidas.set(token, { usuarioId, expiraEm: Date.now() + TTL_SESSAO_MS });
   return token;
-}
-
-function autenticarComSenhaCompartilhada(senha: string): { token: string } | { erro: string } {
-  if (senha !== config.dashboardPassword) return { erro: "Senha incorreta" };
-  return { token: criarSessao(null) };
 }
 
 /**
@@ -69,10 +58,10 @@ async function autenticarPorEmail(email: string, senha: string): Promise<{ token
   return { token: criarSessao(usuario.id) };
 }
 
-/** `email` ausente/vazio cai no caminho da senha compartilhada (break-glass, mantido durante a migracao). */
 export async function autenticar(credenciais: { email?: string; senha: string }): Promise<{ token: string } | { erro: string }> {
-  if (credenciais.email) return autenticarPorEmail(credenciais.email, credenciais.senha);
-  return autenticarComSenhaCompartilhada(credenciais.senha);
+  const email = credenciais.email?.trim();
+  if (!email) return { erro: "Informe seu e-mail." };
+  return autenticarPorEmail(email, credenciais.senha);
 }
 
 export function invalidarToken(token: string): void {
@@ -91,17 +80,11 @@ export function exigirLogin(req: Request, res: Response, next: NextFunction): vo
     return;
   }
 
-  // Sessao de pessoa: confere que a conta continua ativa a cada requisicao,
-  // nao so no momento do login - desativar alguem tem efeito imediato, em vez
-  // de so parar de valer quando a sessao de 12h dela expirar sozinha. O
-  // usuario buscado aqui vira o Principal direto, sem precisar de uma
-  // segunda leitura de usuarios.json em quem for checar permissao depois.
-  if (sessao.usuarioId === null) {
-    req.sessao = { tipo: "legado" };
-    next();
-    return;
-  }
-
+  // Confere que a conta continua ativa a cada requisicao, nao so no momento do
+  // login - desativar alguem tem efeito imediato, em vez de so parar de valer
+  // quando a sessao de 12h dela expirar sozinha. O usuario buscado aqui vira o
+  // Principal direto, sem precisar de uma segunda leitura de usuarios.json em
+  // quem for checar permissao depois.
   const usuario = buscarPorId(sessao.usuarioId);
   if (!usuario || !usuario.ativo) {
     sessoesValidas.delete(token);

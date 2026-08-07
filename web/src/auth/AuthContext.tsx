@@ -8,7 +8,7 @@ interface AuthContextValor {
   /** Quem esta logado - null antes da checagem inicial ou apos logout. */
   eu: Eu | null;
   erroLogin: string | null;
-  entrar: (credenciais: { email?: string; senha: string }) => Promise<void>;
+  entrar: (credenciais: { email: string; senha: string }) => Promise<void>;
   sair: () => Promise<void>;
   marcarDeslogado: () => void;
 }

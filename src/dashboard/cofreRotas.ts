@@ -19,7 +19,7 @@ import { quemEstaAgindo } from "../auditoria";
  * Rotas do cofre de senhas de clientes. Montadas em /api/cofre no server.ts,
  * atras do exigirLogin global - todo mundo logado ve metadados (cliente,
  * sistema, link, validade). Revelar a senha em si exige uma segunda trava:
- * o "destrave", com a mesma senha do painel, valido por 5 min.
+ * o "destrave", com o segredo proprio do cofre (COFRE_SENHA), valido por 5 min.
  */
 
 const NOME_COOKIE_DESTRAVE = "cofre_destrave";
@@ -30,14 +30,18 @@ const TTL_DESTRAVE_MS = 5 * 60 * 1000;
 const destravesValidos = new Map<string, number>();
 
 /** Compara em tempo constante via hash de tamanho fixo - evita vazar o tamanho da senha. */
-function senhaDoPainelConfere(senha: string): boolean {
-  const esperado = crypto.createHash("sha256").update(config.dashboardPassword).digest();
+function senhaDoCofreConfere(senha: string): boolean {
+  // Sem COFRE_SENHA configurada, o cofre nunca destrava (em vez de aceitar
+  // string vazia): assim uma instalacao sem o segredo fica so com o cofre
+  // indisponivel, nao com ele aberto pra qualquer um.
+  if (!config.cofreSenha) return false;
+  const esperado = crypto.createHash("sha256").update(config.cofreSenha).digest();
   const recebido = crypto.createHash("sha256").update(senha).digest();
   return crypto.timingSafeEqual(esperado, recebido);
 }
 
 function destravar(senha: string): string | null {
-  if (!senhaDoPainelConfere(senha)) return null;
+  if (!senhaDoCofreConfere(senha)) return null;
   const token = crypto.randomBytes(24).toString("hex");
   destravesValidos.set(token, Date.now() + TTL_DESTRAVE_MS);
   return token;

@@ -9,7 +9,7 @@ import { podeFazer, type Acao, type Alvo } from "../usuarios/permissoes";
  *
  * Se `obterAlvo` nao acha o alvo (ex.: nome de atendente que nao existe), o
  * jeito seguro e devolver undefined: podeFazer nega pra quem nao e admin e a
- * rota, se chegar a rodar (so pra admin/legado), da o proprio erro de "nao
+ * rota, se chegar a rodar (so pra admin), da o proprio erro de "nao
  * encontrado" que ja tinha antes desta feature.
  */
 export function exigirPermissao(acao: Acao, obterAlvo?: (req: Request) => Alvo | undefined) {

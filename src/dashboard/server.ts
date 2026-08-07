@@ -27,7 +27,6 @@ import { cofreRouter } from "./cofreRotas";
 import { agendaRouter } from "./agendaRotas";
 import { conviteRouter } from "./conviteRotas";
 import { usuariosRouter } from "./usuariosRotas";
-import { perfilRouter } from "./perfilRotas";
 
 const app = express();
 // Necessario atras do nginx: sem isso o Express nao confia no X-Forwarded-For
@@ -73,7 +72,6 @@ app.use("/api", exigirLogin);
 app.use("/api/cofre", cofreRouter);
 app.use("/api/agenda", agendaRouter);
 app.use("/api/usuarios", usuariosRouter);
-app.use("/api/perfil", perfilRouter);
 
 app.get("/api/atendentes", (req, res) => {
   res.json(listarAtendentes());
@@ -150,13 +148,8 @@ app.get("/api/status", (req, res) => {
  * esconder botao que a pessoa nao pode usar, o que e UX, nao seguranca.
  */
 app.get("/api/eu", (req, res) => {
-  const sessao = req.sessao!;
-  if (sessao.tipo === "legado") {
-    res.json({ tipo: "legado", papel: "admin", codigoAtendente: null });
-    return;
-  }
-  const { nome, papel, codigoAtendente } = sessao.usuario;
-  res.json({ tipo: "pessoa", nome, papel, codigoAtendente });
+  const { nome, papel, codigoAtendente } = req.sessao!.usuario;
+  res.json({ nome, papel, codigoAtendente });
 });
 
 app.get("/api/fila", async (req, res) => {

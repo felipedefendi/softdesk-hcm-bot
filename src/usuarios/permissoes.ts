@@ -6,13 +6,8 @@ import type { Usuario } from "./tipos";
  * agir, nunca confia em nada que veio do cliente alem do usuario autenticado.
  */
 
-/**
- * Quem esta pedindo. "legado" e a sessao da senha compartilhada (ver
- * PLANO-USUARIOS.md): acesso total, igual ao comportamento de hoje - ninguem
- * perde capacidade so porque as contas por pessoa ainda nao existem pra todo
- * mundo. Some quando o corte (Fase 6) desligar a senha compartilhada.
- */
-export type Principal = { tipo: "legado" } | { tipo: "pessoa"; usuario: Usuario };
+/** Quem esta pedindo - sempre uma pessoa autenticada pela Senior (ver dashboard/auth.ts). */
+export type Principal = { tipo: "pessoa"; usuario: Usuario };
 
 export type Acao =
   | "ver-paineis" // Visao geral, Fila ao vivo, Historico, Saude do bot
@@ -52,8 +47,6 @@ export interface Alvo {
 }
 
 export function podeFazer(principal: Principal, acao: Acao, alvo?: Alvo): boolean {
-  if (principal.tipo === "legado") return true;
-
   const usuario = principal.usuario;
   if (!usuario.ativo) return false;
   if (usuario.papel === "admin") return true;

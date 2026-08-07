@@ -24,30 +24,6 @@ function pessoa(parcial: Partial<Usuario>): Principal {
   return { tipo: "pessoa", usuario: usuario(parcial) };
 }
 
-const LEGADO: Principal = { tipo: "legado" };
-
-test("sessao legada (senha compartilhada) pode tudo, sem excecao", () => {
-  const acoes = [
-    "ver-paineis",
-    "rodizio:definir-proximo",
-    "rodizio:forcar-verificacao",
-    "rodizio:reordenar",
-    "atendente:desativar",
-    "agenda:ferias",
-    "agenda:dia-especial",
-    "cofre:usar",
-    "senha:trocar-propria",
-    "automacao:pausar-retomar",
-    "configuracoes:alterar",
-    "usuarios:gerenciar",
-    "auditoria:ver",
-  ] as const;
-
-  for (const acao of acoes) assert.equal(podeFazer(LEGADO, acao), true, acao);
-  // Mesmo pra um alvo que nao e ninguem - a sessao legada nao tem "proprio".
-  assert.equal(podeFazer(LEGADO, "atendente:desativar", { codigoAtendente: 999 }), true);
-});
-
 test("conta inativa nunca pode nada, nem sendo admin", () => {
   const admin = pessoa({ papel: "admin", ativo: false });
   assert.equal(podeFazer(admin, "usuarios:gerenciar"), false);

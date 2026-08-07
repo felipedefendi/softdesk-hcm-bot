@@ -3,13 +3,12 @@ import { ehMeuAtendente, souAdmin } from "./permissoes";
 import type { Eu } from "../api/tipos";
 
 function eu(parcial: Partial<Eu>): Eu {
-  return { tipo: "pessoa", papel: "comum", codigoAtendente: 10, ...parcial };
+  return { nome: "Teste", papel: "comum", codigoAtendente: 10, ...parcial };
 }
 
 describe("souAdmin", () => {
-  it("verdadeiro pro papel admin, inclusive na sessao legada", () => {
+  it("verdadeiro pro papel admin", () => {
     expect(souAdmin(eu({ papel: "admin" }))).toBe(true);
-    expect(souAdmin(eu({ tipo: "legado", papel: "admin", codigoAtendente: null }))).toBe(true);
   });
 
   it("falso pro papel comum e antes de saber quem e", () => {

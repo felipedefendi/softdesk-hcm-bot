@@ -25,9 +25,7 @@ export interface ErroApi {
  * e so pra esconder botao que a pessoa nao pode usar (UX, nao seguranca).
  */
 export interface Eu {
-  tipo: "legado" | "pessoa";
-  /** Ausente na sessao legada (senha compartilhada). */
-  nome?: string;
+  nome: string;
   papel: "admin" | "comum";
   codigoAtendente: number | null;
 }

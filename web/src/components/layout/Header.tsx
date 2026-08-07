@@ -30,8 +30,7 @@ export function Header({ titulo, onAbrirDrawer }: Props) {
             {ativa ? "Automação ativa" : "Automação pausada"}
           </span>
         )}
-        {/* Sessao legada (senha compartilhada) nao tem conta propria - sem perfil pra editar. */}
-        {eu?.tipo === "pessoa" && (
+        {eu && (
           <Link to="/perfil" className={styles.botaoIcone} aria-label="Meu perfil">
             <User size={19} strokeWidth={1.5} />
           </Link>

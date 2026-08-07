@@ -41,7 +41,11 @@ export const config = {
   // (ex.: "felipe.prado") e o dominio e anexado aqui pra formar a @mention.
   teamsEmailDomain: process.env.TEAMS_EMAIL_DOMAIN ?? "",
   dashboardPort: Number(process.env.DASHBOARD_PORT ?? 3001),
-  dashboardPassword: process.env.DASHBOARD_PASSWORD ?? "",
+  // Segredo que destrava o cofre de senhas de clientes (segundo fator na hora de
+  // revelar uma credencial, ver cofreRotas.ts). Proprio do cofre, sem relacao
+  // com o login - que agora e sempre pela Senior. Opcional: sem ele o cofre so
+  // nao destrava, o resto do painel funciona igual.
+  cofreSenha: process.env.COFRE_SENHA ?? "",
   // Login por pessoa autentica no Senior X Platform (usuario/senha). O endpoint
   // nao exige client_id nem segredo - so o par usuario/senha - entao nao ha nada
   // sensivel pra guardar aqui. Override so pra apontar pra outro ambiente/tenant.

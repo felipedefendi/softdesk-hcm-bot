@@ -16,14 +16,11 @@ function semPipe(valor: string): string {
   return valor.replace(/\|/g, "/");
 }
 
-/**
- * Quem esta pedindo, pro rotulo do log - nome de verdade pra sessao de
- * pessoa, rotulo fixo pra senha compartilhada (que nao tem "quem" nenhum).
- */
+/** Quem esta pedindo, pro rotulo do log - o nome do usuario logado. */
 export function quemEstaAgindo(req: Request): string {
   const sessao = req.sessao;
   if (!sessao) return "desconhecido";
-  return sessao.tipo === "legado" ? "Senha compartilhada" : sessao.usuario.nome;
+  return sessao.usuario.nome;
 }
 
 /**

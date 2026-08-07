@@ -13,7 +13,7 @@ export function Login() {
     ev.preventDefault();
     setEnviando(true);
     try {
-      await entrar(email ? { email, senha } : { senha });
+      await entrar({ email, senha });
     } catch {
       // erroLogin ja reflete a mensagem, nao precisa fazer nada aqui
     } finally {
@@ -34,8 +34,9 @@ export function Login() {
           type="email"
           value={email}
           onChange={(ev) => setEmail(ev.target.value)}
-          placeholder="E-mail (opcional)"
+          placeholder="E-mail da Senior"
           autoComplete="email"
+          required
           className={styles.campo}
         />
         <input
