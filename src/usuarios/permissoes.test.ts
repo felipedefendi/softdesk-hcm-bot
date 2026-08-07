@@ -8,13 +8,9 @@ function usuario(parcial: Partial<Usuario>): Usuario {
     id: "u1",
     nome: "Teste",
     email: "teste@example.com",
-    hashSenha: "x",
-    salt: "y",
     papel: "comum",
     codigoAtendente: 10,
     ativo: true,
-    tentativasFalhas: 0,
-    bloqueadoAte: null,
     criadoEm: new Date().toISOString(),
     ...parcial,
   };
@@ -41,7 +37,6 @@ test("admin pode tudo que esta mapeado, sem depender de alvo", () => {
     "agenda:ferias",
     "agenda:dia-especial",
     "cofre:usar",
-    "senha:trocar-propria",
     "automacao:pausar-retomar",
     "configuracoes:alterar",
     "usuarios:gerenciar",
@@ -55,7 +50,7 @@ test("admin pode tudo que esta mapeado, sem depender de alvo", () => {
 
 test("comum tem as acoes liberadas a todos", () => {
   const comum = pessoa({ papel: "comum" });
-  for (const acao of ["ver-paineis", "rodizio:definir-proximo", "rodizio:forcar-verificacao", "cofre:usar", "senha:trocar-propria"] as const) {
+  for (const acao of ["ver-paineis", "rodizio:definir-proximo", "rodizio:forcar-verificacao", "cofre:usar"] as const) {
     assert.equal(podeFazer(comum, acao), true, acao);
   }
 });

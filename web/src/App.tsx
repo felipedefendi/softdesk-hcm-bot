@@ -3,7 +3,6 @@ import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { Layout } from "./components/layout/Layout";
 import { Login } from "./paginas/Login";
 import { CarregandoSessao } from "./paginas/CarregandoSessao";
-import { CompletarConvite } from "./paginas/convite/CompletarConvite";
 import { VisaoGeral } from "./paginas/visaoGeral/VisaoGeral";
 import { FilaAoVivo } from "./paginas/filaAoVivo/FilaAoVivo";
 import { RodizioEquipe } from "./paginas/rodizioEquipe/RodizioEquipe";
@@ -16,12 +15,7 @@ import { Auditoria } from "./paginas/auditoria/Auditoria";
 import { Perfil } from "./paginas/perfil/Perfil";
 import { Configuracoes } from "./paginas/configuracoes/Configuracoes";
 
-/**
- * Tudo que exige sessao. Fica atras de /convite/:token de proposito: quem
- * chega por um link de convite ainda nao tem cookie nenhum, e o /api/eu que
- * este bloco depende (via AuthProvider) daria 401 - a pagina do convite
- * precisa ficar fora deste guard, nao dentro dele.
- */
+/** Tudo que exige sessao. */
 function ConteudoAutenticado() {
   const { autenticado } = useAuth();
 
@@ -52,10 +46,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Routes>
-          <Route path="/convite/:token" element={<CompletarConvite />} />
-          <Route path="*" element={<ConteudoAutenticado />} />
-        </Routes>
+        <ConteudoAutenticado />
       </BrowserRouter>
     </AuthProvider>
   );

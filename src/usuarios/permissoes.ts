@@ -18,7 +18,6 @@ export type Acao =
   | "agenda:ferias" // idem
   | "agenda:dia-especial"
   | "cofre:usar" // ver, destravar, revelar, criar, editar, arquivar - um bloco so
-  | "senha:trocar-propria"
   | "automacao:pausar-retomar"
   | "configuracoes:alterar"
   | "usuarios:gerenciar"
@@ -30,7 +29,6 @@ const LIBERADO_A_TODOS = new Set<Acao>([
   "rodizio:definir-proximo",
   "rodizio:forcar-verificacao",
   "cofre:usar",
-  "senha:trocar-propria",
 ]);
 
 /**

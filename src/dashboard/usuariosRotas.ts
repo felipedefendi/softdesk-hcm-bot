@@ -23,7 +23,7 @@ import type { Usuario, Papel } from "../usuarios/tipos";
 export const usuariosRouter = express.Router();
 usuariosRouter.use(exigirPermissao("usuarios:gerenciar"));
 
-/** Nunca devolve hashSenha/salt - so o que a tela de gestao precisa mostrar. */
+/** So o que a tela de gestao precisa mostrar. */
 function paraPublico(u: Usuario) {
   return {
     id: u.id,
@@ -32,10 +32,6 @@ function paraPublico(u: Usuario) {
     papel: u.papel,
     codigoAtendente: u.codigoAtendente,
     ativo: u.ativo,
-    // Convite ainda nao completado = hashSenha vazio (ver criarUsuario). A
-    // tela usa isto pra saber se vale a pena oferecer "gerar novo convite".
-    temSenha: u.hashSenha !== "",
-    bloqueadoAte: u.bloqueadoAte,
     criadoEm: u.criadoEm,
   };
 }

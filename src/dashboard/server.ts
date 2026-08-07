@@ -25,7 +25,6 @@ import { exigirPermissao } from "./exigirPermissao";
 import { lerAuditoria, quemEstaAgindo, registrarAcao } from "../auditoria";
 import { cofreRouter } from "./cofreRotas";
 import { agendaRouter } from "./agendaRotas";
-import { conviteRouter } from "./conviteRotas";
 import { usuariosRouter } from "./usuariosRotas";
 
 const app = express();
@@ -63,10 +62,6 @@ app.post("/api/logout", (req, res) => {
   res.clearCookie(NOME_COOKIE);
   res.json({ ok: true });
 });
-
-// Publica de proposito, antes do exigirLogin: quem chega por um link de
-// convite ainda nao tem sessao nenhuma.
-app.use("/api/convite", conviteRouter);
 
 app.use("/api", exigirLogin);
 app.use("/api/cofre", cofreRouter);

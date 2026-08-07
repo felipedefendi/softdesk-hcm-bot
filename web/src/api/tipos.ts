@@ -30,7 +30,7 @@ export interface Eu {
   codigoAtendente: number | null;
 }
 
-/** Espelha o paraPublico() de src/dashboard/usuariosRotas.ts - nunca inclui hash/salt. */
+/** Espelha o paraPublico() de src/dashboard/usuariosRotas.ts. */
 export interface UsuarioAdmin {
   id: string;
   nome: string;
@@ -38,9 +38,6 @@ export interface UsuarioAdmin {
   papel: "admin" | "comum";
   codigoAtendente: number | null;
   ativo: boolean;
-  /** false = convite ainda pendente, a pessoa nunca definiu senha. */
-  temSenha: boolean;
-  bloqueadoAte: string | null;
   criadoEm: string;
 }
 
@@ -49,12 +46,6 @@ export interface NovoUsuarioEntrada {
   email: string;
   papel: "admin" | "comum";
   codigoAtendente: number | null;
-}
-
-/** GET /api/convite/:token - so o que a pagina publica precisa pra saudar a pessoa certa. */
-export interface ConviteInfo {
-  nome: string;
-  email: string;
 }
 
 /** Espelha LinhaAuditoria de src/auditoria.ts. */
