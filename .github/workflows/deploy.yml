@@ -35,6 +35,13 @@ jobs:
           npm ci --prefix web
 
       - name: Testes do backend
+        # senior.test.ts importa config.ts, que exige SOFTDESK_EMAIL/PASSWORD no
+        # carregamento (guarda de boot do bot). No runner nao ha .env, entao
+        # valores de teste bastam so pra o modulo carregar - os testes nao usam
+        # essas credenciais (o fetch da Senior e mockado).
+        env:
+          SOFTDESK_EMAIL: ci@teste.local
+          SOFTDESK_PASSWORD: ci
         run: npm test
 
       - name: Testes do frontend
