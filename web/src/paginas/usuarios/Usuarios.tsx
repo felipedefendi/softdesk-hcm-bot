@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
-import { Plus, Copy, KeyRound, ShieldCheck, ShieldOff, UserX, UserCheck, Pencil } from "lucide-react";
+import { Plus, Copy, ShieldCheck, ShieldOff, UserX, UserCheck, Pencil } from "lucide-react";
 import { Cartao } from "../../components/Cartao";
 import { DrawerLateral } from "../../components/DrawerLateral";
 import { Esqueleto } from "../../components/Esqueleto";
@@ -27,7 +27,7 @@ function linkCompleto(token: string): string {
 
 export function Usuarios() {
   const { eu } = useAuth();
-  const { usuarios, erro, recarregar, criar, gerarNovoConvite, mudarPapel, mudarEmail, desativar, reativar } = useUsuarios();
+  const { usuarios, erro, recarregar, criar, mudarPapel, mudarEmail, desativar, reativar } = useUsuarios();
   const { atendentes } = useAtendentes();
   const [drawer, setDrawer] = useState<Drawer>({ tipo: "fechado" });
   const [copiado, setCopiado] = useState(false);
@@ -46,22 +46,14 @@ export function Usuarios() {
     setDrawer({ tipo: "link", nome: usuario.nome, link: linkCompleto(tokenConvite) });
   }
 
-  // mudarPapel/desativar/reativar/gerarNovoConvite podem bater em erro do
-  // servidor (ultimo admin, auto-desativacao, usuario nao encontrado) - sem
-  // isto o clique falharia calado.
+  // mudarPapel/desativar/reativar podem bater em erro do servidor (ultimo admin,
+  // auto-desativacao, usuario nao encontrado) - sem isto o clique falharia calado.
   async function comAlertaDeErro(acao: () => Promise<unknown>) {
     try {
       await acao();
     } catch (err) {
       alert(err instanceof Error ? err.message : String(err));
     }
-  }
-
-  async function aoGerarNovoConvite(id: string, nome: string) {
-    await comAlertaDeErro(async () => {
-      const { tokenConvite } = await gerarNovoConvite(id);
-      setDrawer({ tipo: "link", nome, link: linkCompleto(tokenConvite) });
-    });
   }
 
   async function aoEditarEmail(email: string) {
@@ -94,7 +86,7 @@ export function Usuarios() {
             <thead>
               <tr>
                 <th>Nome</th>
-                <th>E-mail</th>
+                <th>Usuário SeniorX</th>
                 <th>Papel</th>
                 <th>Atendente</th>
                 <th>Status</th>
@@ -105,21 +97,21 @@ export function Usuarios() {
               {usuarios.map((u) => (
                 <tr key={u.id}>
                   <td data-rotulo="Nome">{u.nome}</td>
-                  <td data-rotulo="E-mail">{u.email}</td>
+                  {/* So o usuario; o dominio (@tenant) e igual pra todos, entao fica no title pra conferir. */}
+                  <td data-rotulo="Usuário SeniorX" title={u.email}>{u.email.split("@")[0]}</td>
                   <td data-rotulo="Papel">{u.papel === "admin" ? "Administrador" : "Comum"}</td>
                   <td data-rotulo="Atendente">{nomeDoAtendente(u.codigoAtendente)}</td>
                   <td data-rotulo="Status">
                     <span className={u.ativo ? paginaStyles.badgeAtivo : paginaStyles.badgeInativo}>
                       {u.ativo ? "Ativo" : "Inativo"}
                     </span>
-                    {!u.temSenha && <span className={paginaStyles.badgePendente}>Convite pendente</span>}
                   </td>
                   <td data-rotulo="Ações" className={paginaStyles.acoesCelula}>
                     <button
                       type="button"
                       className={paginaStyles.botaoIcone}
-                      title="Editar e-mail"
-                      aria-label={`Editar e-mail: ${u.nome}`}
+                      title="Editar nome de usuário"
+                      aria-label={`Editar nome de usuário: ${u.nome}`}
                       onClick={() => setDrawer({ tipo: "editarEmail", id: u.id, nome: u.nome, email: u.email })}
                     >
                       <Pencil size={14} strokeWidth={1.5} />
@@ -132,15 +124,6 @@ export function Usuarios() {
                       onClick={() => comAlertaDeErro(() => mudarPapel(u.id, u.papel === "admin" ? "comum" : "admin"))}
                     >
                       {u.papel === "admin" ? <ShieldOff size={14} strokeWidth={1.5} /> : <ShieldCheck size={14} strokeWidth={1.5} />}
-                    </button>
-                    <button
-                      type="button"
-                      className={paginaStyles.botaoIcone}
-                      title={u.temSenha ? "Redefinir senha" : "Reenviar convite"}
-                      aria-label={`${u.temSenha ? "Redefinir senha" : "Reenviar convite"}: ${u.nome}`}
-                      onClick={() => aoGerarNovoConvite(u.id, u.nome)}
-                    >
-                      <KeyRound size={14} strokeWidth={1.5} />
                     </button>
                     <button
                       type="button"
@@ -167,7 +150,7 @@ export function Usuarios() {
             : drawer.tipo === "link"
               ? "Link de acesso"
               : drawer.tipo === "editarEmail"
-                ? "Editar e-mail"
+                ? "Editar nome de usuário"
                 : ""
         }
         onFechar={() => setDrawer({ tipo: "fechado" })}

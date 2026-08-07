@@ -31,8 +31,6 @@ export function useUsuarios() {
     [api, recarregar]
   );
 
-  const gerarNovoConvite = useCallback((id: string) => api<{ tokenConvite: string }>(`/usuarios/${id}/convite`, { method: "POST" }), [api]);
-
   const mudarPapel = useCallback(
     async (id: string, papel: "admin" | "comum") => {
       setUsuarios(await api<UsuarioAdmin[]>(`/usuarios/${id}`, { method: "PATCH", body: JSON.stringify({ papel }) }));
@@ -61,5 +59,5 @@ export function useUsuarios() {
     [api]
   );
 
-  return { usuarios, erro, recarregar, criar, gerarNovoConvite, mudarPapel, mudarEmail, desativar, reativar };
+  return { usuarios, erro, recarregar, criar, mudarPapel, mudarEmail, desativar, reativar };
 }
