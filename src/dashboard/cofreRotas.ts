@@ -203,7 +203,10 @@ cofreRouter.post("/destravar", limitadorDestrave, exigirOrigemValida, (req, res)
   const senha = typeof req.body?.senha === "string" ? req.body.senha : "";
   const token = destravar(senha);
   if (!token) {
-    res.status(401).json({ erro: "Senha incorreta" });
+    // 403, nao 401: senha do cofre errada e' um "proibido", nao "sessao
+    // expirada". Com 401 o cliente (ver api/cliente.ts) trata como logout e
+    // derruba a sessao do painel inteiro em vez de so avisar do cofre.
+    res.status(403).json({ erro: "Senha incorreta" });
     return;
   }
   res.cookie(NOME_COOKIE_DESTRAVE, token, {
