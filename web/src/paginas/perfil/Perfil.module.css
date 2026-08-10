@@ -10,12 +10,6 @@
   margin: 0 0 var(--space-4);
 }
 
-.aviso {
-  color: var(--texto-fraco);
-  font-size: var(--fs-sm);
-  margin: 0;
-}
-
 .info {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -27,38 +21,37 @@
   color: var(--texto-fraco);
 }
 
-.form {
+.senha {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
-  max-width: 22rem;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
 }
 
-.campo {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+.aviso {
   color: var(--texto-fraco);
   font-size: var(--fs-sm);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 34rem;
 }
 
-.campo input {
-  padding: 0.5rem 0.65rem;
+.linkPortal {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.9rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--hairline);
   background: var(--surface-2);
   color: var(--texto);
-  font-size: var(--fs-base);
-}
-
-.erro {
-  color: var(--erro);
   font-size: var(--fs-sm);
-  margin: var(--space-3) 0 0;
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s;
 }
 
-.mensagem {
+.linkPortal:hover {
+  border-color: var(--acento);
   color: var(--acento);
-  font-size: var(--fs-sm);
-  margin: var(--space-3) 0 0;
 }
