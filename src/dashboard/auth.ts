@@ -1,8 +1,18 @@
 import crypto from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
+import { config } from "../config";
 import { buscarPorEmail, buscarPorId } from "../usuarios/usuarios";
 import { autenticarNaSenior } from "./senior";
 import type { Principal } from "../usuarios/permissoes";
+
+/**
+ * Contas de teste (dominio @teste.local) so existem pra validar permissao no
+ * ambiente local. Quando MODO_TESTE=true, elas entram com esta senha fixa, sem
+ * passar pela Senior. Fora do modo teste, ou em producao, o login delas cai no
+ * caminho da Senior e falha - nao ha conta @teste.local no Senior X Platform.
+ */
+const DOMINIO_TESTE = "@teste.local";
+const SENHA_TESTE = "teste";
 
 const NOME_COOKIE = "dash_token";
 const TTL_SESSAO_MS = 12 * 60 * 60 * 1000; // 12h
@@ -51,6 +61,12 @@ async function autenticarPorEmail(email: string, senha: string): Promise<{ token
 
   if (!usuario) return GENERICO;
   if (!usuario.ativo) return { erro: "Conta desativada. Fale com o administrador." };
+
+  // Atalho local: contas @teste.local nao existem na Senior, entao so autenticam
+  // aqui, e so quando MODO_TESTE esta ligado (nunca em producao).
+  if (config.modoTeste && email.endsWith(DOMINIO_TESTE)) {
+    return senha === SENHA_TESTE ? { token: criarSessao(usuario.id) } : GENERICO;
+  }
 
   const resultado = await autenticarNaSenior(email, senha);
   if (!resultado.ok) return { erro: resultado.erro };

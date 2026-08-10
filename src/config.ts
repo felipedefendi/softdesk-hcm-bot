@@ -51,6 +51,12 @@ export const config = {
   // sensivel pra guardar aqui. Override so pra apontar pra outro ambiente/tenant.
   seniorAuthUrl: process.env.SENIOR_AUTH_URL ?? "https://api.senior.com.br/platform/authentication/actions/login",
   seniorScope: process.env.SENIOR_SCOPE ?? "desktop",
+  // Atalho de login SO pra ambiente local, pra testar permissao sem uma conta
+  // Senior de verdade. Quando true, contas do dominio @teste.local (ver auth.ts)
+  // entram com uma senha fixa, sem bater na Senior. Fica false por omissao e
+  // nunca e definido no .env de producao - contas reais passam pela Senior de
+  // qualquer jeito, mesmo com isto ligado.
+  modoTeste: process.env.MODO_TESTE === "true",
   // Chave do cofre de senhas de clientes (AES-256-GCM, 32 bytes em base64).
   // Opcional aqui de proposito: sem ela, so o cofre fica indisponivel - o
   // resto do bot continua funcionando. Gerar com `npm run cofre:gerar-chave`.
