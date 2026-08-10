@@ -33,11 +33,9 @@ test("conta dias uteis, nao corridos", () => {
   ]);
 });
 
-test("quem nunca aparece no historico entra com diasUteis null", () => {
+test("quem nunca aparece no historico nao entra no alerta - pode usar outro fluxo", () => {
   const entradas = [entrada("22/07/2026, 09:00:00", "Ana")];
-  assert.deepEqual(detectarRodizioTravado(entradas, ["Ana", "Novato"], HOJE, 5), [
-    { atendente: "Novato", diasUteis: null },
-  ]);
+  assert.deepEqual(detectarRodizioTravado(entradas, ["Ana", "Novato"], HOJE, 5), []);
 });
 
 test("atendente inativo nao entra - nao receber e o comportamento correto", () => {
@@ -54,12 +52,13 @@ test("usa o encaminhamento mais recente de cada um, nao o primeiro", () => {
   assert.deepEqual(detectarRodizioTravado(entradas, ["Ana"], HOJE, 5), []);
 });
 
-test("ordena do mais grave pro menos, com o sem-registro no topo", () => {
+test("ordena do mais grave pro menos", () => {
   const entradas = [
     entrada("16/07/2026, 09:00:00", "QuatroDias"),
     entrada("15/07/2026, 09:00:00", "CincoDias"),
   ];
 
+  // Novato nao entra mais: nunca apareceu no log, pode estar em outro fluxo.
   const alerta = detectarRodizioTravado(entradas, ["QuatroDias", "CincoDias", "Novato"], HOJE, 1);
-  assert.deepEqual(alerta.map((a) => a.atendente), ["Novato", "CincoDias", "QuatroDias"]);
+  assert.deepEqual(alerta.map((a) => a.atendente), ["CincoDias", "QuatroDias"]);
 });

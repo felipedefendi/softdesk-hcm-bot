@@ -69,6 +69,6 @@ export function detectarRodizioTravado(
       const dia = ultimo.get(atendente);
       return { atendente, diasUteis: dia ? diasUteisEntre(dia, hoje) : null };
     })
-    .filter((a) => a.diasUteis === null || a.diasUteis >= limiteDiasUteis)
+    .filter((a) => a.diasUteis !== null && a.diasUteis >= limiteDiasUteis)
     .sort((a, b) => (b.diasUteis ?? Infinity) - (a.diasUteis ?? Infinity));
 }
