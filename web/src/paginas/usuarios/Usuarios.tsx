@@ -103,24 +103,28 @@ export function Usuarios() {
                     >
                       <Pencil size={14} strokeWidth={1.5} />
                     </button>
-                    <button
-                      type="button"
-                      className={paginaStyles.botaoIcone}
-                      title={u.papel === "admin" ? "Tornar comum" : "Tornar admin"}
-                      aria-label={`${u.papel === "admin" ? "Tornar comum" : "Tornar admin"}: ${u.nome}`}
-                      onClick={() => comAlertaDeErro(() => mudarPapel(u.id, u.papel === "admin" ? "comum" : "admin"))}
-                    >
-                      {u.papel === "admin" ? <ShieldOff size={14} strokeWidth={1.5} /> : <ShieldCheck size={14} strokeWidth={1.5} />}
-                    </button>
-                    <button
-                      type="button"
-                      className={paginaStyles.botaoIcone}
-                      title={u.ativo ? "Desativar" : "Reativar"}
-                      aria-label={`${u.ativo ? "Desativar" : "Reativar"}: ${u.nome}`}
-                      onClick={() => comAlertaDeErro(() => (u.ativo ? desativar(u.id) : reativar(u.id)))}
-                    >
-                      {u.ativo ? <UserX size={14} strokeWidth={1.5} /> : <UserCheck size={14} strokeWidth={1.5} />}
-                    </button>
+                    {!u.master && (
+                      <button
+                        type="button"
+                        className={paginaStyles.botaoIcone}
+                        title={u.papel === "admin" ? "Tornar comum" : "Tornar admin"}
+                        aria-label={`${u.papel === "admin" ? "Tornar comum" : "Tornar admin"}: ${u.nome}`}
+                        onClick={() => comAlertaDeErro(() => mudarPapel(u.id, u.papel === "admin" ? "comum" : "admin"))}
+                      >
+                        {u.papel === "admin" ? <ShieldOff size={14} strokeWidth={1.5} /> : <ShieldCheck size={14} strokeWidth={1.5} />}
+                      </button>
+                    )}
+                    {!u.master && (
+                      <button
+                        type="button"
+                        className={paginaStyles.botaoIcone}
+                        title={u.ativo ? "Desativar" : "Reativar"}
+                        aria-label={`${u.ativo ? "Desativar" : "Reativar"}: ${u.nome}`}
+                        onClick={() => comAlertaDeErro(() => (u.ativo ? desativar(u.id) : reativar(u.id)))}
+                      >
+                        {u.ativo ? <UserX size={14} strokeWidth={1.5} /> : <UserCheck size={14} strokeWidth={1.5} />}
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

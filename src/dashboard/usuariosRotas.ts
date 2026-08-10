@@ -10,6 +10,7 @@ import {
   reativarUsuario,
 } from "../usuarios/usuarios";
 import { exigirPermissao } from "./exigirPermissao";
+import { ehMaster } from "../usuarios/permissoes";
 import { quemEstaAgindo, registrarAcao } from "../auditoria";
 import { listarAtendentes } from "../atendentes";
 import type { Usuario, Papel } from "../usuarios/tipos";
@@ -33,6 +34,7 @@ function paraPublico(u: Usuario) {
     codigoAtendente: u.codigoAtendente,
     ativo: u.ativo,
     criadoEm: u.criadoEm,
+    master: ehMaster(u),
   };
 }
 
@@ -86,6 +88,12 @@ usuariosRouter.patch("/:id", (req, res) => {
 
   const b = (req.body ?? {}) as Record<string, unknown>;
   const todos = listarUsuarios();
+
+  // Conta master nao pode ser rebaixada nem desativada por ninguem.
+  if (ehMaster(alvo) && (b.papel === "comum" || b.ativo === false)) {
+    res.status(400).json({ erro: "Esta conta não pode ser rebaixada ou desativada." });
+    return;
+  }
 
   // Duas travas contra "trancar a gestao de usuarios pra sempre": ninguem se
   // desativa (nem rebaixa) sozinho, e o ultimo admin ativo nao pode ser

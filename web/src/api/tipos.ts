@@ -28,6 +28,7 @@ export interface Eu {
   nome: string;
   papel: "admin" | "comum";
   codigoAtendente: number | null;
+  master: boolean;
 }
 
 /** Espelha o paraPublico() de src/dashboard/usuariosRotas.ts. */
@@ -39,6 +40,7 @@ export interface UsuarioAdmin {
   codigoAtendente: number | null;
   ativo: boolean;
   criadoEm: string;
+  master: boolean;
 }
 
 export interface NovoUsuarioEntrada {

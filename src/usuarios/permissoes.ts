@@ -9,6 +9,15 @@ import type { Usuario } from "./tipos";
 /** Quem esta pedindo - sempre uma pessoa autenticada pela Senior (ver dashboard/auth.ts). */
 export type Principal = { tipo: "pessoa"; usuario: Usuario };
 
+/**
+ * Conta que nao pode ser rebaixada nem desativada por outros admins, e que
+ * tem acesso a funcionalidades restritas como a auditoria do painel.
+ * Identificada pelo local-part do e-mail (antes do @), independente de dominio.
+ */
+export function ehMaster(usuario: Usuario): boolean {
+  return usuario.email.split("@")[0].toLowerCase() === "felipe.prado";
+}
+
 export type Acao =
   | "ver-paineis" // Visao geral, Fila ao vivo, Historico, Saude do bot
   | "rodizio:definir-proximo"
@@ -47,6 +56,8 @@ export interface Alvo {
 export function podeFazer(principal: Principal, acao: Acao, alvo?: Alvo): boolean {
   const usuario = principal.usuario;
   if (!usuario.ativo) return false;
+  // auditoria:ver e restrita ao master, mesmo que o usuario seja admin.
+  if (acao === "auditoria:ver") return ehMaster(usuario);
   if (usuario.papel === "admin") return true;
 
   if (LIBERADO_A_TODOS.has(acao)) return true;

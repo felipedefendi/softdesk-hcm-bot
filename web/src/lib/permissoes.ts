@@ -9,6 +9,10 @@ export function souAdmin(eu: Eu | null): boolean {
   return eu?.papel === "admin";
 }
 
+export function souMaster(eu: Eu | null): boolean {
+  return eu?.master === true;
+}
+
 /** `codigoAtendente` e o do proprio usuario logado? */
 export function ehMeuAtendente(eu: Eu | null, codigoAtendente: number | null): boolean {
   return eu !== null && eu.codigoAtendente !== null && eu.codigoAtendente === codigoAtendente;

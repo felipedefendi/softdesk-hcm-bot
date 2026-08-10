@@ -7,6 +7,8 @@ export interface PaginaNav {
   Icone: ComponentType<{ size?: number; strokeWidth?: number }>;
   /** So aparece pra quem e admin (ver src/lib/permissoes.ts). */
   soAdmin?: boolean;
+  /** So aparece pra conta master (ver src/lib/permissoes.ts). */
+  soMaster?: boolean;
 }
 
 export const PAGINAS: PaginaNav[] = [
@@ -18,6 +20,6 @@ export const PAGINAS: PaginaNav[] = [
   { path: "/saude", rotulo: "Saúde do bot", Icone: HeartPulse },
   { path: "/cofre", rotulo: "Cofre", Icone: Lock },
   { path: "/usuarios", rotulo: "Usuários", Icone: UserCog, soAdmin: true },
-  { path: "/auditoria", rotulo: "Auditoria", Icone: ShieldCheck, soAdmin: true },
+  { path: "/auditoria", rotulo: "Auditoria", Icone: ShieldCheck, soMaster: true },
   { path: "/configuracoes", rotulo: "Configurações", Icone: Settings },
 ];

@@ -22,6 +22,7 @@ import { obterFila } from "../fila";
 import { listarExecucoes } from "../execucoes";
 import { autenticar, exigirLogin, invalidarToken, NOME_COOKIE } from "./auth";
 import { exigirPermissao } from "./exigirPermissao";
+import { ehMaster } from "../usuarios/permissoes";
 import { lerAuditoria, quemEstaAgindo, registrarAcao } from "../auditoria";
 import { cofreRouter } from "./cofreRotas";
 import { agendaRouter } from "./agendaRotas";
@@ -143,8 +144,8 @@ app.get("/api/status", (req, res) => {
  * esconder botao que a pessoa nao pode usar, o que e UX, nao seguranca.
  */
 app.get("/api/eu", (req, res) => {
-  const { nome, papel, codigoAtendente } = req.sessao!.usuario;
-  res.json({ nome, papel, codigoAtendente });
+  const usuario = req.sessao!.usuario;
+  res.json({ nome: usuario.nome, papel: usuario.papel, codigoAtendente: usuario.codigoAtendente, master: ehMaster(usuario) });
 });
 
 app.get("/api/fila", async (req, res) => {

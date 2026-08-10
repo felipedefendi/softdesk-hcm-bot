@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { podeFazer, type Principal } from "./permissoes";
+import { podeFazer, ehMaster, type Principal } from "./permissoes";
 import type { Usuario } from "./tipos";
 
 function usuario(parcial: Partial<Usuario>): Usuario {
@@ -40,12 +40,23 @@ test("admin pode tudo que esta mapeado, sem depender de alvo", () => {
     "automacao:pausar-retomar",
     "configuracoes:alterar",
     "usuarios:gerenciar",
-    "auditoria:ver",
   ] as const;
 
   for (const acao of acoes) assert.equal(podeFazer(admin, acao), true, acao);
   // Admin sem atendente vinculado ainda pode mexer no atendente de qualquer um.
   assert.equal(podeFazer(admin, "atendente:desativar", { codigoAtendente: 42 }), true);
+  // auditoria:ver exige master - admin comum nao tem.
+  assert.equal(podeFazer(admin, "auditoria:ver"), false);
+});
+
+test("master tem auditoria:ver, admin comum nao tem", () => {
+  const master = pessoa({ papel: "admin", email: "felipe.prado@empresa.com.br" });
+  const adminComum = pessoa({ papel: "admin", email: "outro@empresa.com.br" });
+
+  assert.equal(ehMaster(master.usuario), true);
+  assert.equal(ehMaster(adminComum.usuario), false);
+  assert.equal(podeFazer(master, "auditoria:ver"), true);
+  assert.equal(podeFazer(adminComum, "auditoria:ver"), false);
 });
 
 test("comum tem as acoes liberadas a todos", () => {

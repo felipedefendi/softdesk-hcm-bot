@@ -2,7 +2,7 @@ import { NavLink } from "react-router-dom";
 import { PanelLeftClose, PanelLeft, X } from "lucide-react";
 import { PAGINAS } from "../../nav/paginas";
 import { useAuth } from "../../auth/AuthContext";
-import { souAdmin } from "../../lib/permissoes";
+import { souAdmin, souMaster } from "../../lib/permissoes";
 import { Marca } from "../Marca";
 import styles from "./Sidebar.module.css";
 
@@ -15,7 +15,7 @@ interface Props {
 
 export function Sidebar({ colapsada, aoAlternarColapso, drawerAberta, aoFecharDrawer }: Props) {
   const { eu } = useAuth();
-  const paginas = PAGINAS.filter((p) => !p.soAdmin || souAdmin(eu));
+  const paginas = PAGINAS.filter((p) => (!p.soAdmin || souAdmin(eu)) && (!p.soMaster || souMaster(eu)));
 
   return (
     <>
