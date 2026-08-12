@@ -5,7 +5,7 @@ import { TabelaAtendentes } from "./TabelaAtendentes";
 import styles from "./RodizioEquipe.module.css";
 
 export function RodizioEquipe() {
-  const { atendentes, erro: erroAtendentes, recarregar: recarregarAtendentes, reordenar, desativar, reativar } = useAtendentes();
+  const { atendentes, erro: erroAtendentes, recarregar: recarregarAtendentes, reordenar, desativar, reativar, remover } = useAtendentes();
   const { proximo, erro: erroRotation, recarregar: recarregarRotation, definirProximo } = useRotation();
 
   return (
@@ -24,6 +24,7 @@ export function RodizioEquipe() {
         onReordenar={reordenar}
         onDesativar={desativar}
         onReativar={reativar}
+        onRemover={remover}
         onMudou={recarregarRotation}
       />
     </div>

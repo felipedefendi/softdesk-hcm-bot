@@ -3,13 +3,14 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import { config } from "../config";
-import { atendenteAtual, definirProximoManualmente } from "../rotation";
+import { atendenteAtual, aoRemoverAtendente, definirProximoManualmente } from "../rotation";
 import {
   atendentesAtivos,
   codigoDoAtendenteOuNull,
   listarAtendentes,
   marcarInativo,
   reativarManualmente,
+  removerAtendente,
   reordenarAtendentes,
 } from "../atendentes";
 import { detectarRodizioTravado } from "../alertaRodizio";
@@ -96,6 +97,24 @@ app.patch(
     }
   }
 );
+
+app.delete("/api/atendentes/:nome", exigirPermissao("atendente:remover"), (req, res) => {
+  const nome = decodeURIComponent(req.params.nome as string);
+  if (!listarAtendentes().some((a) => a.nome === nome)) {
+    res.status(404).json({ erro: `Atendente não encontrado: ${nome}` });
+    return;
+  }
+
+  try {
+    // Conserta o ponteiro do rodizio antes de tirar o nome da lista (ver rotation.ts).
+    aoRemoverAtendente(nome);
+    removerAtendente(nome);
+    registrarAcao(quemEstaAgindo(req), "atendente:remover", nome);
+    res.json(listarAtendentes());
+  } catch (err) {
+    res.status(400).json({ erro: err instanceof Error ? err.message : String(err) });
+  }
+});
 
 app.put("/api/atendentes/ordem", exigirPermissao("rodizio:reordenar"), (req, res) => {
   const ordem = Array.isArray(req.body?.ordem) ? req.body.ordem : [];

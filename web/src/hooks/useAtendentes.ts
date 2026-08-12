@@ -55,5 +55,13 @@ export function useAtendentes() {
     [api]
   );
 
-  return { atendentes, erro, recarregar, reordenar, desativar, reativar };
+  const remover = useCallback(
+    async (nome: string) => {
+      const dados = await api<Atendente[]>(`/atendentes/${encodeURIComponent(nome)}`, { method: "DELETE" });
+      setAtendentes(dados);
+    },
+    [api]
+  );
+
+  return { atendentes, erro, recarregar, reordenar, desativar, reativar, remover };
 }

@@ -111,6 +111,34 @@ export function avancarRodizio(nomeAtribuido: string): void {
 }
 
 /**
+ * Decide o novo `ultimoAtendente` quando `removido` sai do cadastro. Pura, pra
+ * ter teste - a versao com I/O (aoRemoverAtendente) so le e grava em volta dela.
+ *
+ * - Se o ponteiro nao aponta pro removido, nada muda.
+ * - Se aponta, reaponta pro predecessor na ordem ATUAL: assim o proximo do
+ *   rodizio passa a ser quem viria naturalmente depois do removido, em vez de
+ *   resetar pro topo (o que aconteceria se o ponteiro ficasse apontando pra um
+ *   nome que nao existe mais). Sobrando so o removido, volta pra null.
+ */
+export function ponteiroAposRemover(ultimoAtendente: string | null, ordem: string[], removido: string): string | null {
+  if (ultimoAtendente !== removido) return ultimoAtendente;
+  const idx = ordem.indexOf(removido);
+  if (idx === -1 || ordem.length <= 1) return null;
+  return ordem[(idx - 1 + ordem.length) % ordem.length];
+}
+
+/**
+ * Conserta o ponteiro do rodizio antes de um atendente ser removido do cadastro
+ * (por isso roda com o nome ainda na lista - ver ponteiroAposRemover).
+ */
+export function aoRemoverAtendente(nome: string): void {
+  const estado = lerEstado();
+  const ordem = listarAtendentes().map((a) => a.nome);
+  const novo = ponteiroAposRemover(estado.ultimoAtendente, ordem, nome);
+  if (novo !== estado.ultimoAtendente) salvarEstado({ ultimoAtendente: novo });
+}
+
+/**
  * Ajuste manual do rodizio: forca quem sera o proximo atendente, sem
  * precisar que alguem receba um chamado de verdade primeiro. Funciona
  * ajustando ultimoAtendente para quem vem logo antes de "nome" na ordem

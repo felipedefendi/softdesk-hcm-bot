@@ -15,6 +15,7 @@ interface Props {
   onReordenar: (ordem: string[]) => Promise<void>;
   onDesativar: (nome: string, motivo: string, retornaEm: string | null) => Promise<void>;
   onReativar: (nome: string) => Promise<void>;
+  onRemover: (nome: string) => Promise<void>;
   onMudou?: () => void;
 }
 
@@ -30,7 +31,7 @@ function formatarRetornaEm(retornaEm: string | null): string {
  * touch (o DnD nativo nao responde a toque) - mesmo padrao do painel
  * antigo, os dois caminhos chamam a mesma mutacao.
  */
-export function TabelaAtendentes({ atendentes, erro, onTentarNovamente, onReordenar, onDesativar, onReativar, onMudou }: Props) {
+export function TabelaAtendentes({ atendentes, erro, onTentarNovamente, onReordenar, onDesativar, onReativar, onRemover, onMudou }: Props) {
   const { eu } = useAuth();
   const admin = souAdmin(eu);
   const [lista, setLista] = useState<Atendente[]>([]);
@@ -110,6 +111,11 @@ export function TabelaAtendentes({ atendentes, erro, onTentarNovamente, onReorde
     onMudou?.();
   }
 
+  async function remover(nome: string) {
+    await onRemover(nome);
+    onMudou?.();
+  }
+
   return (
     <section className={styles.cartao}>
       <h2 className={styles.titulo}>Atendentes</h2>
@@ -184,8 +190,10 @@ export function TabelaAtendentes({ atendentes, erro, onTentarNovamente, onReorde
                   <AcaoAtendente
                     atendente={a}
                     podeAgir={admin || ehMeuAtendente(eu, a.codigoAtendente)}
+                    podeRemover={admin}
                     onDesativar={(motivo, retornaEm) => desativar(a.nome, motivo, retornaEm)}
                     onReativar={() => reativar(a.nome)}
+                    onRemover={() => remover(a.nome)}
                   />
                 </td>
               </tr>

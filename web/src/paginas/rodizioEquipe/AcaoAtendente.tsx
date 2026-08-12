@@ -6,48 +6,83 @@ interface Props {
   atendente: Atendente;
   /** Falso quando quem esta vendo nao pode mexer nesta linha - nem admin, nem o proprio atendente. */
   podeAgir: boolean;
+  /** So admin: tira o atendente do cadastro de vez (desligamento). */
+  podeRemover: boolean;
   onDesativar: (motivo: string, retornaEm: string | null) => Promise<void>;
   onReativar: () => Promise<void>;
+  onRemover: () => Promise<void>;
 }
 
-export function AcaoAtendente({ atendente, podeAgir, onDesativar, onReativar }: Props) {
+export function AcaoAtendente({ atendente, podeAgir, podeRemover, onDesativar, onReativar, onRemover }: Props) {
   const [aberto, setAberto] = useState(false);
   const [motivo, setMotivo] = useState("");
   const [retornaEm, setRetornaEm] = useState("");
   const [retornaEmHora, setRetornaEmHora] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [removendo, setRemovendo] = useState(false);
 
   // Esconder aqui e so conveniencia - o servidor recusa a mesma acao de
   // qualquer forma (ver src/usuarios/permissoes.ts). Sem isso, cada linha
   // mostraria um botao que so falharia ao ser clicado.
-  if (!podeAgir) return null;
+  if (!podeAgir && !podeRemover) return null;
+
+  async function remover() {
+    const ok = window.confirm(
+      `Remover ${atendente.nome} do rodízio de vez? A pessoa sai do cadastro e essa ação não pode ser desfeita pela tela.`
+    );
+    if (!ok) return;
+    setRemovendo(true);
+    try {
+      await onRemover();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err));
+    } finally {
+      setRemovendo(false);
+    }
+  }
+
+  const botaoRemover = podeRemover ? (
+    <button type="button" className="botao-perigo" onClick={remover} disabled={removendo}>
+      Remover
+    </button>
+  ) : null;
 
   if (!atendente.ativo) {
     return (
-      <button
-        type="button"
-        disabled={enviando}
-        onClick={async () => {
-          setEnviando(true);
-          try {
-            await onReativar();
-          } catch (err) {
-            alert(err instanceof Error ? err.message : String(err));
-          } finally {
-            setEnviando(false);
-          }
-        }}
-      >
-        Reativar agora
-      </button>
+      <div className={styles.painel}>
+        {podeAgir && (
+          <button
+            type="button"
+            disabled={enviando}
+            onClick={async () => {
+              setEnviando(true);
+              try {
+                await onReativar();
+              } catch (err) {
+                alert(err instanceof Error ? err.message : String(err));
+              } finally {
+                setEnviando(false);
+              }
+            }}
+          >
+            Reativar agora
+          </button>
+        )}
+        {botaoRemover}
+      </div>
     );
   }
 
   if (!aberto) {
     return (
-      <button type="button" className="botao-secundario" onClick={() => setAberto(true)}>
-        Desativar
-      </button>
+      <div className={styles.painel}>
+        {podeAgir && (
+          <button type="button" className="botao-secundario" onClick={() => setAberto(true)}>
+            Desativar
+          </button>
+        )}
+        {botaoRemover}
+      </div>
     );
   }
 

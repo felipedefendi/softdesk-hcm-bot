@@ -24,6 +24,7 @@ export type Acao =
   | "rodizio:forcar-verificacao"
   | "rodizio:reordenar"
   | "atendente:desativar" // proprio (alvo = eu) ou de outro (so admin) - decidido pelo alvo
+  | "atendente:remover" // tirar do cadastro de vez (desligamento) - admin-only por omissao
   | "agenda:ferias" // idem
   | "agenda:dia-especial"
   | "cofre:usar" // ver, destravar, revelar, criar, editar, arquivar - um bloco so

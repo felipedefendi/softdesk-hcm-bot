@@ -70,6 +70,16 @@ button.botao-secundario:hover:not(:disabled) {
   background: var(--acento-fraco);
 }
 
+button.botao-perigo {
+  background: transparent;
+  color: var(--erro);
+  border: 1px solid var(--erro);
+}
+
+button.botao-perigo:hover:not(:disabled) {
+  background: var(--erro-fraco);
+}
+
 table,
 .tabular {
   font-variant-numeric: tabular-nums;

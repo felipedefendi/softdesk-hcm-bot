@@ -95,6 +95,18 @@ export function reativarManualmente(nome: string): void {
 }
 
 /**
+ * Tira o atendente do cadastro de vez (ex.: desligamento). Diferente de
+ * desativar, que so o deixa inativo mas mantem na lista. O ponteiro do rodizio
+ * (rotation.json) precisa ser ajustado ANTES desta chamada, enquanto o nome
+ * ainda esta na ordem - ver aoRemoverAtendente em rotation.ts.
+ */
+export function removerAtendente(nome: string): void {
+  const atendentes = listarAtendentes();
+  if (!atendentes.some((a) => a.nome === nome)) throw new Error(`Atendente nao encontrado: ${nome}`);
+  salvar(atendentes.filter((a) => a.nome !== nome));
+}
+
+/**
  * Aplica uma nova ordem de rodizio (drag-and-drop no dashboard). A ordem do
  * rodizio e a propria ordem do array em disco (ver rotation.ts), entao
  * reordenar e so reescrever o arquivo com os mesmos atendentes na ordem

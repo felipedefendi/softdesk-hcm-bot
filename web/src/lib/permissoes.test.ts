@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { ehMeuAtendente, souAdmin } from "./permissoes";
+import { ehMeuAtendente, souAdmin, souMaster } from "./permissoes";
 import type { Eu } from "../api/tipos";
 
 function eu(parcial: Partial<Eu>): Eu {
-  return { nome: "Teste", papel: "comum", codigoAtendente: 10, ...parcial };
+  return { nome: "Teste", papel: "comum", codigoAtendente: 10, master: false, ...parcial };
 }
 
 describe("souAdmin", () => {
@@ -14,6 +14,14 @@ describe("souAdmin", () => {
   it("falso pro papel comum e antes de saber quem e", () => {
     expect(souAdmin(eu({ papel: "comum" }))).toBe(false);
     expect(souAdmin(null)).toBe(false);
+  });
+});
+
+describe("souMaster", () => {
+  it("verdadeiro so quando master e true", () => {
+    expect(souMaster(eu({ master: true }))).toBe(true);
+    expect(souMaster(eu({ master: false }))).toBe(false);
+    expect(souMaster(null)).toBe(false);
   });
 });
 
