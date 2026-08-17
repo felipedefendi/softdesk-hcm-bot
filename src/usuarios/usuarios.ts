@@ -85,6 +85,19 @@ export function mudarPapel(usuarioId: string, papel: Papel): Usuario {
   return atualizar(usuarioId, (u) => ({ ...u, papel }));
 }
 
+export function mudarCodigoAtendente(usuarioId: string, codigoAtendente: number | null): Usuario {
+  return atualizar(usuarioId, (u) => ({ ...u, codigoAtendente }));
+}
+
+/** Encontra conflito de vinculo sem considerar a propria conta que esta sendo editada. */
+export function usuarioComCodigoAtendente(
+  usuarios: Usuario[],
+  codigoAtendente: number,
+  ignorarUsuarioId: string
+): Usuario | undefined {
+  return usuarios.find((u) => u.id !== ignorarUsuarioId && u.codigoAtendente === codigoAtendente);
+}
+
 /**
  * Corrige o e-mail de login (que e tambem o username no Senior X Platform, ver
  * dashboard/senior.ts). Normaliza e recusa colisao com outra conta - a mesma

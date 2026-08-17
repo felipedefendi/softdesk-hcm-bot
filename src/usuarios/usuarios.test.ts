@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { contarAdminsAtivos, emailValido, normalizarEmail } from "./usuarios";
+import { contarAdminsAtivos, emailValido, normalizarEmail, usuarioComCodigoAtendente } from "./usuarios";
 import type { Usuario } from "./tipos";
 
 function usuarioBase(parcial: Partial<Usuario> = {}): Usuario {
@@ -34,4 +34,14 @@ test("contarAdminsAtivos ignora comum e admin inativo", () => {
 
 test("contarAdminsAtivos com lista vazia da zero", () => {
   assert.equal(contarAdminsAtivos([]), 0);
+});
+
+test("usuarioComCodigoAtendente encontra conflito e ignora a conta editada", () => {
+  const usuarios = [
+    usuarioBase({ id: "a", codigoAtendente: 10 }),
+    usuarioBase({ id: "b", codigoAtendente: 20 }),
+  ];
+
+  assert.equal(usuarioComCodigoAtendente(usuarios, 10, "b")?.id, "a");
+  assert.equal(usuarioComCodigoAtendente(usuarios, 10, "a"), undefined);
 });

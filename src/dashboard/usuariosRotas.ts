@@ -5,14 +5,16 @@ import {
   criarUsuario,
   desativarUsuario,
   listarUsuarios,
+  mudarCodigoAtendente,
   mudarEmail,
   mudarPapel,
   reativarUsuario,
+  usuarioComCodigoAtendente,
 } from "../usuarios/usuarios";
 import { exigirPermissao } from "./exigirPermissao";
 import { ehMaster } from "../usuarios/permissoes";
 import { quemEstaAgindo, registrarAcao } from "../auditoria";
-import { listarAtendentes } from "../atendentes";
+import { adicionarAtendente, listarAtendentes, reativarManualmente, type Atendente } from "../atendentes";
 import type { Usuario, Papel } from "../usuarios/tipos";
 
 /**
@@ -65,6 +67,13 @@ usuariosRouter.post("/", (req, res) => {
     res.status(400).json({ erro: "Atendente vinculado não encontrado." });
     return;
   }
+  const conflitoDeVinculo = codigoAtendente === null
+    ? undefined
+    : usuarioComCodigoAtendente(listarUsuarios(), codigoAtendente, "");
+  if (conflitoDeVinculo) {
+    res.status(400).json({ erro: `Este atendente já está vinculado a ${conflitoDeVinculo.nome}.` });
+    return;
+  }
 
   try {
     // Sem convite/senha: o login e pela Senior (ver dashboard/senior.ts). Criar
@@ -113,6 +122,55 @@ usuariosRouter.patch("/:id", (req, res) => {
   }
 
   try {
+    if (Object.prototype.hasOwnProperty.call(b, "codigoAtendente")) {
+      const codigo = b.codigoAtendente;
+      if (codigo !== null && (typeof codigo !== "number" || !Number.isInteger(codigo) || codigo <= 0)) {
+        throw new Error("Código do atendente inválido.");
+      }
+      if (b.garantirNoRodizio === true && codigo === null) {
+        throw new Error("Selecione um atendente para incluí-lo no rodízio.");
+      }
+
+      const codigoNovo = codigo as number | null;
+      const conflito = codigoNovo === null ? undefined : usuarioComCodigoAtendente(todos, codigoNovo, id);
+      if (conflito) {
+        throw new Error(`O atendente #${codigoNovo} já está vinculado a ${conflito.nome}.`);
+      }
+
+      let atendente = codigoNovo === null
+        ? undefined
+        : listarAtendentes().find((a) => a.codigoAtendente === codigoNovo);
+
+      if (codigoNovo !== null && !atendente) {
+        // Um atendente removido some de atendentes.json, mas seu codigo continua
+        // preservado na conta. So esse codigo previamente vinculado pode ser
+        // recriado por esta rota; a tela nao pode inventar codigos do SoftDesk.
+        if (b.garantirNoRodizio !== true || alvo.codigoAtendente !== codigoNovo) {
+          throw new Error("Atendente vinculado não encontrado no rodízio.");
+        }
+        atendente = {
+          nome: alvo.nome,
+          codigoAtendente: codigoNovo,
+          ativo: true,
+          motivoInatividade: null,
+          retornaEm: null,
+          emailTeams: alvo.email.split("@")[0],
+        } satisfies Atendente;
+        adicionarAtendente(atendente);
+        registrarAcao(quemEstaAgindo(req), "atendente:adicionar", `${atendente.nome} (#${codigoNovo}) - fim da fila`);
+      } else if (atendente && !atendente.ativo && b.garantirNoRodizio === true) {
+        reativarManualmente(atendente.nome);
+        registrarAcao(quemEstaAgindo(req), "atendente:reativar", atendente.nome);
+      }
+
+      if (codigoNovo !== alvo.codigoAtendente) {
+        mudarCodigoAtendente(id, codigoNovo);
+        const anterior = alvo.codigoAtendente === null ? "sem vínculo" : `#${alvo.codigoAtendente}`;
+        const atual = codigoNovo === null ? "sem vínculo" : `${atendente?.nome ?? "Atendente"} (#${codigoNovo})`;
+        registrarAcao(quemEstaAgindo(req), "usuario:mudar-atendente", `${alvo.email}: ${anterior} -> ${atual}`);
+      }
+    }
+
     const emailNovo = texto(b.email);
     if (emailNovo && emailNovo.toLowerCase() !== alvo.email) {
       mudarEmail(id, emailNovo);

@@ -30,6 +30,30 @@ function salvar(atendentes: Atendente[]): void {
   fs.writeFileSync(ARQUIVO, JSON.stringify(atendentes, null, 2));
 }
 
+/**
+ * Valida e acrescenta um atendente no fim da ordem do rodizio. Pura para que
+ * as regras de unicidade possam ser testadas sem tocar o state real.
+ */
+export function comAtendenteAdicionado(atendentes: Atendente[], novo: Atendente): Atendente[] {
+  const nome = novo.nome.trim();
+  if (!nome) throw new Error("Informe o nome do atendente.");
+  if (!Number.isInteger(novo.codigoAtendente) || novo.codigoAtendente <= 0) {
+    throw new Error("Codigo do atendente invalido.");
+  }
+  if (atendentes.some((a) => a.nome.toLocaleLowerCase("pt-BR") === nome.toLocaleLowerCase("pt-BR"))) {
+    throw new Error(`Ja existe um atendente chamado "${nome}".`);
+  }
+  if (atendentes.some((a) => a.codigoAtendente === novo.codigoAtendente)) {
+    throw new Error(`Ja existe um atendente com o codigo ${novo.codigoAtendente}.`);
+  }
+  return [...atendentes, { ...novo, nome }];
+}
+
+/** Recoloca no fim da fila um atendente que havia sido removido do cadastro. */
+export function adicionarAtendente(novo: Atendente): void {
+  salvar(comAtendenteAdicionado(listarAtendentes(), novo));
+}
+
 export function atendentesAtivos(): Atendente[] {
   return listarAtendentes().filter((a) => a.ativo);
 }

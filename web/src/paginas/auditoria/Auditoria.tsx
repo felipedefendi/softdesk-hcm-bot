@@ -12,6 +12,7 @@ import styles from "./Auditoria.module.css";
 const ROTULOS: Record<string, string> = {
   "atendente:desativar": "Desativou atendente",
   "atendente:reativar": "Reativou atendente",
+  "atendente:adicionar": "Adicionou atendente",
   "rodizio:reordenar": "Reordenou o rodízio",
   "rodizio:definir-proximo": "Definiu o próximo",
   "configuracoes:alterar": "Alterou configurações",
@@ -24,6 +25,7 @@ const ROTULOS: Record<string, string> = {
   "usuario:criar": "Criou usuário",
   "usuario:gerar-convite": "Gerou link de convite",
   "usuario:mudar-papel": "Mudou o papel",
+  "usuario:mudar-atendente": "Mudou o atendente vinculado",
   "usuario:desativar": "Desativou usuário",
   "usuario:reativar": "Reativou usuário",
 };

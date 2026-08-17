@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
-import { Plus, ShieldCheck, ShieldOff, UserX, UserCheck, Pencil } from "lucide-react";
+import { Link2, Plus, ShieldCheck, ShieldOff, UserX, UserCheck, Pencil } from "lucide-react";
 import { Cartao } from "../../components/Cartao";
 import { DrawerLateral } from "../../components/DrawerLateral";
 import { Esqueleto } from "../../components/Esqueleto";
@@ -9,30 +9,28 @@ import { useUsuarios } from "../../hooks/useUsuarios";
 import { useAtendentes } from "../../hooks/useAtendentes";
 import { useAuth } from "../../auth/AuthContext";
 import { souAdmin } from "../../lib/permissoes";
-import type { NovoUsuarioEntrada } from "../../api/tipos";
+import { nomeDoVinculo, rotuloDaAcaoDeVinculo } from "../../lib/vinculoAtendente";
+import type { NovoUsuarioEntrada, VinculoAtendenteEntrada } from "../../api/tipos";
 import { FormularioUsuario } from "./FormularioUsuario";
 import { FormularioEmail } from "./FormularioEmail";
+import { FormularioVinculoAtendente } from "./FormularioVinculoAtendente";
 import paginaStyles from "./Usuarios.module.css";
 
 type Drawer =
   | { tipo: "fechado" }
   | { tipo: "novo" }
-  | { tipo: "editarEmail"; id: string; nome: string; email: string };
+  | { tipo: "editarEmail"; id: string; nome: string; email: string }
+  | { tipo: "editarAtendente"; id: string; nome: string; codigoAtendente: number | null };
 
 export function Usuarios() {
   const { eu } = useAuth();
-  const { usuarios, erro, recarregar, criar, mudarPapel, mudarEmail, desativar, reativar } = useUsuarios();
-  const { atendentes } = useAtendentes();
+  const { usuarios, erro, recarregar, criar, mudarPapel, mudarEmail, mudarAtendente, desativar, reativar } = useUsuarios();
+  const { atendentes, recarregar: recarregarAtendentes } = useAtendentes();
   const [drawer, setDrawer] = useState<Drawer>({ tipo: "fechado" });
 
   // Guarda de UI - o servidor ja recusa qualquer coisa aqui pra quem nao e
   // admin, isto so evita que a tela fique presa "carregando" pra sempre.
   if (!souAdmin(eu)) return <Navigate to="/" replace />;
-
-  function nomeDoAtendente(codigo: number | null): string {
-    if (codigo === null) return "—";
-    return atendentes?.find((a) => a.codigoAtendente === codigo)?.nome ?? `#${codigo}`;
-  }
 
   async function aoCriar(entrada: NovoUsuarioEntrada) {
     await criar(entrada);
@@ -52,6 +50,13 @@ export function Usuarios() {
   async function aoEditarEmail(email: string) {
     if (drawer.tipo !== "editarEmail") return;
     await mudarEmail(drawer.id, email);
+    setDrawer({ tipo: "fechado" });
+  }
+
+  async function aoEditarAtendente(entrada: VinculoAtendenteEntrada) {
+    if (drawer.tipo !== "editarAtendente") return;
+    await mudarAtendente(drawer.id, entrada);
+    await recarregarAtendentes();
     setDrawer({ tipo: "fechado" });
   }
 
@@ -87,7 +92,7 @@ export function Usuarios() {
                   {/* So o usuario; o dominio (@tenant) e igual pra todos, entao fica no title pra conferir. */}
                   <td data-rotulo="Usuário SeniorX" title={u.email}>{u.email.split("@")[0]}</td>
                   <td data-rotulo="Papel">{u.papel === "admin" ? "Administrador" : "Comum"}</td>
-                  <td data-rotulo="Atendente">{nomeDoAtendente(u.codigoAtendente)}</td>
+                  <td data-rotulo="Atendente">{nomeDoVinculo(atendentes, u.codigoAtendente)}</td>
                   <td data-rotulo="Status">
                     <span className={u.ativo ? paginaStyles.badgeAtivo : paginaStyles.badgeInativo}>
                       {u.ativo ? "Ativo" : "Inativo"}
@@ -102,6 +107,22 @@ export function Usuarios() {
                       onClick={() => setDrawer({ tipo: "editarEmail", id: u.id, nome: u.nome, email: u.email })}
                     >
                       <Pencil size={14} strokeWidth={1.5} />
+                    </button>
+                    <button
+                      type="button"
+                      className={paginaStyles.botaoIcone}
+                      disabled={atendentes === null}
+                      title={`${rotuloDaAcaoDeVinculo(atendentes, u.codigoAtendente)}: ${u.nome}`}
+                      aria-label={`${rotuloDaAcaoDeVinculo(atendentes, u.codigoAtendente)}: ${u.nome}`}
+                      onClick={() => setDrawer({
+                        tipo: "editarAtendente",
+                        id: u.id,
+                        nome: u.nome,
+                        codigoAtendente: u.codigoAtendente,
+                      })}
+                    >
+                      <Link2 size={14} strokeWidth={1.5} />
+                      {rotuloDaAcaoDeVinculo(atendentes, u.codigoAtendente)}
                     </button>
                     {!u.master && (
                       <button
@@ -140,6 +161,8 @@ export function Usuarios() {
             ? "Nova conta"
             : drawer.tipo === "editarEmail"
               ? "Editar nome de usuário"
+              : drawer.tipo === "editarAtendente"
+                ? "Vincular atendente"
               : ""
         }
         onFechar={() => setDrawer({ tipo: "fechado" })}
@@ -150,6 +173,19 @@ export function Usuarios() {
 
         {drawer.tipo === "editarEmail" && (
           <FormularioEmail emailAtual={drawer.email} onSalvar={aoEditarEmail} onCancelar={() => setDrawer({ tipo: "fechado" })} />
+        )}
+
+        {drawer.tipo === "editarAtendente" && (
+          <FormularioVinculoAtendente
+            nomeUsuario={drawer.nome}
+            codigoAtual={drawer.codigoAtendente}
+            atendentes={(atendentes ?? []).filter(
+              (a) => a.codigoAtendente === drawer.codigoAtendente
+                || !usuarios?.some((u) => u.id !== drawer.id && u.codigoAtendente === a.codigoAtendente)
+            )}
+            onSalvar={aoEditarAtendente}
+            onCancelar={() => setDrawer({ tipo: "fechado" })}
+          />
         )}
       </DrawerLateral>
     </div>

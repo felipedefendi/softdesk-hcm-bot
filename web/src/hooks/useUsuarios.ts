@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useApi } from "../api/useApi";
-import type { NovoUsuarioEntrada, UsuarioAdmin } from "../api/tipos";
+import type { NovoUsuarioEntrada, UsuarioAdmin, VinculoAtendenteEntrada } from "../api/tipos";
 
 /** Gestao de usuarios (admin). Sem polling - cadastro muda por acao de quem esta na tela. */
 export function useUsuarios() {
@@ -44,6 +44,13 @@ export function useUsuarios() {
     [api]
   );
 
+  const mudarAtendente = useCallback(
+    async (id: string, entrada: VinculoAtendenteEntrada) => {
+      setUsuarios(await api<UsuarioAdmin[]>(`/usuarios/${id}`, { method: "PATCH", body: JSON.stringify(entrada) }));
+    },
+    [api]
+  );
+
   const desativar = useCallback(
     async (id: string) => {
       setUsuarios(await api<UsuarioAdmin[]>(`/usuarios/${id}`, { method: "PATCH", body: JSON.stringify({ ativo: false }) }));
@@ -58,5 +65,5 @@ export function useUsuarios() {
     [api]
   );
 
-  return { usuarios, erro, recarregar, criar, mudarPapel, mudarEmail, desativar, reativar };
+  return { usuarios, erro, recarregar, criar, mudarPapel, mudarEmail, mudarAtendente, desativar, reativar };
 }

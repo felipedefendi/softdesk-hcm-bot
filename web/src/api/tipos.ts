@@ -50,6 +50,12 @@ export interface NovoUsuarioEntrada {
   codigoAtendente: number | null;
 }
 
+export interface VinculoAtendenteEntrada {
+  codigoAtendente: number | null;
+  /** Recria o removido ou reativa o inativo antes de manter o vinculo. */
+  garantirNoRodizio: boolean;
+}
+
 /** Espelha LinhaAuditoria de src/auditoria.ts. */
 export interface LinhaAuditoria {
   /** ISO. */
