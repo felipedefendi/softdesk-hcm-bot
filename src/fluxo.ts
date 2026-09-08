@@ -1,5 +1,5 @@
 import { abrirSessao, encerrarSessao } from "./sessao";
-import { listarChamadosSemAtendente, buscarInfoEncaminhamento } from "./tickets";
+import { listarChamadosSemAtendente, buscarInfoEncaminhamento, deveEncaminhar } from "./tickets";
 import { atribuirChamado } from "./assign";
 import { atendenteAtual, avancarRodizio } from "./rotation";
 import { emailTeamsDoAtendente } from "./atendentes";
@@ -67,7 +67,7 @@ export async function verificarChamados(): Promise<{ processados: number }> {
     for (const chamado of chamados) {
       const info = await buscarInfoEncaminhamento(sessao, chamado.numero);
       const minutos = info.minutos;
-      if (minutos < cfg.encaminhamentoLimiteMinutos) continue;
+      if (!deveEncaminhar(minutos, info.minutosResolucao, cfg.encaminhamentoLimiteMinutos)) continue;
 
       if (config.dryRun && foiRegistradoNoDryRun(chamado.numero)) {
         // Chamado ja foi calculado numa verificacao anterior e continua

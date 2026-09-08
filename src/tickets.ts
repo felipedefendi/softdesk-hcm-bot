@@ -65,17 +65,63 @@ export interface ContatoChamado {
 
 export interface InfoEncaminhamento extends ContatoChamado {
   minutos: number;
+  /**
+   * Minutos do SLA de "Resolucao". Em chamado novo costuma ser 0 (so o SLA de
+   * Encaminhamento esta correndo); passa a crescer nos que ja foram atendidos e
+   * voltaram pra "Sem atendente" - ver deveEncaminhar.
+   */
+  minutosResolucao: number;
+}
+
+type ItemSla = { nome: string; decorrido: string };
+
+function slasDoDetalhe(data: Record<string, unknown>): ItemSla[] {
+  return ((data.sla as Record<string, unknown>)?.sla ?? []) as ItemSla[];
+}
+
+/** Compara nome de SLA sem depender de acento nem caixa (ex.: "Resolução" ~ "resolucao"). */
+function normalizarNome(nome: string): string {
+  return nome.normalize("NFD").replace(/[^\x00-\x7f]/g, "").toLowerCase();
 }
 
 /** Minutos decorridos no SLA de "Encaminhamento", a partir do detalhe ja carregado. */
 function minutosEncaminhamentoDoDetalhe(data: Record<string, unknown>, numeroChamado: number): number {
-  const sla = ((data.sla as Record<string, unknown>)?.sla ?? []) as Array<{ nome: string; decorrido: string }>;
-  const encaminhamento = sla.find((s) => s.nome === "Encaminhamento");
+  const encaminhamento = slasDoDetalhe(data).find((s) => s.nome === "Encaminhamento");
   if (!encaminhamento) {
     throw new Error(`SLA de "Encaminhamento" nao encontrado no chamado ${numeroChamado}`);
   }
 
   return tempoDecorridoEmMinutos(encaminhamento.decorrido);
+}
+
+/**
+ * Minutos do SLA de "Resolucao", ou 0 quando ele nao existe ou ainda nao
+ * comecou. Diferente do de Encaminhamento, nao lanca se faltar: chamado novo
+ * pode ter so o de Encaminhamento correndo, e isso e' esperado. O nome e casado
+ * sem acento/caixa pra nao quebrar se o texto exato do SoftDesk variar.
+ */
+export function minutosResolucaoDoDetalhe(data: Record<string, unknown>): number {
+  const resolucao = slasDoDetalhe(data).find((s) => normalizarNome(s.nome).includes("resolu"));
+  if (!resolucao) return 0;
+  try {
+    return tempoDecorridoEmMinutos(resolucao.decorrido);
+  } catch {
+    return 0; // formato inesperado ou SLA ainda nao iniciado
+  }
+}
+
+/**
+ * Decide se o chamado ja deve ir pro proximo atendente. Pura, pra ter teste.
+ *
+ * Encaminha quando o SLA de Encaminhamento passou do limite (fluxo normal) OU
+ * quando o de Resolucao ja passou do de Encaminhamento. Esse segundo caso cobre
+ * os chamados transferidos de volta pra "Sem atendente": neles o Encaminhamento
+ * fica travado e nunca cresce, enquanto o de Resolucao segue correndo - sem esta
+ * regra ficariam presos fora do rodizio pra sempre. Num chamado novo a Resolucao
+ * e 0 e o Encaminhamento corre, entao a regra so dispara mesmo nos travados.
+ */
+export function deveEncaminhar(minutosEncaminhamento: number, minutosResolucao: number, limiteMinutos: number): boolean {
+  return minutosEncaminhamento >= limiteMinutos || minutosResolucao > minutosEncaminhamento;
 }
 
 /** Normaliza um campo texto do SoftDesk: vazio ou so espacos vira null. */
@@ -103,6 +149,7 @@ export async function buscarInfoEncaminhamento(sessao: Sessao, numeroChamado: nu
   const data = await buscarDetalheChamado(sessao, numeroChamado);
   return {
     minutos: minutosEncaminhamentoDoDetalhe(data, numeroChamado),
+    minutosResolucao: minutosResolucaoDoDetalhe(data),
     ...contatoDoDetalhe(data),
   };
 }
