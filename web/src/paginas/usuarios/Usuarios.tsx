@@ -34,6 +34,8 @@ export function Usuarios() {
 
   async function aoCriar(entrada: NovoUsuarioEntrada) {
     await criar(entrada);
+    // A conta pode ter criado um atendente novo no rodizio.
+    await recarregarAtendentes();
     setDrawer({ tipo: "fechado" });
   }
 

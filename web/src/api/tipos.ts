@@ -47,7 +47,10 @@ export interface NovoUsuarioEntrada {
   nome: string;
   email: string;
   papel: "admin" | "comum";
+  /** cd_atendente no SoftDesk. */
   codigoAtendente: number | null;
+  /** Marcado: se o codigo ainda nao estiver no rodizio, o atendente e criado no fim da fila. */
+  usuarioAtendente: boolean;
 }
 
 export interface VinculoAtendenteEntrada {

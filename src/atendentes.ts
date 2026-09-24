@@ -49,7 +49,29 @@ export function comAtendenteAdicionado(atendentes: Atendente[], novo: Atendente)
   return [...atendentes, { ...novo, nome }];
 }
 
-/** Recoloca no fim da fila um atendente que havia sido removido do cadastro. */
+/**
+ * O que a criacao de uma conta faz com o rodizio. Pura, pra ter teste.
+ * - sem codigo: conta so de gestao, fora do rodizio;
+ * - codigo que ja existe: so vincula;
+ * - codigo novo: so com "usuario atendente" marcado, e ai cria o atendente.
+ * O codigo e o cd_atendente do SoftDesk - e com ele que o bot atribui o chamado.
+ */
+export function planoDeAtendenteNaNovaConta(
+  atendentes: Atendente[],
+  codigo: number | null,
+  usuarioAtendente: boolean
+): "nenhum" | "vincular" | "criar" {
+  if (codigo === null) {
+    if (usuarioAtendente) throw new Error("Informe o código do atendente no SoftDesk.");
+    return "nenhum";
+  }
+  if (!Number.isInteger(codigo) || codigo <= 0) throw new Error("Código do atendente inválido.");
+  if (atendentes.some((a) => a.codigoAtendente === codigo)) return "vincular";
+  if (!usuarioAtendente) throw new Error("Atendente vinculado não encontrado.");
+  return "criar";
+}
+
+/** Acrescenta um atendente no fim da fila (recolocado ou recem-cadastrado). */
 export function adicionarAtendente(novo: Atendente): void {
   salvar(comAtendenteAdicionado(listarAtendentes(), novo));
 }

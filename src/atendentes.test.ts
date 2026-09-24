@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { comAtendenteAdicionado, type Atendente } from "./atendentes";
+import { comAtendenteAdicionado, planoDeAtendenteNaNovaConta, type Atendente } from "./atendentes";
 
 const ANA: Atendente = {
   nome: "Ana",
@@ -39,4 +39,27 @@ test("recusa codigo de atendente repetido", () => {
     () => comAtendenteAdicionado([ANA], { ...BRUNO, codigoAtendente: ANA.codigoAtendente }),
     /Ja existe um atendente com o codigo/
   );
+});
+
+test("nova conta sem codigo fica fora do rodizio", () => {
+  assert.equal(planoDeAtendenteNaNovaConta([ANA], null, false), "nenhum");
+});
+
+test("nova conta com codigo ja cadastrado so vincula, marcada ou nao", () => {
+  assert.equal(planoDeAtendenteNaNovaConta([ANA], 10, false), "vincular");
+  assert.equal(planoDeAtendenteNaNovaConta([ANA], 10, true), "vincular");
+});
+
+test("usuario atendente com codigo novo cria o atendente", () => {
+  assert.equal(planoDeAtendenteNaNovaConta([ANA], 99, true), "criar");
+});
+
+test("codigo desconhecido sem marcar usuario atendente e recusado", () => {
+  assert.throws(() => planoDeAtendenteNaNovaConta([ANA], 99, false), /não encontrado/);
+});
+
+test("usuario atendente exige codigo inteiro positivo", () => {
+  assert.throws(() => planoDeAtendenteNaNovaConta([ANA], null, true), /Informe o código/);
+  assert.throws(() => planoDeAtendenteNaNovaConta([ANA], 0, true), /inválido/);
+  assert.throws(() => planoDeAtendenteNaNovaConta([ANA], 1.5, true), /inválido/);
 });

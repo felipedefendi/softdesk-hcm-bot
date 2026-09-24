@@ -1,7 +1,10 @@
 import express, { type Request } from "express";
 import {
+  buscarPorEmail,
   buscarPorId,
   contarAdminsAtivos,
+  emailValido,
+  normalizarEmail,
   criarUsuario,
   desativarUsuario,
   listarUsuarios,
@@ -14,7 +17,13 @@ import {
 import { exigirPermissao } from "./exigirPermissao";
 import { ehMaster } from "../usuarios/permissoes";
 import { quemEstaAgindo, registrarAcao } from "../auditoria";
-import { adicionarAtendente, listarAtendentes, reativarManualmente, type Atendente } from "../atendentes";
+import {
+  adicionarAtendente,
+  listarAtendentes,
+  planoDeAtendenteNaNovaConta,
+  reativarManualmente,
+  type Atendente,
+} from "../atendentes";
 import type { Usuario, Papel } from "../usuarios/tipos";
 
 /**
@@ -58,15 +67,21 @@ usuariosRouter.post("/", (req, res) => {
   const email = texto(b.email);
   const papel: Papel = b.papel === "admin" ? "admin" : "comum";
   const codigoAtendente = typeof b.codigoAtendente === "number" ? b.codigoAtendente : null;
+  const usuarioAtendente = b.usuarioAtendente === true;
 
   if (!nome) {
     res.status(400).json({ erro: "Informe o nome." });
     return;
   }
-  if (codigoAtendente !== null && !listarAtendentes().some((a) => a.codigoAtendente === codigoAtendente)) {
-    res.status(400).json({ erro: "Atendente vinculado não encontrado." });
+
+  let plano: ReturnType<typeof planoDeAtendenteNaNovaConta>;
+  try {
+    plano = planoDeAtendenteNaNovaConta(listarAtendentes(), codigoAtendente, usuarioAtendente);
+  } catch (err) {
+    res.status(400).json({ erro: err instanceof Error ? err.message : String(err) });
     return;
   }
+
   const conflitoDeVinculo = codigoAtendente === null
     ? undefined
     : usuarioComCodigoAtendente(listarUsuarios(), codigoAtendente, "");
@@ -75,7 +90,32 @@ usuariosRouter.post("/", (req, res) => {
     return;
   }
 
+  if (plano === "criar") {
+    // O e-mail e conferido antes de mexer no rodizio: se a conta fosse recusada
+    // depois, sobraria um atendente recebendo chamado sem ninguem vinculado.
+    if (!emailValido(email)) {
+      res.status(400).json({ erro: `E-mail inválido: "${email}"` });
+      return;
+    }
+    if (buscarPorEmail(email)) {
+      res.status(400).json({ erro: `Já existe uma conta com o e-mail "${normalizarEmail(email)}".` });
+      return;
+    }
+  }
+
   try {
+    if (plano === "criar") {
+      adicionarAtendente({
+        nome,
+        codigoAtendente: codigoAtendente as number,
+        ativo: true,
+        motivoInatividade: null,
+        retornaEm: null,
+        emailTeams: normalizarEmail(email).split("@")[0],
+      });
+      registrarAcao(quemEstaAgindo(req), "atendente:adicionar", `${nome} (#${codigoAtendente}) - fim da fila`);
+    }
+
     // Sem convite/senha: o login e pela Senior (ver dashboard/senior.ts). Criar
     // a conta e so registra-la na allowlist com o usuario SeniorX certo; a
     // pessoa ja entra com a senha da propria conta Senior.
