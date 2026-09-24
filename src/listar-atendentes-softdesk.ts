@@ -1,76 +1,81 @@
 import { abrirSessao, encerrarSessao, headersAutenticados } from "./sessao";
-import { listarChamadosSemAtendente } from "./tickets";
 import { listarAtendentes } from "./atendentes";
 import { config } from "./config";
 
 /**
  * Lista os atendentes do SoftDesk com o codigo (cd_atendente) que o bot usa
  * pra encaminhar - o numero pedido em "Usuario atendente" na tela de Usuarios.
- * So leitura: nao encaminha nada.
+ * So leitura.
  *
- * O SoftDesk nao tem endpoint de "lista de atendentes" pra este login. A lista
- * sai do mesmo formulario que o bot usa pra encaminhar (json-formulario), que
- * so vem preenchido pra um chamado aberto - e traz os atendentes do grupo de
- * solucao dele (HCM). Sem chamado em "Sem atendente", nao ha como listar.
+ * A fonte e o formulario da tela de pesquisa de chamados, que traz todos os
+ * atendentes sem depender de chamado aberto. Atencao: o SoftDesk devolve ali o
+ * cadastro inteiro de cada atendente (inclusive senha e tokens). Aqui so codigo,
+ * nome, grupo e status sao lidos - o resto nunca e impresso nem guardado.
  *
  * Na VM: cd ~/softdesk-hcm-bot && node dist/listar-atendentes-softdesk.js
  */
-async function main(): Promise<void> {
+interface AtendenteSoftDesk {
+  codigo: number;
+  nome: string;
+  grupo: string;
+  ativo: boolean;
+}
+
+async function buscarAtendentes(): Promise<AtendenteSoftDesk[]> {
   const sessao = await abrirSessao();
   try {
-    const abertos = await listarChamadosSemAtendente(sessao);
-    if (abertos.length === 0) {
-      console.log('Nenhum chamado em "Sem atendente" agora - o SoftDesk so devolve a lista com um chamado aberto. Tente mais tarde.');
-      process.exitCode = 1;
-      return;
-    }
-
-    const numero = abertos[0].numero;
-    // Mesmos campos que o assign.ts pede: com um subconjunto menor o SoftDesk
-    // devolve a lista de atendentes vazia.
-    const res = await sessao.context.post("/chamado/json-formulario", {
-      headers: { ...headersAutenticados(sessao), referer: `${config.softdeskUrl}/encaminhar/${numero}` },
+    const res = await sessao.context.post("/chamado/json-formulario/pesquisa", {
+      headers: { ...headersAutenticados(sessao), referer: config.softdeskUrl },
       data: {
-        acao: "encaminhar",
-        cd_atividade_chamado: 0,
-        cd_chamado: numero,
-        cd_departamento_selecionado: 3,
-        cd_ligacao: 0,
-        flag_inicializar_usuario: true,
         ref: "mounted",
+        cd_area: 0,
+        cd_cliente: [],
+        flag_exibir_inativos: false,
+        flag_listar_todos_clientes: true,
+        flag_listar_todas_filiais: true,
+        // Mesmos campos que a tela pede. So com "atendente" o SoftDesk devolve
+        // outra lista (com contas de sistema e sem o grupo de solucao).
         campos: [
-          "chamado", "cliente", "area", "filial", "departamento", "usuario", "usuario_chave",
-          "campo_customizavel", "prioridade", "nivel_indisponibilidade", "servico", "tag",
-          "template_chamado", "template_chamado_tema", "tipo_chamado", "grupo_solucao",
-          "atendente", "item_conf", "versao", "tipo_atividade", "fornecedor", "configuracao", "geral",
+          "area", "atendente", "cliente", "grupo_solucao", "prioridade", "servico", "tag", "tipo_chamado",
+          "usuario", "versao", "projeto", "status_chamado", "fornecedor", "departamento", "filial",
+          "pesquisa_nr_filtros", "geral",
         ],
       },
     });
-    if (!res.ok()) throw new Error(`json-formulario respondeu HTTP ${res.status()}`);
+    if (!res.ok()) throw new Error(`json-formulario/pesquisa respondeu HTTP ${res.status()}`);
 
-    const dados = (await res.json()) as {
-      atendente?: Array<{ cd_atendente: number; nm_atendente: string; flag_impedimento: number }>;
-      grupo_solucao?: Array<{ ds_grupo_solucao: string }>;
-    };
-    const lista = [...(dados.atendente ?? [])].sort((a, b) => a.nm_atendente.localeCompare(b.nm_atendente, "pt-BR"));
-    if (lista.length === 0) {
-      console.log(`O SoftDesk devolveu a lista vazia para o chamado ${numero}.`);
-      process.exitCode = 1;
-      return;
-    }
-
-    const noRodizio = new Map(listarAtendentes().map((a) => [a.codigoAtendente, a]));
-    const grupo = dados.grupo_solucao?.[0]?.ds_grupo_solucao ?? "?";
-    console.log(`Atendentes do grupo "${grupo}" no SoftDesk (lidos do chamado ${numero}):\n`);
-    console.log("Codigo  Nome                            No rodizio do bot");
-    for (const a of lista) {
-      const local = noRodizio.get(a.cd_atendente);
-      const situacao = local ? (local.ativo ? "sim" : "sim (inativo)") : "-";
-      const impedido = a.flag_impedimento ? "  [impedido no SoftDesk]" : "";
-      console.log(`${String(a.cd_atendente).padEnd(8)}${a.nm_atendente.padEnd(32)}${situacao}${impedido}`);
-    }
+    const dados = (await res.json()) as { atendente?: Array<Record<string, unknown>> };
+    return (dados.atendente ?? []).map((a) => ({
+      codigo: Number(a.cd_atendente),
+      nome: String(a.nm_atendente ?? ""),
+      grupo: String(a.ds_grupo_solucao ?? "-"),
+      ativo: Number(a.st_atendente) === 1,
+    }));
   } finally {
     await encerrarSessao(sessao);
+  }
+}
+
+async function main(): Promise<void> {
+  const atendentes = await buscarAtendentes();
+  if (atendentes.length === 0) {
+    console.log("O SoftDesk devolveu a lista de atendentes vazia.");
+    process.exitCode = 1;
+    return;
+  }
+
+  // Por nome, nao por grupo: o SoftDesk manda um grupo so por pessoa, mesmo pra
+  // quem esta em varios (quem atende HCM pode aparecer como "Suprimentos").
+  atendentes.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+
+  const noRodizio = new Map(listarAtendentes().map((a) => [a.codigoAtendente, a]));
+  console.log(`${atendentes.length} atendentes no SoftDesk:\n`);
+  console.log("Codigo  Nome                            Rodizio         Um dos grupos de solucao");
+  for (const a of atendentes) {
+    const local = noRodizio.get(a.codigo);
+    const rodizio = local ? (local.ativo ? "sim" : "sim (inativo)") : "-";
+    const status = a.ativo ? "" : "  [inativo no SoftDesk]";
+    console.log(`${String(a.codigo).padEnd(8)}${a.nome.padEnd(32)}${rodizio.padEnd(16)}${a.grupo}${status}`);
   }
 }
 
