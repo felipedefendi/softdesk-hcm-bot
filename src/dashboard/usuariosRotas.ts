@@ -24,6 +24,8 @@ import {
   reativarManualmente,
   type Atendente,
 } from "../atendentes";
+import { buscarAtendentesSoftDesk, type AtendenteSoftDesk } from "../atendentesSoftDesk";
+import { resumirErro } from "../relatorios/erros";
 import type { Usuario, Papel } from "../usuarios/tipos";
 
 /**
@@ -59,6 +61,28 @@ function idDaSessao(req: Request): string | null {
 
 usuariosRouter.get("/", (req, res) => {
   res.json(listarUsuarios().map(paraPublico));
+});
+
+/**
+ * Atendentes do SoftDesk pra escolher em "Usuario atendente". Cada busca abre
+ * uma sessao no SoftDesk (alguns segundos), entao guarda por 5 min. A promessa
+ * e guardada, nao so o resultado: dois cliques juntos compartilham um login.
+ */
+const TTL_ATENDENTES_SOFTDESK_MS = 5 * 60 * 1000;
+let cacheAtendentesSoftDesk: { promessa: Promise<AtendenteSoftDesk[]>; expiraEm: number } | null = null;
+
+usuariosRouter.get("/atendentes-softdesk", async (req, res) => {
+  if (!cacheAtendentesSoftDesk || cacheAtendentesSoftDesk.expiraEm <= Date.now()) {
+    cacheAtendentesSoftDesk = { promessa: buscarAtendentesSoftDesk(), expiraEm: Date.now() + TTL_ATENDENTES_SOFTDESK_MS };
+  }
+  try {
+    const atendentes = await cacheAtendentesSoftDesk.promessa;
+    // So codigo e nome saem daqui - nada do cadastro do SoftDesk alem disso.
+    res.json(atendentes.filter((a) => a.ativo).map((a) => ({ codigo: a.codigo, nome: a.nome })));
+  } catch (err) {
+    cacheAtendentesSoftDesk = null; // nao guarda falha: a proxima tentativa busca de novo
+    res.status(502).json({ erro: `Não foi possível buscar os atendentes no SoftDesk: ${resumirErro(err)}` });
+  }
 });
 
 usuariosRouter.post("/", (req, res) => {

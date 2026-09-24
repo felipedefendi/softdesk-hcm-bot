@@ -9,7 +9,11 @@
 #
 #   $env:SOFTDESK_VM      = "ubuntu@000.000.000.000"
 #   $env:SOFTDESK_SSH_KEY = "C:\caminho\para\chave.key"
-#   $env:SOFTDESK_URL     = "https://exemplo.duckdns.org"
+#   $env:SOFTDESK_PAINEL_URL = "https://exemplo.duckdns.org"
+#
+# O endereco do painel NAO pode se chamar SOFTDESK_URL: esse nome e do bot (o
+# endereco do SoftDesk, ver config.ts), e uma variavel de ambiente com ele faz o
+# bot local tentar logar no painel em vez do SoftDesk.
 
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
@@ -38,10 +42,10 @@ function Etapa($numero, $titulo) {
 
 $vm = $env:SOFTDESK_VM
 $chave = $env:SOFTDESK_SSH_KEY
-$url = $env:SOFTDESK_URL
+$url = $env:SOFTDESK_PAINEL_URL
 
 if (-not $vm -or -not $chave -or -not $url) {
-  Abortar "defina SOFTDESK_VM, SOFTDESK_SSH_KEY e SOFTDESK_URL (ver o cabecalho deste arquivo)"
+  Abortar "defina SOFTDESK_VM, SOFTDESK_SSH_KEY e SOFTDESK_PAINEL_URL (ver o cabecalho deste arquivo)"
 }
 if (-not (Test-Path $chave)) {
   Abortar "chave SSH nao encontrada em $chave"

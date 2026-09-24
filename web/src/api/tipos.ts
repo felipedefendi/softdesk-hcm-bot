@@ -43,6 +43,13 @@ export interface UsuarioAdmin {
   master: boolean;
 }
 
+/** Espelha GET /api/usuarios/atendentes-softdesk. */
+export interface AtendenteSoftDesk {
+  /** cd_atendente no SoftDesk. */
+  codigo: number;
+  nome: string;
+}
+
 export interface NovoUsuarioEntrada {
   nome: string;
   email: string;

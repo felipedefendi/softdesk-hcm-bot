@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from "react";
-import type { Atendente, NovoUsuarioEntrada } from "../../api/tipos";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useApi } from "../../api/useApi";
+import type { Atendente, AtendenteSoftDesk, NovoUsuarioEntrada } from "../../api/tipos";
 import styles from "./Formularios.module.css";
 
 interface Props {
@@ -9,16 +10,42 @@ interface Props {
 }
 
 export function FormularioUsuario({ atendentes, onSalvar, onCancelar }: Props) {
+  const api = useApi();
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [papel, setPapel] = useState<"admin" | "comum">("comum");
   const [usuarioAtendente, setUsuarioAtendente] = useState(false);
   const [codigoAtendente, setCodigoAtendente] = useState("");
+  const [softDesk, setSoftDesk] = useState<AtendenteSoftDesk[] | null>(null);
+  const [erroSoftDesk, setErroSoftDesk] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
+  // A lista vem do SoftDesk (alguns segundos na primeira vez), entao so e
+  // buscada quando alguem marca "Usuario atendente".
+  const carregarSoftDesk = useCallback(async () => {
+    setErroSoftDesk(null);
+    try {
+      setSoftDesk(await api<AtendenteSoftDesk[]>("/usuarios/atendentes-softdesk"));
+    } catch (err) {
+      setErroSoftDesk(err instanceof Error ? err.message : String(err));
+    }
+  }, [api]);
+
+  useEffect(() => {
+    if (usuarioAtendente && softDesk === null && erroSoftDesk === null) carregarSoftDesk();
+  }, [usuarioAtendente, softDesk, erroSoftDesk, carregarSoftDesk]);
+
   const codigo = usuarioAtendente && codigoAtendente ? Number(codigoAtendente) : null;
   const existente = codigo === null ? undefined : atendentes.find((a) => a.codigoAtendente === codigo);
+  const noRodizio = new Set(atendentes.map((a) => a.codigoAtendente));
+
+  function escolherAtendente(valor: string) {
+    setCodigoAtendente(valor);
+    // Com o nome em branco, usa o do SoftDesk - e o nome que aparece no rodizio.
+    const escolhido = softDesk?.find((a) => String(a.codigo) === valor);
+    if (escolhido && !nome.trim()) setNome(escolhido.nome);
+  }
 
   async function enviar(ev: FormEvent) {
     ev.preventDefault();
@@ -72,23 +99,36 @@ export function FormularioUsuario({ atendentes, onSalvar, onCancelar }: Props) {
 
       {usuarioAtendente && (
         <>
-          <label className={styles.campo}>
-            Código do atendente no SoftDesk
-            <input
-              type="number"
-              min={1}
-              step={1}
-              inputMode="numeric"
-              value={codigoAtendente}
-              onChange={(ev) => setCodigoAtendente(ev.target.value)}
-              required
-            />
-          </label>
+          {erroSoftDesk ? (
+            <p className={styles.erro}>
+              {erroSoftDesk}{" "}
+              <button type="button" className="botao-secundario" onClick={carregarSoftDesk}>
+                Tentar de novo
+              </button>
+            </p>
+          ) : (
+            <label className={styles.campo}>
+              Atendente no SoftDesk
+              <select
+                value={codigoAtendente}
+                onChange={(ev) => escolherAtendente(ev.target.value)}
+                disabled={softDesk === null}
+                required
+              >
+                <option value="">{softDesk === null ? "Buscando atendentes no SoftDesk..." : "Selecione"}</option>
+                {softDesk?.map((a) => (
+                  <option key={a.codigo} value={a.codigo}>
+                    {a.nome} (#{a.codigo}){noRodizio.has(a.codigo) ? " — já no rodízio" : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           {codigo !== null && (
             <p className={styles.aviso}>
               {existente
-                ? `Este código já é de ${existente.nome} no rodízio — a conta só será vinculada a ele.`
-                : `Novo atendente: ${nome.trim() || "a pessoa"} entra ativo no fim da fila com o código #${codigo}. Confira o código no SoftDesk: é com ele que o bot atribui os chamados.`}
+                ? `Este atendente já está no rodízio como ${existente.nome} — a conta só será vinculada a ele.`
+                : `Novo atendente: ${nome.trim() || "a pessoa"} entra ativo no fim da fila com o código #${codigo}.`}
             </p>
           )}
         </>
