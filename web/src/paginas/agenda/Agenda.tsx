@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, CalendarPlus, Trash2 } from "lucide-react";
 import { Cartao } from "../../components/Cartao";
 import { DrawerLateral } from "../../components/DrawerLateral";
+import { DialogoConfirmacao } from "../../components/DialogoConfirmacao";
 import { Esqueleto } from "../../components/Esqueleto";
 import { ErroCarregamento } from "../../components/ErroCarregamento";
 import { useAgenda } from "../../hooks/useAgenda";
@@ -10,7 +11,7 @@ import { useAuth } from "../../auth/AuthContext";
 import { ehMeuAtendente, souAdmin } from "../../lib/permissoes";
 import { explicarDia, gradeDoMes } from "../../lib/gradeDoMes";
 import { andarMes } from "../../lib/navegarMes";
-import type { DiaEspecial } from "../../api/tipos";
+import type { DiaEspecial, Ferias } from "../../api/tipos";
 import { GradeDoMes } from "./GradeDoMes";
 import { FormularioDiaEspecial } from "./FormularioDiaEspecial";
 import { FormularioFerias } from "./FormularioFerias";
@@ -66,6 +67,9 @@ export function Agenda() {
     return { ano: d.getFullYear(), mes: d.getMonth() + 1 };
   });
   const [drawer, setDrawer] = useState<Drawer>({ tipo: "fechado" });
+  const [feriasParaRemover, setFeriasParaRemover] = useState<Ferias | null>(null);
+  // Estavel: o dialogo reage a troca desta funcao devolvendo o foco.
+  const cancelarRemocao = useCallback(() => setFeriasParaRemover(null), []);
 
   const semanas = useMemo(
     () => gradeDoMes(cursor.ano, cursor.mes, agenda?.diasEspeciais ?? [], agenda?.ferias ?? []),
@@ -184,9 +188,7 @@ export function Agenda() {
                           className={styles.botaoIcone}
                           aria-label={`Remover férias de ${f.atendente}`}
                           title="Remover"
-                          onClick={() => {
-                            if (window.confirm(`Remover as férias de ${f.atendente}?`)) removerFerias(f.id);
-                          }}
+                          onClick={() => setFeriasParaRemover(f)}
                         >
                           <Trash2 size={14} strokeWidth={1.5} />
                         </button>
@@ -275,6 +277,17 @@ export function Agenda() {
           />
         )}
       </DrawerLateral>
+
+      <DialogoConfirmacao
+        aberto={feriasParaRemover !== null}
+        titulo="Remover férias"
+        mensagem={`Esta ação removerá as férias de ${feriasParaRemover?.atendente ?? ""}, deseja confirmar?`}
+        onConfirmar={() => {
+          if (feriasParaRemover) removerFerias(feriasParaRemover.id);
+          setFeriasParaRemover(null);
+        }}
+        onCancelar={cancelarRemocao}
+      />
     </div>
   );
 }

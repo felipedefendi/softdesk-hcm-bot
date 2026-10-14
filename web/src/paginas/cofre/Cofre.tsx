@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { Search, Copy, Pencil, Archive, Lock, LockOpen, Plus } from "lucide-react";
 import { Cartao } from "../../components/Cartao";
 import { DrawerLateral } from "../../components/DrawerLateral";
+import { DialogoConfirmacao } from "../../components/DialogoConfirmacao";
 import { Esqueleto } from "../../components/Esqueleto";
 import { ErroCarregamento } from "../../components/ErroCarregamento";
 import { useCofreCredenciais } from "../../hooks/useCofreCredenciais";
@@ -43,6 +44,9 @@ export function Cofre() {
     aberto: false,
     editando: null,
   });
+  const [paraArquivar, setParaArquivar] = useState<CredencialMetadados | null>(null);
+  // Estavel: o dialogo reage a troca desta funcao devolvendo o foco.
+  const cancelarArquivamento = useCallback(() => setParaArquivar(null), []);
 
   const buscaRef = useRef<HTMLInputElement>(null);
 
@@ -100,7 +104,7 @@ export function Cofre() {
   }
 
   async function aoArquivar(c: CredencialMetadados) {
-    if (!window.confirm(`Arquivar a credencial de "${c.cliente}"? Ela sai da lista, mas continua recuperável.`)) return;
+    setParaArquivar(null);
     try {
       await arquivar(c.id);
       setToast("Credencial arquivada");
@@ -246,7 +250,7 @@ export function Cofre() {
                           className={styles.botaoIcone}
                           title="Arquivar"
                           aria-label={`Arquivar credencial de ${c.cliente}`}
-                          onClick={() => aoArquivar(c)}
+                          onClick={() => setParaArquivar(c)}
                         >
                           <Archive size={14} strokeWidth={1.5} />
                         </button>
@@ -272,6 +276,14 @@ export function Cofre() {
           onCancelar={() => setDrawer({ aberto: false, editando: null })}
         />
       </DrawerLateral>
+
+      <DialogoConfirmacao
+        aberto={paraArquivar !== null}
+        titulo="Arquivar credencial"
+        mensagem={`Esta ação arquivará a credencial de "${paraArquivar?.cliente ?? ""}". Ela sai da lista, mas continua recuperável. Deseja confirmar?`}
+        onConfirmar={() => paraArquivar && aoArquivar(paraArquivar)}
+        onCancelar={cancelarArquivamento}
+      />
 
       {toast && <div className={styles.toast}>{toast}</div>}
     </div>
