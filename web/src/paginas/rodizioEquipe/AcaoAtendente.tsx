@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import type { Atendente } from "../../api/tipos";
+import { DialogoConfirmacao } from "../../components/DialogoConfirmacao";
 import styles from "./AcaoAtendente.module.css";
 
 interface Props {
@@ -20,6 +21,9 @@ export function AcaoAtendente({ atendente, podeAgir, podeRemover, onDesativar, o
   const [retornaEmHora, setRetornaEmHora] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [removendo, setRemovendo] = useState(false);
+  const [confirmandoRemocao, setConfirmandoRemocao] = useState(false);
+  // Estavel: o dialogo reage a troca desta funcao devolvendo o foco.
+  const cancelarRemocao = useCallback(() => setConfirmandoRemocao(false), []);
 
   // Esconder aqui e so conveniencia - o servidor recusa a mesma acao de
   // qualquer forma (ver src/usuarios/permissoes.ts). Sem isso, cada linha
@@ -27,10 +31,7 @@ export function AcaoAtendente({ atendente, podeAgir, podeRemover, onDesativar, o
   if (!podeAgir && !podeRemover) return null;
 
   async function remover() {
-    const ok = window.confirm(
-      `Remover ${atendente.nome} do rodízio de vez? A pessoa sai do cadastro e essa ação não pode ser desfeita pela tela.`
-    );
-    if (!ok) return;
+    setConfirmandoRemocao(false);
     setRemovendo(true);
     try {
       await onRemover();
@@ -42,9 +43,18 @@ export function AcaoAtendente({ atendente, podeAgir, podeRemover, onDesativar, o
   }
 
   const botaoRemover = podeRemover ? (
-    <button type="button" className="botao-perigo" onClick={remover} disabled={removendo}>
-      Remover
-    </button>
+    <>
+      <button type="button" className="botao-perigo" onClick={() => setConfirmandoRemocao(true)} disabled={removendo}>
+        Remover
+      </button>
+      <DialogoConfirmacao
+        aberto={confirmandoRemocao}
+        titulo={`Remover ${atendente.nome}`}
+        mensagem="Esta ação removerá o usuário do rodízio, deseja confirmar?"
+        onConfirmar={remover}
+        onCancelar={cancelarRemocao}
+      />
+    </>
   ) : null;
 
   if (!atendente.ativo) {

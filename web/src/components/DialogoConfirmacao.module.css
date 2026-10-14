@@ -1,0 +1,60 @@
+.fundo {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+}
+
+.caixa {
+  width: 400px;
+  max-width: 100%;
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  animation: entrar 0.15s ease;
+}
+
+@keyframes entrar {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.titulo {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  margin: 0;
+}
+
+.mensagem {
+  color: var(--texto-fraco);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caixa {
+    animation: none;
+  }
+}
