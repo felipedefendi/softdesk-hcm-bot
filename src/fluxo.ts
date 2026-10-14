@@ -1,4 +1,6 @@
-import { abrirSessao, encerrarSessao } from "./sessao";
+import path from "node:path";
+import { abrirSessao, encerrarSessao, type Sessao } from "./sessao";
+import { PassadaEmAndamento, tentarTravar } from "./travaPassada";
 import { listarChamadosSemAtendente, buscarInfoEncaminhamento, deveEncaminhar } from "./tickets";
 import { atribuirChamado } from "./assign";
 import { atendenteAtual, avancarRodizio } from "./rotation";
@@ -13,6 +15,8 @@ import { diaEmSaoPaulo, horaEmSaoPaulo } from "./relatorios/periodos";
 import { lerDiasEspeciais } from "./agenda/armazenamento";
 import { estadoDoDia } from "./agenda/regras";
 import { config } from "./config";
+
+const ARQUIVO_TRAVA = path.join(__dirname, "..", "state", "passada.lock");
 
 /**
  * Fecha a passada sem ter aberto sessao no SoftDesk. Registrar mesmo assim
@@ -57,7 +61,17 @@ export async function verificarChamados(): Promise<{ processados: number }> {
     return passadaVazia(inicio);
   }
 
-  const sessao = await abrirSessao();
+  // Timer e botao do painel rodam em processos diferentes - ver travaPassada.ts.
+  const liberarTrava = tentarTravar(ARQUIVO_TRAVA);
+  if (!liberarTrava) throw new PassadaEmAndamento();
+
+  let sessao: Sessao;
+  try {
+    sessao = await abrirSessao();
+  } catch (err) {
+    liberarTrava();
+    throw err;
+  }
   let processados = 0;
   const notificacoes: NotificacaoEncaminhamento[] = [];
 
@@ -97,6 +111,8 @@ export async function verificarChamados(): Promise<{ processados: number }> {
       avancarRodizio(atendente);
       registrarEncaminhamento(chamado.numero, chamado.titulo, chamado.cliente, atendente);
       notificacoes.push({
+        ordem: notificacoes.length + 1,
+        atribuidoEm: new Date(),
         chamado: chamado.numero,
         titulo: chamado.titulo,
         cliente: chamado.cliente,
@@ -132,7 +148,11 @@ export async function verificarChamados(): Promise<{ processados: number }> {
     // que os chamados foram atribuidos - evita que o Power Automate reordene
     // as mensagens quando ha 2+ chamados. No finally pra que, se a atribuicao
     // de um chamado falhar no meio, os ja atribuidos ainda sejam notificados.
-    await notificarTeams(notificacoes);
-    await encerrarSessao(sessao);
+    try {
+      await notificarTeams(notificacoes);
+      await encerrarSessao(sessao);
+    } finally {
+      liberarTrava();
+    }
   }
 }

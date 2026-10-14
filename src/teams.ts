@@ -1,6 +1,10 @@
 import { config } from "./config";
 
 export interface NotificacaoEncaminhamento {
+  /** Posicao na passada: 1 = primeiro chamado encaminhado. E a ordem do rodizio. */
+  ordem: number;
+  /** Momento em que o chamado foi de fato atribuido no SoftDesk. */
+  atribuidoEm: Date;
   chamado: number;
   titulo: string;
   cliente: string;
@@ -51,8 +55,33 @@ function linhaContato(email: string | null, telefone: string | null): string | n
   return partes.length > 0 ? partes.join(" · ") : null;
 }
 
+/** HH:MM em Sao Paulo - a VM roda em UTC. */
+function horaSP(data: Date): string {
+  return data.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+}
+
+/**
+ * Ordem de envio = ordem em que os chamados foram atribuidos (a do rodizio).
+ * Ordena por `ordem` explicitamente, em vez de confiar na ordem do array, e
+ * confere contra o horario real da atribuicao. Se os dois discordarem (defeito
+ * no fluxo), vale o horario - e o que de fato aconteceu no SoftDesk - e o card
+ * sai mesmo assim: sem ele os atendentes nem saberiam do chamado. As posicoes
+ * sao renumeradas pela ordem final.
+ */
+export function ordenarParaEnvio(lista: NotificacaoEncaminhamento[]): NotificacaoEncaminhamento[] {
+  const porOrdem = [...lista].sort((a, b) => a.ordem - b.ordem);
+  const consistente = porOrdem.every(
+    (info, i) => i === 0 || porOrdem[i - 1].atribuidoEm.getTime() <= info.atribuidoEm.getTime()
+  );
+  if (!consistente) {
+    console.warn("Ordem dos encaminhamentos nao bate com o horario de atribuicao; usando o horario.");
+  }
+  const final = consistente ? porOrdem : [...lista].sort((a, b) => a.atribuidoEm.getTime() - b.atribuidoEm.getTime());
+  return final.map((info, i) => ({ ...info, ordem: i + 1 }));
+}
+
 /** Monta os elementos de um chamado no card. `separador` marca o inicio de cada bloco quando ha varios. */
-function secaoChamado(info: NotificacaoEncaminhamento, separador: boolean): Record<string, unknown>[] {
+function secaoChamado(info: NotificacaoEncaminhamento, total: number, separador: boolean): Record<string, unknown>[] {
   const email = info.emailAtendente ?? null;
   // Com e-mail cadastrado, o nome vira @mention de verdade: o Teams exige o par
   // <at>Nome</at> no texto + a entidade correspondente em msteams.entities. Sem
@@ -87,7 +116,16 @@ function secaoChamado(info: NotificacaoEncaminhamento, separador: boolean): Reco
           width: "stretch",
           verticalContentAlignment: "Center",
           items: [
-            { type: "TextBlock", text: "CHAMADO ENCAMINHADO", size: "Small", weight: "Bolder", color: "Accent", spacing: "None" },
+            {
+              // Hora e posicao deixam a ordem clara mesmo se o Teams entregar
+              // cards de passadas diferentes fora de ordem.
+              type: "TextBlock",
+              text: `CHAMADO ENCAMINHADO · ${horaSP(info.atribuidoEm)}${total > 1 ? ` · ${info.ordem} de ${total}` : ""}`,
+              size: "Small",
+              weight: "Bolder",
+              color: "Accent",
+              spacing: "None",
+            },
             { type: "TextBlock", text: textoAtendente, size: "Large", weight: "Bolder", spacing: "None", wrap: true },
           ],
         },
@@ -149,12 +187,12 @@ function entidadesMencao(lista: NotificacaoEncaminhamento[]): Record<string, unk
   return entidades;
 }
 
-function montarAdaptiveCard(lista: NotificacaoEncaminhamento[]) {
+export function montarAdaptiveCard(lista: NotificacaoEncaminhamento[]) {
   const content: Record<string, unknown> = {
     $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
     type: "AdaptiveCard",
     version: "1.4",
-    body: lista.flatMap((info, i) => secaoChamado(info, i > 0)),
+    body: lista.flatMap((info, i) => secaoChamado(info, lista.length, i > 0)),
   };
 
   const entidades = entidadesMencao(lista);
@@ -192,8 +230,9 @@ function montarAdaptiveCard(lista: NotificacaoEncaminhamento[]) {
 export async function notificarTeams(lista: NotificacaoEncaminhamento[]): Promise<void> {
   if (lista.length === 0) return;
 
-  const numeros = lista.map((i) => i.chamado).join(", ");
-  await postarNoTeams(montarAdaptiveCard(lista), `os chamados ${numeros}`);
+  const ordenada = ordenarParaEnvio(lista);
+  const numeros = ordenada.map((i) => i.chamado).join(", ");
+  await postarNoTeams(montarAdaptiveCard(ordenada), `os chamados ${numeros}`);
 }
 
 /**

@@ -7,6 +7,7 @@ import { atendenteAtual, aoRemoverAtendente, definirProximoManualmente } from ".
 import {
   atendentesAtivos,
   codigoDoAtendenteOuNull,
+  emailTeamsCompleto,
   listarAtendentes,
   marcarInativo,
   reativarManualmente,
@@ -19,6 +20,7 @@ import { lerConfiguracoes, salvarConfiguracoes } from "../configuracoes";
 import { lerStatus } from "../status";
 import { lerHistorico } from "./logHistorico";
 import { verificarChamados } from "../fluxo";
+import { PassadaEmAndamento } from "../travaPassada";
 import { obterFila } from "../fila";
 import { listarExecucoes } from "../execucoes";
 import { autenticar, exigirLogin, invalidarToken, NOME_COOKIE } from "./auth";
@@ -28,6 +30,14 @@ import { lerAuditoria, quemEstaAgindo, registrarAcao } from "../auditoria";
 import { cofreRouter } from "./cofreRotas";
 import { agendaRouter } from "./agendaRotas";
 import { usuariosRouter } from "./usuariosRotas";
+
+/**
+ * Atendentes pro painel, com o e-mail do Teams ja completo: o cadastro antigo
+ * guarda so o usuario (o dominio vem do .env), e a tela mostra o endereco inteiro.
+ */
+function atendentesParaPainel() {
+  return listarAtendentes().map((a) => ({ ...a, emailTeams: emailTeamsCompleto(a.emailTeams) }));
+}
 
 const app = express();
 // Necessario atras do nginx: sem isso o Express nao confia no X-Forwarded-For
@@ -71,7 +81,7 @@ app.use("/api/agenda", agendaRouter);
 app.use("/api/usuarios", usuariosRouter);
 
 app.get("/api/atendentes", (req, res) => {
-  res.json(listarAtendentes());
+  res.json(atendentesParaPainel());
 });
 
 app.patch(
@@ -91,7 +101,7 @@ app.patch(
         reativarManualmente(nome);
         registrarAcao(quemEstaAgindo(req), "atendente:reativar", nome);
       }
-      res.json(listarAtendentes());
+      res.json(atendentesParaPainel());
     } catch (err) {
       res.status(400).json({ erro: err instanceof Error ? err.message : String(err) });
     }
@@ -110,7 +120,7 @@ app.delete("/api/atendentes/:nome", exigirPermissao("atendente:remover"), (req, 
     aoRemoverAtendente(nome);
     removerAtendente(nome);
     registrarAcao(quemEstaAgindo(req), "atendente:remover", nome);
-    res.json(listarAtendentes());
+    res.json(atendentesParaPainel());
   } catch (err) {
     res.status(400).json({ erro: err instanceof Error ? err.message : String(err) });
   }
@@ -122,7 +132,7 @@ app.put("/api/atendentes/ordem", exigirPermissao("rodizio:reordenar"), (req, res
   try {
     reordenarAtendentes(ordem);
     registrarAcao(quemEstaAgindo(req), "rodizio:reordenar", ordem.join(", "));
-    res.json(listarAtendentes());
+    res.json(atendentesParaPainel());
   } catch (err) {
     res.status(400).json({ erro: err instanceof Error ? err.message : String(err) });
   }
@@ -251,7 +261,9 @@ app.post("/api/verificar-agora", async (req, res) => {
     const resultado = await verificarChamados();
     res.json(resultado);
   } catch (err) {
-    res.status(500).json({ erro: err instanceof Error ? err.message : String(err) });
+    // O timer pode estar no meio de uma passada (outro processo - ver travaPassada.ts).
+    const status = err instanceof PassadaEmAndamento ? 409 : 500;
+    res.status(status).json({ erro: err instanceof Error ? err.message : String(err) });
   } finally {
     verificacaoEmAndamento = false;
   }
