@@ -19,6 +19,8 @@ import { ehMaster } from "../usuarios/permissoes";
 import { quemEstaAgindo, registrarAcao } from "../auditoria";
 import {
   adicionarAtendente,
+  definirEmailTeams,
+  emailTeamsCompleto,
   listarAtendentes,
   planoDeAtendenteNaNovaConta,
   reativarManualmente,
@@ -53,6 +55,16 @@ function paraPublico(u: Usuario) {
 
 function texto(valor: unknown): string {
   return typeof valor === "string" ? valor.trim() : "";
+}
+
+const ERRO_EMAIL_TEAMS = "Informe o e-mail do Teams do atendente (usado na marcação no canal de revezamento).";
+
+/** Grava o e-mail do Teams do atendente, registrando na auditoria so quando muda. */
+function atualizarEmailTeams(req: Request, codigoAtendente: number, emailTeams: string): void {
+  const atendente = listarAtendentes().find((a) => a.codigoAtendente === codigoAtendente);
+  if (!atendente || emailTeamsCompleto(atendente.emailTeams) === emailTeams) return;
+  definirEmailTeams(codigoAtendente, emailTeams);
+  registrarAcao(quemEstaAgindo(req), "atendente:email-teams", `${atendente.nome} -> ${emailTeams}`);
 }
 
 function idDaSessao(req: Request): string | null {
@@ -92,6 +104,7 @@ usuariosRouter.post("/", (req, res) => {
   const papel: Papel = b.papel === "admin" ? "admin" : "comum";
   const codigoAtendente = typeof b.codigoAtendente === "number" ? b.codigoAtendente : null;
   const usuarioAtendente = b.usuarioAtendente === true;
+  const emailTeams = normalizarEmail(texto(b.emailTeams));
 
   if (!nome) {
     res.status(400).json({ erro: "Informe o nome." });
@@ -111,6 +124,10 @@ usuariosRouter.post("/", (req, res) => {
     : usuarioComCodigoAtendente(listarUsuarios(), codigoAtendente, "");
   if (conflitoDeVinculo) {
     res.status(400).json({ erro: `Este atendente já está vinculado a ${conflitoDeVinculo.nome}.` });
+    return;
+  }
+  if (plano !== "nenhum" && !emailValido(emailTeams)) {
+    res.status(400).json({ erro: ERRO_EMAIL_TEAMS });
     return;
   }
 
@@ -135,7 +152,7 @@ usuariosRouter.post("/", (req, res) => {
         ativo: true,
         motivoInatividade: null,
         retornaEm: null,
-        emailTeams: normalizarEmail(email).split("@")[0],
+        emailTeams,
       });
       registrarAcao(quemEstaAgindo(req), "atendente:adicionar", `${nome} (#${codigoAtendente}) - fim da fila`);
     }
@@ -145,6 +162,7 @@ usuariosRouter.post("/", (req, res) => {
     // pessoa ja entra com a senha da propria conta Senior.
     const usuario = criarUsuario({ nome, email, papel, codigoAtendente });
     registrarAcao(quemEstaAgindo(req), "usuario:criar", `${nome} <${email}> - ${papel}`);
+    if (plano === "vincular") atualizarEmailTeams(req, codigoAtendente as number, emailTeams);
     res.json({ usuario: paraPublico(usuario) });
   } catch (err) {
     res.status(400).json({ erro: err instanceof Error ? err.message : String(err) });
@@ -200,6 +218,10 @@ usuariosRouter.patch("/:id", (req, res) => {
       if (conflito) {
         throw new Error(`O atendente #${codigoNovo} já está vinculado a ${conflito.nome}.`);
       }
+      const emailTeams = normalizarEmail(texto(b.emailTeams));
+      if (codigoNovo !== null && !emailValido(emailTeams)) {
+        throw new Error(ERRO_EMAIL_TEAMS);
+      }
 
       let atendente = codigoNovo === null
         ? undefined
@@ -218,7 +240,7 @@ usuariosRouter.patch("/:id", (req, res) => {
           ativo: true,
           motivoInatividade: null,
           retornaEm: null,
-          emailTeams: alvo.email.split("@")[0],
+          emailTeams,
         } satisfies Atendente;
         adicionarAtendente(atendente);
         registrarAcao(quemEstaAgindo(req), "atendente:adicionar", `${atendente.nome} (#${codigoNovo}) - fim da fila`);
@@ -226,6 +248,7 @@ usuariosRouter.patch("/:id", (req, res) => {
         reativarManualmente(atendente.nome);
         registrarAcao(quemEstaAgindo(req), "atendente:reativar", atendente.nome);
       }
+      if (codigoNovo !== null) atualizarEmailTeams(req, codigoNovo, emailTeams);
 
       if (codigoNovo !== alvo.codigoAtendente) {
         mudarCodigoAtendente(id, codigoNovo);

@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from "react";
 import type { Atendente, VinculoAtendenteEntrada } from "../../api/tipos";
+import { CampoEmailTeams } from "./CampoEmailTeams";
 import styles from "./Formularios.module.css";
 
 interface Props {
@@ -20,6 +21,7 @@ export function FormularioVinculoAtendente({ nomeUsuario, codigoAtual, atendente
   const [valor, setValor] = useState(
     removido ? valorRestaurar(codigoAtual) : codigoAtual === null ? "" : String(codigoAtual)
   );
+  const [emailTeams, setEmailTeams] = useState(atendenteAtual?.emailTeams ?? "");
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
@@ -27,6 +29,13 @@ export function FormularioVinculoAtendente({ nomeUsuario, codigoAtual, atendente
     () => atendentes.find((a) => String(a.codigoAtendente) === valor),
     [atendentes, valor]
   );
+
+  function escolher(novoValor: string) {
+    setValor(novoValor);
+    // Traz o e-mail do Teams que o atendente escolhido ja tem, pra conferir.
+    const atendente = atendentes.find((a) => String(a.codigoAtendente) === novoValor);
+    if (atendente?.emailTeams) setEmailTeams(atendente.emailTeams);
+  }
 
   async function enviar(ev: FormEvent) {
     ev.preventDefault();
@@ -38,6 +47,7 @@ export function FormularioVinculoAtendente({ nomeUsuario, codigoAtual, atendente
       await onSalvar({
         codigoAtendente: codigo,
         garantirNoRodizio: restaurando || selecionado?.ativo === false,
+        emailTeams,
       });
     } catch (err) {
       setErro(err instanceof Error ? err.message : String(err));
@@ -54,7 +64,7 @@ export function FormularioVinculoAtendente({ nomeUsuario, codigoAtual, atendente
 
       <label className={styles.campo}>
         Atendente de {nomeUsuario}
-        <select value={valor} onChange={(ev) => setValor(ev.target.value)}>
+        <select value={valor} onChange={(ev) => escolher(ev.target.value)}>
           <option value="">Nenhum (só gestão, fora do rodízio)</option>
           {removido && (
             <option value={valorRestaurar(codigoAtual)}>
@@ -68,6 +78,8 @@ export function FormularioVinculoAtendente({ nomeUsuario, codigoAtual, atendente
           ))}
         </select>
       </label>
+
+      {valor && <CampoEmailTeams valor={emailTeams} onMudar={setEmailTeams} />}
 
       {removido && valor === valorRestaurar(codigoAtual) && (
         <p className={styles.aviso}>

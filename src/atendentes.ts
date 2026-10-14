@@ -195,10 +195,27 @@ export function codigoDoAtendenteOuNull(nome: string): number | null {
  * se nao houver dominio configurado, retorna null pra nao gerar menção quebrada.
  */
 export function emailTeamsDoAtendente(nome: string): string | null {
-  const alvo = listarAtendentes().find((a) => a.nome === nome);
-  const usuario = alvo?.emailTeams?.trim();
+  return emailTeamsCompleto(listarAtendentes().find((a) => a.nome === nome)?.emailTeams);
+}
+
+/** O valor cadastrado (usuario ou e-mail completo) como e-mail completo, ou null. */
+export function emailTeamsCompleto(valor: string | null | undefined): string | null {
+  const usuario = valor?.trim();
   if (!usuario) return null;
   if (usuario.includes("@")) return usuario;
   if (!config.teamsEmailDomain) return null;
   return `${usuario}@${config.teamsEmailDomain}`;
+}
+
+/**
+ * Grava o e-mail do Teams usado na @mencao do card. Guarda o e-mail completo:
+ * o usuario nem sempre bate com o login (ex.: conta "mateus@" e Teams
+ * "mateus.felipe@"), entao quem cadastra informa o endereco exato.
+ */
+export function definirEmailTeams(codigoAtendente: number, email: string): void {
+  const atendentes = listarAtendentes();
+  const alvo = atendentes.find((a) => a.codigoAtendente === codigoAtendente);
+  if (!alvo) throw new Error(`Atendente nao encontrado: #${codigoAtendente}`);
+  alvo.emailTeams = email;
+  salvar(atendentes);
 }

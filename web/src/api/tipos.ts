@@ -58,12 +58,16 @@ export interface NovoUsuarioEntrada {
   codigoAtendente: number | null;
   /** Marcado: se o codigo ainda nao estiver no rodizio, o atendente e criado no fim da fila. */
   usuarioAtendente: boolean;
+  /** E-mail do Teams pra @mencao no canal. Obrigatorio quando ha atendente vinculado. */
+  emailTeams: string;
 }
 
 export interface VinculoAtendenteEntrada {
   codigoAtendente: number | null;
   /** Recria o removido ou reativa o inativo antes de manter o vinculo. */
   garantirNoRodizio: boolean;
+  /** E-mail do Teams pra @mencao no canal. Obrigatorio quando ha atendente vinculado. */
+  emailTeams: string;
 }
 
 /** Espelha LinhaAuditoria de src/auditoria.ts. */

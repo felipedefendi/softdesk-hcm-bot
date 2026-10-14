@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useApi } from "../../api/useApi";
 import type { Atendente, AtendenteSoftDesk, NovoUsuarioEntrada } from "../../api/tipos";
+import { CampoEmailTeams } from "./CampoEmailTeams";
 import styles from "./Formularios.module.css";
 
 interface Props {
@@ -16,6 +17,7 @@ export function FormularioUsuario({ atendentes, onSalvar, onCancelar }: Props) {
   const [papel, setPapel] = useState<"admin" | "comum">("comum");
   const [usuarioAtendente, setUsuarioAtendente] = useState(false);
   const [codigoAtendente, setCodigoAtendente] = useState("");
+  const [emailTeams, setEmailTeams] = useState("");
   const [softDesk, setSoftDesk] = useState<AtendenteSoftDesk[] | null>(null);
   const [erroSoftDesk, setErroSoftDesk] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -45,6 +47,9 @@ export function FormularioUsuario({ atendentes, onSalvar, onCancelar }: Props) {
     // Com o nome em branco, usa o do SoftDesk - e o nome que aparece no rodizio.
     const escolhido = softDesk?.find((a) => String(a.codigo) === valor);
     if (escolhido && !nome.trim()) setNome(escolhido.nome);
+    // Quem ja esta no rodizio ja tem e-mail do Teams: traz pra conferir.
+    const noRodizioAtual = atendentes.find((a) => String(a.codigoAtendente) === valor);
+    if (noRodizioAtual?.emailTeams) setEmailTeams(noRodizioAtual.emailTeams);
   }
 
   async function enviar(ev: FormEvent) {
@@ -52,7 +57,7 @@ export function FormularioUsuario({ atendentes, onSalvar, onCancelar }: Props) {
     setErro(null);
     setEnviando(true);
     try {
-      await onSalvar({ nome, email, papel, codigoAtendente: codigo, usuarioAtendente });
+      await onSalvar({ nome, email, papel, codigoAtendente: codigo, usuarioAtendente, emailTeams });
     } catch (err) {
       setErro(err instanceof Error ? err.message : String(err));
       setEnviando(false);
@@ -124,6 +129,7 @@ export function FormularioUsuario({ atendentes, onSalvar, onCancelar }: Props) {
               </select>
             </label>
           )}
+          <CampoEmailTeams valor={emailTeams} onMudar={setEmailTeams} />
           {codigo !== null && (
             <p className={styles.aviso}>
               {existente
